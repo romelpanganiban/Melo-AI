@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from api.health import router as health_router
 from api.chat import router as chat_router
+from api.session import router as session_router
 
 app = FastAPI(
     title="Melo-AI",
@@ -10,6 +11,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(chat_router)
+app.include_router(session_router)
 
 @app.get("/")
 def home():
