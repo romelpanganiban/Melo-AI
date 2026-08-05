@@ -14,9 +14,9 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 def chat(request: ChatRequest):
 
-    memory.add_message("user", request.message)
+    service.add_message("user", request.message)
 
-    history = memory.get_history()
+    history = service.get_history()
 
     last_messages = history[-5:]
 
@@ -25,7 +25,7 @@ def chat(request: ChatRequest):
         f"{len(history)} messages in this conversation."
     )
 
-    memory.add_message(
+    service.add_message(
         "assistant",
         response
     )
@@ -37,4 +37,4 @@ def chat(request: ChatRequest):
 
 @router.get("/history")
 def history():
-    return memory.get_history()
+    return service.get_history()

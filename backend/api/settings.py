@@ -16,13 +16,13 @@ class SettingsRequest(BaseModel):
 
 @router.get("/settings")
 def get_settings():
-    return manager.get_settings()
+    return service.get_settings()
 
 
 @router.put("/settings")
 def update_settings(
     request: SettingsRequest
 ):
-    return manager.update_settings(
+    return service.update_settings(
         request.model_dump()
     )

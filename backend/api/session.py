@@ -7,18 +7,19 @@ router = APIRouter()
 
 service = SessionService()
 
+
 class RenameSessionRequest(BaseModel):
     title: str
 
 
 @router.post("/sessions")
 def create_session():
-    return manager.create_session()
+    return service.create_session()
 
 
 @router.get("/sessions")
 def get_sessions():
-    return manager.get_sessions()
+    return service.get_sessions()
 
 
 @router.put("/sessions/{session_id}")
@@ -26,7 +27,7 @@ def rename_session(
     session_id: str,
     request: RenameSessionRequest
 ):
-    return manager.rename_session(
+    return service.rename_session(
         session_id,
         request.title
     )
@@ -34,4 +35,4 @@ def rename_session(
 
 @router.delete("/sessions/{session_id}")
 def delete_session(session_id: str):
-    return manager.delete_session(session_id)
+    return service.delete_session(session_id)
