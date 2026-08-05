@@ -17,15 +17,12 @@ def chat(request: ChatRequest):
 
     history = memory.get_history()
 
-    response = f"""
-Message received.
+    last_messages = history[-5:]
 
-Current message:
-{request.message}
-
-Messages stored:
-{len(history)}
-"""
+    response = (
+        f"Hello! I currently remember "
+        f"{len(history)} messages in this conversation."
+    )
 
     memory.add_message(
         "assistant",
@@ -34,7 +31,7 @@ Messages stored:
 
     return {
         "response": response,
-        "history_count": len(history)
+        "recent_history": last_messages
     }
 
 @router.get("/history")

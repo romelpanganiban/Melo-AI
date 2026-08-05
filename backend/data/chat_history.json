@@ -6,5 +6,21 @@
     {
         "role": "assistant",
         "content": "Melo-AI received: Hello Melo"
+    },
+    {
+        "role": "user",
+        "content": "Hi Melo"
+    },
+    {
+        "role": "assistant",
+        "content": "\nMessage received.\n\nCurrent message:\nHi Melo\n\nMessages stored:\n3\n"
+    },
+    {
+        "role": "user",
+        "content": "Hi my name is romel"
+    },
+    {
+        "role": "assistant",
+        "content": "Hello! I currently remember 5 messages in this conversation."
     }
 ]
