@@ -22,5 +22,25 @@
     {
         "role": "assistant",
         "content": "Hello! I currently remember 5 messages in this conversation."
+    },
+    {
+        "role": "user",
+        "content": "Hello Melo Ai"
+    },
+    {
+        "role": "assistant",
+        "content": "Hello! I currently remember 7 messages in this conversation."
+    },
+    {
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "role": "user",
+        "content": "Hello"
     }
 ]

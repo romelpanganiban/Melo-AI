@@ -48,20 +48,19 @@ Persistent memory
 
 ---
 
-## Milestone 4 - Session System 🚧
+## Milestone 4 - Session System ✅
 
-Status: In Progress
+Status: Completed
 
 - [x] Session Manager
 - [x] Create Session
 - [x] Get Sessions
-- [ ] Delete Session
-- [ ] Rename Session
-- [ ] Session-based Chat History
+- [x] Rename Session
+- [x] Delete Session
+- [x] Unit Tests
 
 Deliverable:
-Claude-style Conversations
-
+Claude-style Conversation Management
 ---
 
 ## Milestone 5 - Frontend

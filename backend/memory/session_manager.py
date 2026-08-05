@@ -41,3 +41,41 @@ class SessionManager:
 
     def get_sessions(self):
         return self.load()
+
+    def rename_session(
+        self,
+        session_id,
+        title
+    ):
+
+        sessions = self.load()
+
+        for session in sessions:
+
+            if session["id"] == session_id:
+
+                session["title"] = title
+
+                self.save(sessions)
+
+                return session
+
+        return {
+            "message": "Session not found"
+        }
+
+    def delete_session(self, session_id):
+
+        sessions = self.load()
+
+        sessions = [
+            session
+            for session in sessions
+            if session["id"] != session_id
+        ]
+
+        self.save(sessions)
+
+        return {
+            "message": "Session deleted"
+        }
