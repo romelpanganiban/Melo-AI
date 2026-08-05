@@ -1,12 +1,11 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from memory.session_manager import SessionManager
+from services.session_service import SessionService
 
 router = APIRouter()
 
-manager = SessionManager()
-
+service = SessionService()
 
 class RenameSessionRequest(BaseModel):
     title: str

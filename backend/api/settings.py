@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from services.settings_manager import SettingsManager
+from services.settings_service import SettingsService
 
 router = APIRouter()
 
-manager = SettingsManager()
+service = SettingsService()
 
 
 class SettingsRequest(BaseModel):

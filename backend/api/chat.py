@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from memory.memory_manager import MemoryManager
+from services.chat_service import ChatService
 
 router = APIRouter()
 
-memory = MemoryManager()
+service = ChatService()
+
 
 class ChatRequest(BaseModel):
     message: str
