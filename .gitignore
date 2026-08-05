@@ -1,5 +1,6 @@
 # Python
 venv/
+backend/venv/
 .venv/
 __pycache__/
 *.pyc
@@ -16,16 +17,11 @@ node_modules/
 # Logs
 *.log
 
-# Build
-dist/
-build/
-
 # AI Models
 models/
 *.gguf
 *.safetensors
 
-# OS
-Thumbs.db
-.DS_Store
-``
+# Training
+outputs/
+checkpoints/
