@@ -1,4 +1,5 @@
 from memory.session_manager import SessionManager
+from core.logger import logger
 
 
 class SessionService:
@@ -7,7 +8,14 @@ class SessionService:
         self.manager = SessionManager()
 
     def create_session(self):
-        return self.manager.create_session()
+
+        session = self.manager.create_session()
+
+        logger.info(
+            f"Session created: {session['id']}"
+        )
+
+        return session
 
     def get_sessions(self):
         return self.manager.get_sessions()
@@ -17,6 +25,11 @@ class SessionService:
         session_id,
         title
     ):
+
+        logger.info(
+            f"Session renamed: {session_id}"
+        )
+
         return self.manager.rename_session(
             session_id,
             title
@@ -26,6 +39,11 @@ class SessionService:
         self,
         session_id
     ):
+
+        logger.info(
+            f"Session deleted: {session_id}"
+        )
+
         return self.manager.delete_session(
             session_id
         )

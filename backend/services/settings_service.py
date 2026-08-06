@@ -1,4 +1,5 @@
 from services.settings_manager import SettingsManager
+from core.logger import logger
 
 
 class SettingsService:
@@ -10,4 +11,11 @@ class SettingsService:
         return self.manager.get_settings()
 
     def update_settings(self, settings):
-        return self.manager.update_settings(settings)
+
+        logger.info(
+            "Settings updated"
+        )
+
+        return self.manager.update_settings(
+            settings
+        )

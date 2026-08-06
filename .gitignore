@@ -4,15 +4,18 @@ backend/venv/
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Environment
 .env
+.env.*
 
 # VS Code
 .vscode/
 
-# Node
+# Node.js
 node_modules/
+.next/
 
 # Logs
 *.log
@@ -25,3 +28,12 @@ models/
 # Training
 outputs/
 checkpoints/
+
+# Local Data
+backend/data/chat_history.json
+backend/data/sessions.json
+backend/data/settings.json
+
+# OS Files
+Thumbs.db
+.DS_Store

@@ -51,6 +51,22 @@
 
 ---
 
+## Milestone 5.1 - Backend Hardening ✅
+
+Status: Completed
+
+- [x] Session-Based Memory
+- [x] Chat API Tests
+- [x] Service Tests
+- [x] Custom Exceptions
+- [x] Logging
+- [x] Agent Structure
+
+Deliverable:
+ChatGPT/Claude-style Session Memory and Hardened Backend
+git add .
+---
+
 ## Phase 6 - Frontend
 
 - [ ] Next.js

@@ -1,78 +1,37 @@
 [
     {
+        "session_id": "test-session",
         "role": "user",
         "content": "Hello Melo"
     },
     {
+        "session_id": "test-session",
         "role": "assistant",
-        "content": "Melo-AI received: Hello Melo"
+        "content": "Hello! I currently remember 1 messages in this session."
     },
     {
+        "session_id": "test-session",
         "role": "user",
-        "content": "Hi Melo"
+        "content": "Hello Melo"
     },
     {
+        "session_id": "test-session",
         "role": "assistant",
-        "content": "\nMessage received.\n\nCurrent message:\nHi Melo\n\nMessages stored:\n3\n"
+        "content": "Hello! I currently remember 3 messages in this session."
     },
     {
+        "session_id": "test-session",
         "role": "user",
-        "content": "Hi my name is romel"
+        "content": "Hello"
     },
     {
+        "session_id": "session1",
+        "role": "user",
+        "content": "test"
+    },
+    {
+        "session_id": "session1",
         "role": "assistant",
-        "content": "Hello! I currently remember 5 messages in this conversation."
-    },
-    {
-        "role": "user",
-        "content": "Hello Melo Ai"
-    },
-    {
-        "role": "assistant",
-        "content": "Hello! I currently remember 7 messages in this conversation."
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "Hello"
-    },
-    {
-        "role": "user",
-        "content": "hello melo"
-    },
-    {
-        "role": "assistant",
-        "content": "Hello! I currently remember 18 messages in this conversation."
+        "content": "Hello! I currently remember 1 messages in this session."
     }
 ]

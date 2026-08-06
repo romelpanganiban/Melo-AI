@@ -9,16 +9,21 @@ service = ChatService()
 
 
 class ChatRequest(BaseModel):
+    session_id: str
     message: str
 
 
 @router.post("/chat")
 def chat(request: ChatRequest):
+
     return service.process_message(
+        request.session_id,
         request.message
     )
 
+@router.get("/history/{session_id}")
+def history(session_id: str):
 
-@router.get("/history")
-def history():
-    return service.get_history()
+    return service.get_history(
+        session_id
+    )

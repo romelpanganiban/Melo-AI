@@ -6,6 +6,7 @@ def test_add_message():
     manager = MemoryManager()
 
     manager.add_message(
+        "test-session",
         "user",
         "Hello"
     )

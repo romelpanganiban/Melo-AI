@@ -1,7 +1,15 @@
 import logging
 
+
 logging.basicConfig(
-    level=logging.INFO
+    level=logging.INFO,
+    format=(
+        "%(asctime)s "
+        "- %(levelname)s "
+        "- %(message)s"
+    )
 )
 
-logger = logging.getLogger("melo-ai")
+logger = logging.getLogger(
+    "melo-ai"
+)
