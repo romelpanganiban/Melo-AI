@@ -13,8 +13,13 @@ class ChatService:
             message
         )
 
+        history = self.memory.get_history()
+
+        last_messages = history[-5:]
+
         response = (
-            f"Melo-AI received: {message}"
+            f"Hello! I currently remember "
+            f"{len(history)} messages in this conversation."
         )
 
         self.memory.add_message(
@@ -22,4 +27,10 @@ class ChatService:
             response
         )
 
-        return response
+        return {
+            "response": response,
+            "recent_history": last_messages
+        }
+
+    def get_history(self):
+        return self.memory.get_history()

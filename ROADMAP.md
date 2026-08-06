@@ -103,6 +103,30 @@
 
 ---
 
+## Phase 12 - Cloud Platform
+
+- [ ] User Accounts
+- [ ] Authentication
+- [ ] Database
+- [ ] Deployment
+- [ ] Usage Tracking
+
+Deliverable:
+Hosted Melo-AI Platform
+
+---
+
+## Phase 13 - Subscriptions
+
+- [ ] Free Tier
+- [ ] Pro Tier
+- [ ] Payment Integration
+- [ ] Subscription Management
+- [ ] Billing Dashboard
+
+Deliverable:
+Commercial SaaS Version
+
 ## Version 1.0
 
 - [ ] Local Claude Alternative

@@ -54,5 +54,25 @@
     {
         "role": "user",
         "content": "Hello"
+    },
+    {
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "role": "user",
+        "content": "hello melo"
+    },
+    {
+        "role": "assistant",
+        "content": "Hello! I currently remember 18 messages in this conversation."
     }
 ]
