@@ -81,17 +81,19 @@ Production-ready Backend Foundation
 
 ---
 
-## Milestone 6 - Frontend
+## Milestone 6 - Frontend 🚧
 
-Status: Planned
+Status: In Progress
 
-- [ ] Install Node.js
-- [ ] Next.js setup
-- [ ] TypeScript
-- [ ] Tailwind CSS
-- [ ] Chat Page
-- [ ] Sidebar
-- [ ] Session List
+- [x] Frontend Setup
+- [x] App Router
+- [x] Chat Page
+- [x] Sidebar
+- [x] Session List
+- [x] Session Selection
+- [x] Backend Connection
+- [ ] Send Message
+- [ ] Display Chat History
 - [ ] Settings Page
 
 Deliverable:

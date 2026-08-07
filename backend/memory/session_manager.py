@@ -30,7 +30,7 @@ class SessionManager:
 
         session = {
             "id": str(uuid4()),
-            "title": "New Chat"
+            "title": f"Chat {len(sessions) + 1}"
         }
 
         sessions.append(session)
