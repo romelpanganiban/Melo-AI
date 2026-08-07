@@ -50,3 +50,32 @@ export async function sendMessage(
 
   return response.json();
 }
+
+export async function getSettings() {
+  const response = await fetch(
+    `${API_URL}/settings`
+  );
+
+  return response.json();
+}
+
+export async function updateSettings(
+  settings: {
+    model: string;
+    provider: string;
+    temperature: number;
+  }
+) {
+  const response = await fetch(
+     `${API_URL}/settings`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(settings),
+    }
+  );
+
+  return response.json();
+}
