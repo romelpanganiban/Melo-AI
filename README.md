@@ -28,7 +28,7 @@ The goal is to build an AI assistant that can:
 
 ## Current Status
 
-Version: 0.1.0
+Version: 0.1.1
 
 ### Completed
 
