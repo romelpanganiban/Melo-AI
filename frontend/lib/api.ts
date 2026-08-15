@@ -1,81 +1,253 @@
-const API_URL = "http://127.0.0.1:8000";
-
-export async function getSessions() {
-  const response = await fetch(
-    `${API_URL}/sessions`
-  );
-
-  return response.json();
+/**
+ * API Error types
+ */
+export class APIError extends Error {
+  constructor(
+    public statusCode: number,
+    public errorCode: string,
+    message: string,
+    public details?: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = 'APIError';
+  }
 }
 
-export async function createSession() {
-  const response = await fetch(
-    `${API_URL}/sessions`,
-    {
-      method: "POST",
+/**
+ * Get API base URL from environment or use default
+ * NEXT_PUBLIC_API_URL is injected by Next.js at build time for NEXT_PUBLIC_ prefixed vars
+ */
+// @ts-ignore - NEXT_PUBLIC_API_URL is injected by Next.js at build time
+const API_URL: string = (global as any).NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+/**
+ * Handle API response and errors
+ */
+async function handleResponse<T>(response: Response): Promise<T> {
+  // Check if response is ok
+  if (!response.ok) {
+    let errorData;
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = {
+        error: 'UNKNOWN_ERROR',
+        message: `HTTP ${response.status}: ${response.statusText}`,
+        details: {}
+      };
     }
-  );
+
+    throw new APIError(
+      response.status,
+      errorData.error || 'UNKNOWN_ERROR',
+      errorData.message || `HTTP ${response.status}`,
+      errorData.details
+    );
+  }
 
   return response.json();
 }
 
-export async function getHistory(
-  sessionId: string
-) {
-  const response = await fetch(
-    `${API_URL}/history/${sessionId}`
-  );
-
-  return response.json();
+/**
+ * Get all sessions
+ */
+export async function getSessions() {
+  try {
+    const response = await fetch(`${API_URL}/sessions`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to fetch sessions',
+      { originalError: String(error) }
+    );
+  }
 }
 
+/**
+ * Create a new session
+ */
+export async function createSession() {
+  try {
+    const response = await fetch(`${API_URL}/sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to create session',
+      { originalError: String(error) }
+    );
+  }
+}
+
+/**
+ * Get chat history for a session
+ */
+export async function getHistory(sessionId: string) {
+  try {
+    if (!sessionId) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Session ID is required',
+        { field: 'sessionId' }
+      );
+    }
+
+    const response = await fetch(`${API_URL}/history/${sessionId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to fetch chat history',
+      { originalError: String(error) }
+    );
+  }
+}
+
+/**
+ * Send a message to a session
+ */
 export async function sendMessage(
   sessionId: string,
   message: string
 ) {
-  const response = await fetch(
-    `${API_URL}/chat`,
-    {
-      method: "POST",
+  try {
+    if (!sessionId) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Session ID is required',
+        { field: 'sessionId' }
+      );
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Message cannot be empty',
+        { field: 'message' }
+      );
+    }
+
+    const response = await fetch(`${API_URL}/chat`, {
+      method: 'POST',
       headers: {
-        "Content-Type":
-          "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         session_id: sessionId,
-        message,
+        message: message.trim(),
       }),
-    }
-  );
-
-  return response.json();
-}
-
-export async function getSettings() {
-  const response = await fetch(
-    `${API_URL}/settings`
-  );
-
-  return response.json();
-}
-
-export async function updateSettings(
-  settings: {
-    model: string;
-    provider: string;
-    temperature: number;
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to send message',
+      { originalError: String(error) }
+    );
   }
-) {
-  const response = await fetch(
-     `${API_URL}/settings`,
-    {
-      method: "PUT",
+}
+
+/**
+ * Get current settings
+ */
+export async function getSettings() {
+  try {
+    const response = await fetch(`${API_URL}/settings`, {
+      method: 'GET',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to fetch settings',
+      { originalError: String(error) }
+    );
+  }
+}
+
+/**
+ * Update application settings
+ */
+export async function updateSettings(settings: {
+  model: string;
+  provider: string;
+  temperature: number;
+}) {
+  try {
+    if (!settings.model || settings.model.trim().length === 0) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Model is required',
+        { field: 'model' }
+      );
+    }
+
+    if (!settings.provider || settings.provider.trim().length === 0) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Provider is required',
+        { field: 'provider' }
+      );
+    }
+
+    if (typeof settings.temperature !== 'number' || settings.temperature < 0 || settings.temperature > 2) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Temperature must be between 0 and 2',
+        { field: 'temperature' }
+      );
+    }
+
+    const response = await fetch(`${API_URL}/settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(settings),
-    }
-  );
-
-  return response.json();
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to update settings',
+      { originalError: String(error) }
+    );
+  }
 }

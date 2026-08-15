@@ -11,8 +11,8 @@ export default function MessageBubble({
     <div
       className={`p-3 rounded max-w-xl ${
         role === "user"
-          ? "bg-blue-500 text-white ml-auto"
-          : "bg-gray-200"
+          ? "bg-blue-500 text-white ml-auto rounded-lg shadow"
+          : "bg-gray-200 text-gray-900 rounded-lg shadow"
       }`}
     >
       {content}

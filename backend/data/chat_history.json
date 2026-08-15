@@ -63,5 +63,55 @@
         "session_id": "06f34bb8-c2ed-433e-8002-b300808907bd",
         "role": "assistant",
         "content": "Hello! I currently remember 5 messages in this session."
+    },
+    {
+        "session_id": "06f34bb8-c2ed-433e-8002-b300808907bd",
+        "role": "user",
+        "content": "test"
+    },
+    {
+        "session_id": "06f34bb8-c2ed-433e-8002-b300808907bd",
+        "role": "assistant",
+        "content": "Hello! I currently remember 7 messages in this session. [This is a placeholder response - real LLM integration coming soon]"
+    },
+    {
+        "session_id": "06f34bb8-c2ed-433e-8002-b300808907bd",
+        "role": "user",
+        "content": "1"
+    },
+    {
+        "session_id": "06f34bb8-c2ed-433e-8002-b300808907bd",
+        "role": "assistant",
+        "content": "Hello! I currently remember 9 messages in this session. [This is a placeholder response - real LLM integration coming soon]"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "user",
+        "content": "im testing"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "assistant",
+        "content": "Hello! I currently remember 1 messages in this session. [This is a placeholder response - real LLM integration coming soon]"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "user",
+        "content": "okay"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "assistant",
+        "content": "Hello! I currently remember 3 messages in this session. [This is a placeholder response - real LLM integration coming soon]"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "user",
+        "content": "i good?"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "assistant",
+        "content": "Hello! I currently remember 5 messages in this session. [This is a placeholder response - real LLM integration coming soon]"
     }
 ]
