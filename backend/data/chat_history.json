@@ -113,5 +113,75 @@
         "session_id": "791acb84-cde8-441c-901b-7642864a056a",
         "role": "assistant",
         "content": "Hello! I currently remember 5 messages in this session. [This is a placeholder response - real LLM integration coming soon]"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "user",
+        "content": "test"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "assistant",
+        "content": "Testing... How can I assist you today? \ud83d\ude0a"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "user",
+        "content": "can you teach me how to learn java and how to start initiate"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "assistant",
+        "content": "Learning Java is a great choice! Here's a step-by-step guide to help you get started and build foundational skills:\n\n---\n\n### **1. Understand the Basics of Programming**\n   - **Concepts to Learn**: Variables, data types, operators, control flow (if/else, loops), functions, and basic algorithms.\n   - **Why Java?**: Java is statically typed, object-oriented, and widely used in enterprise applications, Android development, and more.\n\n---\n\n### **2. Set Up Your Development Environment**\n   - **Install JDK**: Download the latest Java Development Kit (JDK) from [Oracle](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/).\n   - **Choose an IDE**: \n     - **IntelliJ IDEA** (free for basic use)\n     - **Eclipse** (open-source)\n     - **VS Code** (with Java extensions like \"Java Extension Pack\")\n   - **Text Editor**: Use Notepad++, Sublime Text, or any code editor if you prefer simplicity.\n\n---\n\n### **3. Learn Java Fundamentals**\n   - **Start with Syntax**:\n     ```java\n     public class HelloWorld {\n         public static void main(String[] args) {\n             System.out.println(\"Hello, World!\");\n         }\n     }\n     ```\n   - **Key Topics**:\n     - Variables and data types (`int`, `String`, `boolean`, etc.)\n     - Operators (`+`, `-`, `==`, `!=`)\n     - Control flow (`if`, `else`, `for`, `while`)\n     - Arrays and collections\n     - Methods and functions\n   - **Resources**:\n     - **Books**: *\"Head First Java\"* (great for beginners)\n     - **Online Tutorials**: \n       - [JavaTpoint](https://www.javatpoint.com/java-tutorial)\n       - [GeeksforGeeks](https://www.geeksforgeeks.org/java-tutorial/)\n       - [YouTube Channels](https://www.youtube.com/@CodeWithHarry) (e.g., \"CodeWithHarry\" for beginner-friendly videos)\n\n---\n\n### **4. Practice with Small Projects**\n   - **Examples**:\n     - A calculator app\n     - A to-do list manager\n     - A simple game (e.g., Rock-Paper-Scissors)\n   - **Tips**: Break projects into smaller tasks, test each part, and debug as you go.\n\n---\n\n### **5. Master Object-Oriented Programming (OOP)**\n   - **Core Concepts**:\n     - **Classes and Objects**\n     - **Encapsulation** (data hiding)\n     - **Inheritance** (reusing code)\n     - **Polymorphism** (overriding methods)\n     - **Abstraction** (simplifying complex systems)\n   - **Practice**: Create a `BankAccount` class with methods for depositing and withdrawing.\n\n---\n\n### **6. Learn Advanced Topics**\n   - **Java Features**:\n     - Exception handling (`try`, `catch`, `finally`)\n     - Generics and collections (`ArrayList`, `HashMap`)\n     - Streams and lambda expressions (Java 8+)\n     - Multithreading and concurrency\n   - **Resources**: \n     - [Java Documentation](https://docs.oracle.com/javase/tutorial/)\n     - [Java 17 Features](https://openjdk.org/jeps/437)\n\n---\n\n### **7. Build Real-World Applications**\n   - **Android Development**: Use Android Studio to create mobile apps.\n   - **Web Applications**: Combine Java with frameworks like Spring Boot (backend) and HTML/CSS/JS (frontend).\n   - **Games**: Use libraries like LibGDX or Unity (with Java support).\n\n---\n\n### **8. Join Communities and Learn from Others**\n   - **Forums**: \n     - [Stack Overflow](https://stackoverflow.com/questions/tagged/java)\n     - [Reddit r/java](https://www.reddit.com/r/java/)\n   - **GitHub**: Explore open-source Java projects to see real-world code.\n\n---\n\n### **9. Stay Consistent and Keep Learning**\n   - **Daily Practice**: Dedicate 30\u201360 minutes daily to coding.\n   - **Track Progress**: Use tools like [LeetCode](https://leetcode.com/) or [Codewars](https://www.codewars.com/) for challenges.\n   - **Review Mistakes**: Debugging is part of the learning process!\n\n---\n\n### **Bonus Tips**\n   - **Write Clean Code**: Follow naming conventions (e.g., `camelCase` for variables).\n   - **Use Version Control**: Learn Git and GitHub to manage your projects.\n   - **Ask Questions**: Don\u2019t hesitate to seek help when stuck!\n\n---\n\nWould you like a **starter project** or **resource list** to begin with? \ud83d\ude0a"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "user",
+        "content": "can you give me sample code?"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "assistant",
+        "content": "Here\u2019s a simple Java code example to get you started! These examples cover basic syntax, variables, and control flow. You can copy and run them in your IDE or text editor with a Java compiler.\n\n---\n\n### **1. Hello, World!**  \n```java\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\"); // Prints text to the console\n    }\n}\n```\n**Output**:  \n```\nHello, World!\n```\n\n---\n\n### **2. Variables and Data Types**  \n```java\npublic class VariablesExample {\n    public static void main(String[] args) {\n        int age = 25;              // Integer\n        double price = 9.99;       // Floating-point\n        char grade = 'A';          // Character\n        boolean isJavaFun = true;  // Boolean\n\n        System.out.println(\"Age: \" + age);\n        System.out.println(\"Price: \" + price);\n        System.out.println(\"Grade: \" + grade);\n        System.out.println(\"Is Java fun? \" + isJavaFun);\n    }\n}\n```\n\n---\n\n### **3. Control Flow (If/Else)**  \n```java\npublic class IfElseExample {\n    public static void main(String[] args) {\n        int score = 85;\n\n        if (score >= 90) {\n            System.out.println(\"Grade: A\");\n        } else if (score >= 80) {\n            System.out.println(\"Grade: B\");\n        } else {\n            System.out.println(\"Grade: C or below\");\n        }\n    }\n}\n```\n\n---\n\n### **4. Simple Calculator**  \n```java\nimport java.util.Scanner; // For user input\n\npublic class Calculator {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n\n        System.out.print(\"Enter first number: \");\n        double num1 = scanner.nextDouble();\n\n        System.out.print(\"Enter operator (+, -, *, /): \");\n        char operator = scanner.next().charAt(0);\n\n        System.out.print(\"Enter second number: \");\n        double num2 = scanner.nextDouble();\n\n        double result;\n\n        switch (operator) {\n            case '+':\n                result = num1 + num2;\n                break;\n            case '-':\n                result = num1 - num2;\n                break;\n            case '*':\n                result = num1 * num2;\n                break;\n            case '/':\n                result = num1 / num2;\n                break;\n            default:\n                System.out.println(\"Invalid operator!\");\n                return;\n        }\n\n        System.out.println(\"Result: \" + result);\n    }\n}\n```\n\n---\n\n### **Tips for Running the Code**\n1. Save the file with the same name as the class (e.g., `HelloWorld.java`).\n2. Compile using `javac filename.java`.\n3. Run using `java filename` (no `.java` extension).\n\n---\n\nWould you like a **project idea** or **exercise** to practice these concepts? \ud83d\ude0a"
+    },
+    {
+        "session_id": "test-session",
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "user",
+        "content": "give me the code"
+    },
+    {
+        "session_id": "791acb84-cde8-441c-901b-7642864a056a",
+        "role": "assistant",
+        "content": "Here\u2019s a **complete Java program** that demonstrates a simple **to-do list manager**. This example includes user input, arrays, loops, and basic OOP concepts. You can copy and run it in your IDE or terminal.\n\n---\n\n### \ud83d\udcdd **To-Do List Manager in Java**\n```java\nimport java.util.Scanner;\n\npublic class ToDoList {\n    // Class-level variables\n    private static final Scanner scanner = new Scanner(System.in);\n    private static String[] tasks = new String[10]; // Max 10 tasks\n    private static int taskCount = 0;\n\n    public static void main(String[] args) {\n        boolean running = true;\n        while (running) {\n            displayMenu();\n            int choice = getUserChoice();\n\n            switch (choice) {\n                case 1:\n                    addTask();\n                    break;\n                case 2:\n                    viewTasks();\n                    break;\n                case 3:\n                    deleteTask();\n                    break;\n                case 4:\n                    running = false;\n                    System.out.println(\"Exiting... Have a great day! \ud83d\ude0a\");\n                    break;\n                default:\n                    System.out.println(\"Invalid choice. Try again.\");\n            }\n        }\n    }\n\n    // Display the menu\n    private static void displayMenu() {\n        System.out.println(\"\\n=== To-Do List Manager ===\");\n        System.out.println(\"1. Add Task\");\n        System.out.println(\"2. View Tasks\");\n        System.out.println(\"3. Delete Task\");\n        System.out.println(\"4. Exit\");\n        System.out.print(\"Choose an option (1-4): \");\n    }\n\n    // Get user input\n    private static int getUserChoice() {\n        while (true) {\n            if (scanner.hasNextInt()) {\n                int choice = scanner.nextInt();\n                scanner.nextLine(); // Consume newline\n                return choice;\n            } else {\n                System.out.println(\"Please enter a valid number.\");\n                scanner.nextLine(); // Clear invalid input\n            }\n        }\n    }\n\n    // Add a task\n    private static void addTask() {\n        if (taskCount >= tasks.length) {\n            System.out.println(\"Maximum tasks reached (10). Cannot add more.\");\n            return;\n        }\n        System.out.print(\"Enter task description: \");\n        String task = scanner.nextLine();\n        tasks[taskCount++] = task;\n        System.out.println(\"Task added successfully!\");\n    }\n\n    // View all tasks\n    private static void viewTasks() {\n        if (taskCount == 0) {\n            System.out.println(\"No tasks in the list.\");\n            return;\n        }\n        System.out.println(\"\\n=== Your Tasks ===\");\n        for (int i = 0; i < taskCount; i++) {\n            System.out.println((i + 1) + \". \" + tasks[i]);\n        }\n    }\n\n    // Delete a task\n    private static void deleteTask() {\n        if (taskCount == 0) {\n            System.out.println(\"No tasks to delete.\");\n            return;\n        }\n        viewTasks();\n        System.out.print(\"Enter task number to delete: \");\n        int index = scanner.nextInt() - 1;\n        scanner.nextLine(); // Consume newline\n\n        if (index >= 0 && index < taskCount) {\n            for (int i = index; i < taskCount - 1; i++) {\n                tasks[i] = tasks[i + 1];\n            }\n            taskCount--;\n            System.out.println(\"Task deleted successfully!\");\n        } else {\n            System.out.println(\"Invalid task number.\");\n        }\n    }\n}\n```\n\n---\n\n### \ud83d\ude80 How to Run This Code\n1. **Save** the code in a file named `ToDoList.java`.\n2. **Compile** with:  \n   ```bash\n   javac ToDoList.java\n   ```\n3. **Run** with:  \n   ```bash\n   java ToDoList\n   ```\n\n---\n\n### \ud83e\udde0 What This Code Demonstrates\n- **Arrays** for storing tasks.\n- **Loops** and **conditionals** for menu navigation.\n- **OOP principles** (encapsulation, methods).\n- **User input/output** using `Scanner`.\n\nWould you like a **more advanced example** (e.g., a to-do list with persistence using files or databases)? \ud83d\ude0a"
+    },
+    {
+        "session_id": "test-session",
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "session_id": "test-session",
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "session_id": "test-session",
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "session_id": "test-session",
+        "role": "user",
+        "content": "Hello"
+    },
+    {
+        "session_id": "test-session",
+        "role": "user",
+        "content": "Hello"
     }
 ]

@@ -1,14 +1,14 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from services.chat_service import ChatService
 from core.errors import ValidationError, ChatServiceError, SessionNotFoundError
 from core.validation import validate_message, validate_uuid
 from core.logging import logger
+from database.connection import get_db
 
 router = APIRouter()
-
-service = ChatService()
 
 
 class ChatRequest(BaseModel):
@@ -17,16 +17,18 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    session_id: str
     response: str
     recent_history: list[dict]
 
 
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat(request: ChatRequest):
+def chat(request: ChatRequest, db: Session = Depends(get_db)):
     """Process a chat message for a session
     
     Args:
         request: ChatRequest containing session_id and message
+        db: Database session dependency
     
     Returns:
         ChatResponse with assistant response and recent history
@@ -49,8 +51,9 @@ def chat(request: ChatRequest):
             }
         )
         
-        # Process message
-        result = service.process_message(session_id, message)
+        # Process message with injected database session
+        service = ChatService()
+        result = service.process_message(session_id, message, db)
         
         return result
         
@@ -67,11 +70,12 @@ def chat(request: ChatRequest):
 
 
 @router.get("/history/{session_id}", status_code=status.HTTP_200_OK)
-def history(session_id: str):
+def history(session_id: str, db: Session = Depends(get_db)):
     """Get chat history for a session
     
     Args:
         session_id: Session ID (UUID)
+        db: Database session dependency
     
     Returns:
         List of messages with role and content
@@ -89,7 +93,8 @@ def history(session_id: str):
             extra={"session_id": session_id}
         )
         
-        history = service.get_history(session_id)
+        service = ChatService()
+        history = service.get_history(session_id, db)
         
         return {
             "session_id": session_id,

@@ -1,14 +1,14 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from services.session_service import SessionService
 from core.errors import ValidationError, SessionNotFoundError
 from core.validation import validate_uuid, validate_session_title
 from core.logging import logger
+from database.connection import get_db
 
 router = APIRouter()
-
-service = SessionService()
 
 
 class RenameSessionRequest(BaseModel):
@@ -21,7 +21,7 @@ class SessionResponse(BaseModel):
 
 
 @router.post("/sessions", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
-def create_session():
+def create_session(db: Session = Depends(get_db)):
     """Create a new chat session
     
     Returns:
@@ -29,7 +29,8 @@ def create_session():
     """
     try:
         logger.info("Creating new session")
-        session = service.create_session()
+        service = SessionService()
+        session = service.create_session(db)
         return session
         
     except Exception as e:
@@ -38,7 +39,7 @@ def create_session():
 
 
 @router.get("/sessions", status_code=status.HTTP_200_OK)
-def get_sessions():
+def get_sessions(db: Session = Depends(get_db)):
     """Get all sessions
     
     Returns:
@@ -46,7 +47,8 @@ def get_sessions():
     """
     try:
         logger.info("Retrieving all sessions")
-        sessions = service.get_sessions()
+        service = SessionService()
+        sessions = service.get_sessions(db)
         return {
             "sessions": sessions,
             "count": len(sessions)
@@ -60,13 +62,15 @@ def get_sessions():
 @router.put("/sessions/{session_id}", response_model=SessionResponse, status_code=status.HTTP_200_OK)
 def rename_session(
     session_id: str,
-    request: RenameSessionRequest
+    request: RenameSessionRequest,
+    db: Session = Depends(get_db)
 ):
     """Rename an existing session
     
     Args:
         session_id: Session ID (UUID)
         request: RenameSessionRequest with new title
+        db: Database session dependency
         
     Returns:
         Updated SessionResponse
@@ -85,7 +89,8 @@ def rename_session(
             extra={"session_id": session_id, "new_title": title}
         )
         
-        session = service.rename_session(session_id, title)
+        service = SessionService()
+        session = service.rename_session(session_id, title, db)
         return session
         
     except ValidationError:
@@ -101,14 +106,15 @@ def rename_session(
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_session(session_id: str):
-    """Delete a session
+def delete_session(session_id: str, db: Session = Depends(get_db)):
+    """Delete an existing session
     
     Args:
         session_id: Session ID (UUID)
+        db: Database session dependency
         
     Raises:
-        ValidationError: If session_id is invalid
+        ValidationError: If input validation fails
         SessionNotFoundError: If session not found
     """
     try:
@@ -120,7 +126,8 @@ def delete_session(session_id: str):
             extra={"session_id": session_id}
         )
         
-        service.delete_session(session_id)
+        service = SessionService()
+        service.delete_session(session_id, db)
         
     except ValidationError:
         raise

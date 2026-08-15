@@ -7,12 +7,21 @@ from api.health import router as health_router
 from api.chat import router as chat_router
 from api.session import router as session_router
 from api.settings import router as settings_router
+from api.document import router as document_router
 from core.errors import MeloAIException
 from core.settings import settings
 from core.logging import logger
+from database import init_database
 
 # Ensure data directory exists
 settings.ensure_data_dir()
+
+# Initialize database
+try:
+    init_database()
+except Exception as e:
+    logger.error(f"Failed to initialize database: {str(e)}")
+    raise
 
 app = FastAPI(
     title="Melo-AI",
@@ -65,6 +74,7 @@ app.include_router(health_router)
 app.include_router(chat_router)
 app.include_router(session_router)
 app.include_router(settings_router)
+app.include_router(document_router)
 
 @app.get("/")
 def home():

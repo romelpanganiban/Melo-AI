@@ -54,6 +54,10 @@ class Settings:
         "You run entirely on the user's local machine."
     )
     
+    # Database Configuration
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./melo_ai.db")
+    DEBUG_SQL: bool = os.getenv("DEBUG_SQL", "false").lower() == "true"
+    
     @classmethod
     def ensure_data_dir(cls) -> None:
         """Ensure data directory exists"""
@@ -68,6 +72,7 @@ class Settings:
             "frontend_url": cls.FRONTEND_URL,
             "log_level": cls.LOG_LEVEL,
             "log_format": cls.LOG_FORMAT,
+            "database_url": cls.DATABASE_URL if "password" not in cls.DATABASE_URL.lower() else "***",
         }
 
 
