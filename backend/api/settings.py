@@ -11,9 +11,9 @@ service = SettingsService()
 
 
 class SettingsRequest(BaseModel):
-    model: str = Field(..., min_length=1, description="Model name")
-    provider: str = Field(..., min_length=1, description="Model provider (e.g., ollama)")
-    temperature: float = Field(..., ge=0.0, le=2.0, description="Temperature for generation (0.0-2.0)")
+    model: str = Field(default="qwen3:8b", min_length=1, description="Model name")
+    provider: str = Field(default="ollama", min_length=1, description="Model provider (e.g., ollama)")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for generation (0.0-2.0)")
 
 
 class SettingsResponse(BaseModel):

@@ -20,7 +20,7 @@ class DatabaseConfig:
         )
         
         # For PostgreSQL production, use something like:
-        # postgresql://user:password@localhost:5432/melo_ai
+        # postgresql+psycopg://postgres:****@localhost:5432/melo_ai
         
         self.echo_sql = os.getenv("DEBUG_SQL", "false").lower() == "true"
     
