@@ -17,8 +17,7 @@ export class APIError extends Error {
  * Get API base URL from environment or use default
  * NEXT_PUBLIC_API_URL is injected by Next.js at build time for NEXT_PUBLIC_ prefixed vars
  */
-// @ts-ignore - NEXT_PUBLIC_API_URL is injected by Next.js at build time
-const API_URL: string = (global as any).NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 /**
  * Handle API response and errors

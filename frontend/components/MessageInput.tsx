@@ -54,7 +54,7 @@ export default function MessageInput({
   }
 
   function handleKeyPress(
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLTextAreaElement>
   ) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -63,15 +63,15 @@ export default function MessageInput({
   }
 
   return (
-    <div className="border-t border-gray-300 p-4 bg-white text-gray-900">
+    <div className="mx-3 mb-3 rounded-2xl border border-emerald-900/10 bg-white/85 p-4 text-emerald-950 shadow-sm md:mx-4 md:mb-4">
       {error && (
-        <div className="mb-3 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-red-700">
           <p className="text-sm">{error}</p>
         </div>
       )}
 
-      <div className="flex gap-2">
-        <input
+      <div className="flex items-end gap-2">
+        <textarea
           value={message}
           onChange={(e) => {
             setMessage(e.target.value);
@@ -80,16 +80,17 @@ export default function MessageInput({
           onKeyPress={handleKeyPress}
           disabled={isLoading || !sessionId}
           maxLength={4096}
-          className="flex-1 border rounded p-2 disabled:bg-gray-100 disabled:text-gray-500"
+          rows={2}
+          className="max-h-44 min-h-11 flex-1 resize-y rounded-xl border border-emerald-900/20 p-2.5 text-sm shadow-inner outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200 disabled:bg-gray-100 disabled:text-gray-500"
           placeholder={
-            sessionId ? "Message Melo..." : "Select a session to start"
+            sessionId ? "Message Melo... (Enter to send, Shift+Enter for new line)" : "Select a session to start"
           }
         />
 
         <button
           onClick={handleSend}
           disabled={isLoading || !sessionId || !message.trim()}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          className="rounded-xl bg-teal-700 px-4 py-2 font-semibold text-teal-50 transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-gray-400"
         >
           {isLoading ? (
             <span className="inline-flex items-center gap-1">
@@ -103,7 +104,7 @@ export default function MessageInput({
       </div>
 
       {message.length > 0 && (
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="mt-1 text-xs text-emerald-900/55">
           {message.length} / 4096
         </p>
       )}

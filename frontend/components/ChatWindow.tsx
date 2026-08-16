@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getHistory, APIError } from "@/lib/api";
 import MessageBubble from "./MessageBubble";
+
+type Message = {
+  role: string;
+  content: string;
+};
 
 type Props = {
   sessionId: string | null;
@@ -13,9 +18,11 @@ export default function ChatWindow({
   sessionId,
   refresh,
 }: Props) {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
+  const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function loadHistory() {
@@ -29,8 +36,10 @@ export default function ChatWindow({
       setError(null);
 
       try {
-        const data: any = await getHistory(sessionId);
-        setMessages(data.messages || data || []);
+        const data = (await getHistory(sessionId)) as {
+          messages?: Message[];
+        };
+        setMessages(data.messages || []);
         setError(null);
       } catch (err) {
         const message =
@@ -46,13 +55,22 @@ export default function ChatWindow({
     }
 
     loadHistory();
-  }, [sessionId, refresh]);
+  }, [sessionId, refresh, retryToken]);
+
+  useEffect(() => {
+    if (!messages.length) {
+      return;
+    }
+    endOfMessagesRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
 
   if (!sessionId) {
     return (
       <div className="flex-1 flex items-center justify-center p-4 bg-white">
         <div className="text-center">
-          <p className="text-gray-600 text-lg font-medium">
+          <p className="text-emerald-900/80 text-lg font-medium">
             Select a session to start chatting
           </p>
         </div>
@@ -62,10 +80,10 @@ export default function ChatWindow({
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4 bg-white">
+      <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-          <p className="text-gray-600 mt-2 font-medium">Loading messages...</p>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-teal-700" />
+          <p className="mt-2 font-medium text-emerald-900/75">Loading messages...</p>
         </div>
       </div>
     );
@@ -73,13 +91,13 @@ export default function ChatWindow({
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4 bg-white">
+      <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-red-600 text-lg font-semibold">Error</p>
-          <p className="text-gray-700 mt-2">{error}</p>
+          <p className="text-lg font-semibold text-red-700">Error</p>
+          <p className="mt-2 text-emerald-950/80">{error}</p>
           <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            onClick={() => setRetryToken((prev) => prev + 1)}
+            className="mt-4 rounded-lg bg-teal-700 px-4 py-2 font-medium text-teal-50 transition hover:bg-teal-800"
           >
             Retry
           </button>
@@ -89,21 +107,24 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white text-gray-900">
+    <div className="mx-3 my-3 flex-1 overflow-y-auto rounded-2xl border border-emerald-900/10 bg-white/75 p-4 text-emerald-950 shadow-sm md:mx-4">
       {messages.length === 0 ? (
         <div className="flex items-center justify-center h-full">
-          <p className="text-gray-500 text-lg">
+          <p className="text-lg text-emerald-900/55">
             No messages yet. Start a conversation!
           </p>
         </div>
       ) : (
-        messages.map((message, index) => (
-          <MessageBubble
-            key={index}
-            role={message.role}
-            content={message.content}
-          />
-        ))
+        <div className="space-y-4">
+          {messages.map((message, index) => (
+            <MessageBubble
+              key={`${message.role}-${index}`}
+              role={message.role}
+              content={message.content}
+            />
+          ))}
+          <div ref={endOfMessagesRef} aria-hidden="true" />
+        </div>
       )}
     </div>
   );

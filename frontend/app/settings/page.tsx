@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSettings, updateSettings, APIError } from "@/lib/api";
 
@@ -57,89 +58,105 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto p-8">
-        <div className="text-center">Loading settings...</div>
+      <div className="page-shell min-h-screen px-6 py-10">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-emerald-900/10 bg-white/80 p-8 text-center shadow-sm">
+          Loading settings...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-8 space-y-6">
-      <h1 className="text-3xl font-bold">Settings</h1>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-          Settings saved successfully!
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Model Name
-          </label>
-          <input
-            type="text"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            placeholder="e.g., qwen3:8b"
-            className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            The AI model to use (must be installed in Ollama)
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Provider
-          </label>
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <main className="page-shell min-h-screen px-6 py-10">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <header className="glass-panel rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-teal-800/80">Configuration</p>
+          <h1 className="brand-title mt-3 text-3xl font-bold text-emerald-950">Model Settings</h1>
+          <p className="mt-2 text-sm text-emerald-900/75">Tune how Melo responds and which provider/model pair to use.</p>
+          <Link
+            href="/chat"
+            className="mt-4 inline-flex rounded-lg border border-emerald-900/20 bg-white/70 px-3 py-1.5 text-sm font-medium text-emerald-900 transition hover:bg-white"
           >
-            <option value="ollama">Ollama</option>
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-          </select>
-          <p className="text-xs text-gray-500 mt-1">
-            The AI provider to use
-          </p>
-        </div>
+            Back to Chat
+          </Link>
+        </header>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Temperature: {temperature.toFixed(2)}
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="2"
-            step="0.1"
-            value={temperature}
-            onChange={(e) => setTemperature(Number(e.target.value))}
-            className="w-full"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Higher values (closer to 2) make output more random. Lower values (closer to 0) make it more focused.
-          </p>
-        </div>
+        {error && (
+          <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="rounded-lg border border-teal-300 bg-teal-50 px-4 py-3 text-teal-800">
+            Settings saved successfully!
+          </div>
+        )}
+
+        <section className="rounded-2xl border border-emerald-900/10 bg-white/80 p-5 shadow-sm">
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">
+                Model Name
+              </label>
+              <input
+                type="text"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="e.g., qwen3:8b"
+                className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200"
+              />
+              <p className="mt-1 text-xs text-emerald-900/60">
+                The AI model to use (must be installed in Ollama)
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">
+                Provider
+              </label>
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200"
+              >
+                <option value="ollama">Ollama</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+              </select>
+              <p className="mt-1 text-xs text-emerald-900/60">
+                The AI provider to use
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">
+                Temperature: {temperature.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={temperature}
+                onChange={(e) => setTemperature(Number(e.target.value))}
+                className="w-full accent-teal-700"
+              />
+              <p className="mt-1 text-xs text-emerald-900/60">
+                Higher values (closer to 2) make output more random. Lower values (closer to 0) make it more focused.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="mt-6 rounded-xl bg-teal-700 px-6 py-2.5 font-semibold text-teal-50 transition hover:bg-teal-800 disabled:bg-gray-400"
+          >
+            {saving ? "Saving..." : "Save Settings"}
+          </button>
+        </section>
       </div>
-
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-6 py-2 rounded font-medium transition-colors"
-      >
-        {saving ? "Saving..." : "Save Settings"}
-      </button>
-    </div>
+    </main>
   );
 }

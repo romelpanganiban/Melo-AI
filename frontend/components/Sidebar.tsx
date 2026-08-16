@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   getSessions,
@@ -7,16 +8,25 @@ import {
   APIError,
 } from "@/lib/api";
 
+type Session = {
+  id: string;
+  title: string;
+};
+
 type SidebarProps = {
   selectedSession: string | null;
   setSelectedSession: (sessionId: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
 };
 
 export default function Sidebar({
   selectedSession,
   setSelectedSession,
+  isOpen,
+  onClose,
 }: SidebarProps) {
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +37,10 @@ export default function Sidebar({
 
     try {
       const data = await getSessions();
-      setSessions(data.sessions || data || []);
+      const payload = data as {
+        sessions?: Session[];
+      };
+      setSessions(payload.sessions || []);
       setError(null);
     } catch (err) {
       const message =
@@ -63,72 +76,117 @@ export default function Sidebar({
   }
 
   useEffect(() => {
-    loadSessions();
+    const timeoutId = window.setTimeout(() => {
+      void loadSessions();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
   return (
-    <div className="w-64 h-screen border-r border-gray-300 p-4 flex flex-col bg-gradient-to-b from-blue-50 to-white">
-      <div className="mb-4">
-        <h2 className="font-bold text-xl">Melo-AI</h2>
-        <p className="text-xs text-gray-500">Local AI Assistant</p>
-      </div>
-
-      <button
-        onClick={handleNewChat}
-        disabled={isCreating || isLoading}
-        className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-      >
-        {isCreating ? (
-          <>
-            <span className="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-            Creating...
-          </>
-        ) : (
-          "+ New Chat"
-        )}
-      </button>
-
-      {error && (
-        <div className="mt-3 p-2 bg-red-100 border border-red-400 text-red-700 text-xs rounded">
-          <p>{error}</p>
-          <button
-            onClick={loadSessions}
-            className="mt-1 underline text-xs"
-          >
-            Retry
-          </button>
-        </div>
+    <>
+      {isOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-emerald-950/35 md:hidden"
+          onClick={onClose}
+          aria-label="Close sidebar"
+        />
       )}
 
-      <div className="mt-4 space-y-2 flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-72 transform border-r border-emerald-900/15 bg-gradient-to-b from-emerald-50 to-lime-50 p-4 transition-transform duration-300 md:static md:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 className="brand-title text-xl font-bold text-emerald-950">Melo-AI</h2>
+            <p className="text-xs text-emerald-900/60">Local AI Assistant</p>
           </div>
-        ) : sessions.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-400 text-sm">No sessions yet</p>
-            <p className="text-gray-400 text-xs mt-1">
-              Create a new chat to start
-            </p>
-          </div>
-        ) : (
-          sessions.map((session) => (
-            <div
-              key={session.id}
-              onClick={() => setSelectedSession(session.id)}
-              className={`cursor-pointer p-2 rounded hover:bg-gray-200 transition truncate ${
-                selectedSession === session.id
-                  ? "bg-blue-100 font-semibold"
-                  : "text-gray-700"
-              }`}
-              title={session.title}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-2 py-1 text-sm text-emerald-900/70 hover:bg-emerald-100 md:hidden"
+            aria-label="Close sidebar"
+          >
+            Close
+          </button>
+        </div>
+
+        <button
+          onClick={handleNewChat}
+          disabled={isCreating || isLoading}
+          className="w-full rounded-xl bg-teal-700 p-2.5 font-semibold text-teal-50 shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+        >
+          {isCreating ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Creating...
+            </span>
+          ) : (
+            "+ New Chat"
+          )}
+        </button>
+
+        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <Link
+            href="/models"
+            className="rounded-lg border border-emerald-900/15 bg-white/70 px-3 py-2 text-center font-medium text-emerald-900 transition hover:bg-white"
+          >
+            Models
+          </Link>
+          <Link
+            href="/settings"
+            className="rounded-lg border border-emerald-900/15 bg-white/70 px-3 py-2 text-center font-medium text-emerald-900 transition hover:bg-white"
+          >
+            Settings
+          </Link>
+        </div>
+
+        {error && (
+          <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-2 text-xs text-red-700">
+            <p>{error}</p>
+            <button
+              onClick={loadSessions}
+              className="mt-1 underline"
             >
-              {session.title}
-            </div>
-          ))
+              Retry
+            </button>
+          </div>
         )}
-      </div>
-    </div>
+
+        <div className="mt-4 space-y-2 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="inline-block h-6 w-6 animate-spin rounded-full border-b-2 border-teal-700" />
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="rounded-xl border border-emerald-900/10 bg-white/60 py-8 text-center">
+              <p className="text-sm text-emerald-900/70">No sessions yet</p>
+              <p className="mt-1 text-xs text-emerald-900/55">Create a new chat to start</p>
+            </div>
+          ) : (
+            sessions.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                onClick={() => setSelectedSession(session.id)}
+                className={`w-full truncate rounded-lg px-3 py-2 text-left text-sm transition ${
+                  selectedSession === session.id
+                    ? "bg-teal-100 font-semibold text-teal-900"
+                    : "text-emerald-900/80 hover:bg-emerald-100"
+                }`}
+                title={session.title}
+              >
+                {session.title}
+              </button>
+            ))
+          )}
+        </div>
+      </aside>
+    </>
   );
 }
