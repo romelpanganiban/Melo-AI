@@ -128,7 +128,23 @@ Frontend will run on `http://localhost:3000`
 1. Open browser to `http://localhost:3000/chat`
 2. Click "+ New Chat"
 3. Type a message and press Enter
-4. You should see the AI response from Ollama!
+4. You should see the AI response stream in real time (token by token)
+5. You should not need to manually refresh to see new messages
+
+---
+
+## Streaming API Details
+
+Melo-AI supports two chat endpoints:
+
+- `POST /chat` for standard request/response
+- `POST /chat/stream` for real-time streaming
+
+Streaming format is NDJSON with event types:
+
+- `chunk` -> partial response text
+- `done` -> completed response payload
+- `error` -> stream error payload
 
 ---
 
@@ -158,6 +174,7 @@ Frontend will run on `http://localhost:3000`
 - Subsequent requests will be faster
 - Consider reducing `OLLAMA_TEMPERATURE` to 0.5 for faster responses
 - Monitor system resources during responses
+- Use the streaming endpoint (`/chat/stream`) to improve perceived latency
 
 ---
 

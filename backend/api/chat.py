@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -67,6 +68,43 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
             extra={"session_id": request.session_id}
         )
         raise ChatServiceError(f"Failed to process message: {str(e)}")
+
+
+@router.post("/chat/stream", status_code=status.HTTP_200_OK)
+def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
+    """Process a chat message and stream assistant response chunks.
+
+    Response format is newline-delimited JSON (NDJSON) with events:
+    - {"type":"chunk","content":"..."}
+    - {"type":"done","session_id":"...","response":"..."}
+    - {"type":"error","error_code":"...","message":"..."}
+    """
+    try:
+        session_id = validate_uuid(request.session_id, field_name="session_id")
+        message = validate_message(request.message)
+
+        logger.info(
+            "Processing streaming chat message",
+            extra={
+                "session_id": session_id,
+                "message_length": len(message)
+            }
+        )
+
+        service = ChatService()
+        stream = service.process_message_stream(session_id, message, db)
+        return StreamingResponse(stream, media_type="application/x-ndjson")
+
+    except ValidationError:
+        raise
+    except SessionNotFoundError:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error processing streaming chat message: {str(e)}",
+            extra={"session_id": request.session_id}
+        )
+        raise ChatServiceError(f"Failed to process streaming message: {str(e)}")
 
 
 @router.get("/history/{session_id}", status_code=status.HTTP_200_OK)

@@ -1,28 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Melo-AI Frontend
+
+Next.js App Router frontend for Melo-AI.
+
+## Features
+
+- Session-based chat UI
+- Real-time streaming responses from backend/Ollama
+- Live assistant typing effect during generation
+- Settings page for model/provider/temperature
+- Models page with local model guidance
 
 ## Getting Started
 
-First, run the development server:
+Run the frontend development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Required Backend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The frontend expects the backend API at:
 
-## Learn More
+- Default: http://127.0.0.1:8000
+- Override with environment variable: `NEXT_PUBLIC_API_URL`
 
-To learn more about Next.js, take a look at the following resources:
+Streaming chat uses:
+
+- `POST /chat/stream` (NDJSON events)
+
+## Main Routes
+
+- `/` Home
+- `/chat` Chat UI
+- `/models` Model recommendations and setup tips
+- `/settings` Runtime model settings
+
+## Build and Lint
+
+```bash
+npm run lint
+npm run build
+```
+
+## Notes
+
+- If offline or behind a restricted network, local system font fallbacks are used.
+- If tests are needed, ensure Jest is installed in this environment.
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.

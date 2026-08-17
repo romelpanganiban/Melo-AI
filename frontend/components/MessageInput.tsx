@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { sendMessage, APIError } from "@/lib/api";
 
 type Props = {
   sessionId: string | null;
-  onMessageSent: () => void;
+  onSendMessage: (message: string) => Promise<void>;
+  isSending: boolean;
 };
 
 export default function MessageInput({
   sessionId,
-  onMessageSent,
+  onSendMessage,
+  isSending,
 }: Props) {
   const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSend() {
@@ -33,23 +33,19 @@ export default function MessageInput({
       return;
     }
 
-    setIsLoading(true);
     setError(null);
 
     try {
-      await sendMessage(sessionId, trimmedMessage);
+      await onSendMessage(trimmedMessage);
       setMessage("");
       setError(null);
-      onMessageSent();
     } catch (err) {
       const errorMessage =
-        err instanceof APIError
+        err instanceof Error
           ? err.message
           : "Failed to send message";
       setError(errorMessage);
       console.error("Error sending message:", err);
-    } finally {
-      setIsLoading(false);
     }
   }
 
@@ -78,7 +74,7 @@ export default function MessageInput({
             setError(null);
           }}
           onKeyPress={handleKeyPress}
-          disabled={isLoading || !sessionId}
+          disabled={isSending || !sessionId}
           maxLength={4096}
           rows={2}
           className="max-h-44 min-h-11 flex-1 resize-y rounded-xl border border-emerald-900/20 p-2.5 text-sm shadow-inner outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200 disabled:bg-gray-100 disabled:text-gray-500"
@@ -89,10 +85,10 @@ export default function MessageInput({
 
         <button
           onClick={handleSend}
-          disabled={isLoading || !sessionId || !message.trim()}
+          disabled={isSending || !sessionId || !message.trim()}
           className="rounded-xl bg-teal-700 px-4 py-2 font-semibold text-teal-50 transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-gray-400"
         >
-          {isLoading ? (
+          {isSending ? (
             <span className="inline-flex items-center gap-1">
               <span className="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
               Sending

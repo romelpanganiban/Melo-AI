@@ -1,11 +1,13 @@
 type MessageBubbleProps = {
   role: string;
   content: string;
+  isStreaming?: boolean;
 };
 
 export default function MessageBubble({
   role,
   content,
+  isStreaming = false,
 }: MessageBubbleProps) {
   const isUser = role === "user";
 
@@ -22,6 +24,9 @@ export default function MessageBubble({
         }`}
       >
         {content}
+        {isStreaming && (
+          <span className="ml-1 inline-block animate-pulse align-middle text-emerald-800">|</span>
+        )}
       </div>
     </div>
   );

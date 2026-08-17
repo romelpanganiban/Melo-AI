@@ -1,11 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Sidebar from "@/components/Sidebar";
 import ChatWindow from "@/components/ChatWindow";
 import MessageInput from "@/components/MessageInput";
+import {
+  APIError,
+  ChatMessage,
+  getHistory,
+  sendMessageStream,
+} from "@/lib/api";
+
+type ChatMessageWithState = ChatMessage & {
+  id: string;
+  isStreaming?: boolean;
+};
+
+function createMessageId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export default function ChatPage() {
   const [
@@ -19,11 +34,150 @@ export default function ChatPage() {
     useState(0);
   const [sidebarOpen, setSidebarOpen] =
     useState(false);
+  const [messages, setMessages] = useState<ChatMessageWithState[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const activeStreamRef = useRef<AbortController | null>(null);
 
-  function reloadMessages() {
-    setRefresh(
-      (prev) => prev + 1
-    );
+  const loadHistory = useCallback(async () => {
+    if (!selectedSession) {
+      setMessages([]);
+      setError(null);
+      return;
+    }
+
+    setIsHistoryLoading(true);
+    setError(null);
+
+    try {
+      const data = (await getHistory(selectedSession)) as {
+        messages?: ChatMessage[];
+      };
+
+      const mapped = (data.messages || []).map((message, index) => ({
+        id: createMessageId(`history-${index}`),
+        role: message.role,
+        content: message.content,
+      }));
+
+      setMessages(mapped);
+    } catch (err) {
+      const message =
+        err instanceof APIError
+          ? err.message
+          : "Failed to load chat history";
+      setError(message);
+      setMessages([]);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, [selectedSession]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadHistory();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [loadHistory, refresh]);
+
+  useEffect(() => {
+    activeStreamRef.current?.abort();
+  }, [selectedSession]);
+
+  useEffect(() => {
+    return () => {
+      activeStreamRef.current?.abort();
+    };
+  }, []);
+
+  async function handleSendMessage(userMessage: string) {
+    if (!selectedSession || isSending) {
+      return;
+    }
+
+    setError(null);
+    setIsSending(true);
+
+    const userMessageId = createMessageId("user");
+    const assistantMessageId = createMessageId("assistant");
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: userMessageId,
+        role: "user",
+        content: userMessage,
+      },
+      {
+        id: assistantMessageId,
+        role: "assistant",
+        content: "",
+        isStreaming: true,
+      },
+    ]);
+
+    activeStreamRef.current?.abort();
+    const controller = new AbortController();
+    activeStreamRef.current = controller;
+
+    try {
+      const finalResponse = await sendMessageStream(selectedSession, userMessage, {
+        signal: controller.signal,
+        onChunk: (chunk) => {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    content: message.content + chunk,
+                  }
+                : message
+            )
+          );
+        },
+      });
+
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                content: finalResponse,
+                isStreaming: false,
+              }
+            : message
+        )
+      );
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+
+      const message =
+        err instanceof APIError || err instanceof Error
+          ? err.message
+          : "Failed to send message";
+
+      setError(message);
+      setMessages((prev) =>
+        prev.map((item) =>
+          item.id === assistantMessageId
+            ? {
+                ...item,
+                content: `[Error] ${message}`,
+                isStreaming: false,
+              }
+            : item
+        )
+      );
+    } finally {
+      setIsSending(false);
+      activeStreamRef.current = null;
+    }
   }
 
   return (
@@ -79,16 +233,20 @@ export default function ChatPage() {
           sessionId={
             selectedSession
           }
-          refresh={refresh}
+          messages={messages}
+          isLoading={isHistoryLoading}
+          error={error}
+          onRetry={() => {
+            setRefresh((prev) => prev + 1);
+          }}
         />
 
         <MessageInput
           sessionId={
             selectedSession
           }
-          onMessageSent={
-            reloadMessages
-          }
+          onSendMessage={handleSendMessage}
+          isSending={isSending}
         />
       </div>
     </div>

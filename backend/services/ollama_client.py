@@ -1,7 +1,8 @@
 """Ollama LLM Integration for Melo-AI"""
 
 import httpx
-from typing import Optional
+import json
+from typing import Iterator, Optional
 from core.logging import logger
 from core.errors import ChatServiceError
 
@@ -164,6 +165,89 @@ class OllamaClient:
                 extra={"model": self.model}
             )
             raise ChatServiceError(f"Failed to generate response: {str(e)}")
+
+    def generate_response_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.7,
+        top_p: float = 0.9,
+        top_k: int = 40
+    ) -> Iterator[str]:
+        """Generate a streaming response using Ollama.
+
+        Yields incremental text chunks as they arrive from Ollama.
+        """
+        try:
+            full_prompt = prompt
+            if system_prompt:
+                full_prompt = f"{system_prompt}\n\n{prompt}"
+
+            logger.info(
+                "Generating streaming response with Ollama",
+                extra={
+                    "model": self.model,
+                    "prompt_length": len(prompt),
+                    "temperature": temperature
+                }
+            )
+
+            with self.client.stream(
+                "POST",
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": full_prompt,
+                    "stream": True,
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "top_k": top_k,
+                }
+            ) as response:
+                if response.status_code != 200:
+                    raise ChatServiceError(
+                        f"Ollama API error: {response.status_code}"
+                    )
+
+                for line in response.iter_lines():
+                    if not line:
+                        continue
+
+                    try:
+                        payload = json.loads(line)
+                    except json.JSONDecodeError:
+                        logger.warning("Skipping malformed Ollama stream chunk")
+                        continue
+
+                    text = payload.get("response", "")
+                    if text:
+                        yield text
+
+                    if payload.get("done") is True:
+                        break
+
+        except httpx.ConnectError as e:
+            logger.error(
+                f"Cannot connect to Ollama server at {self.base_url}",
+                extra={"error": str(e)}
+            )
+            raise ChatServiceError(
+                f"Cannot connect to Ollama. Make sure Ollama is running at {self.base_url}"
+            )
+        except httpx.TimeoutException:
+            logger.error(
+                "Ollama stream timeout",
+                extra={"timeout": self.timeout}
+            )
+            raise ChatServiceError(
+                f"Ollama request timed out after {self.timeout}s."
+            )
+        except Exception as e:
+            logger.error(
+                f"Error generating streaming response: {str(e)}",
+                extra={"model": self.model}
+            )
+            raise ChatServiceError(f"Failed to generate streaming response: {str(e)}")
     
     def close(self) -> None:
         """Close the HTTP client"""

@@ -28,7 +28,7 @@ The goal is to build an AI assistant that can:
 
 ## Current Status
 
-Version: 0.1.1
+Version: 0.1.2
 
 ### Completed
 
@@ -37,6 +37,7 @@ Version: 0.1.1
 - FastAPI Backend
 - Health Endpoint
 - Chat Endpoint
+- Streaming Chat Endpoint (`/chat/stream`)
 - Swagger Documentation
 
 #### Memory System
@@ -52,6 +53,13 @@ Version: 0.1.1
 - Rename Sessions
 - Delete Sessions
 
+#### Chat Experience
+
+- Real-time token streaming from Ollama
+- Live typing effect in frontend while model responds
+- No manual refresh needed after sending a message
+- Session-based history loaded from database
+
 #### Settings System
 
 - Settings API
@@ -63,12 +71,23 @@ Version: 0.1.1
 - Service Layer
 - Configuration Layer
 - Modular Project Structure
+- Database-backed sessions and messages
 
 #### Testing
 
 - Pytest Setup
 - Unit Tests
 - API Tests
+
+---
+
+## Latest Update (v0.1.2)
+
+- Added backend streaming endpoint using NDJSON event chunks.
+- Added streaming support in Ollama client and chat service.
+- Updated frontend chat flow to render messages in real time without refresh polling.
+- Added live streaming cursor in assistant message bubble.
+- Improved chat response latency perception with incremental rendering.
 
 ---
 

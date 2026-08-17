@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.1.2
+
+### Added
+
+#### Real-time Chat
+
+- Streaming chat API endpoint: `POST /chat/stream`
+- NDJSON chunk events (`chunk`, `done`, `error`) for progressive responses
+- Ollama streaming client support in backend service layer
+
+#### Frontend Chat UX
+
+- Real-time assistant token rendering in chat window
+- Live typing cursor while response is streaming
+- Removed refresh-based message update flow after send
+
+### Improved
+
+- Reduced repeated Ollama availability checks per request
+- Fixed database session close behavior in chat service when using injected DB session
+
+---
+
 ## v0.1.1
 
 ### Added

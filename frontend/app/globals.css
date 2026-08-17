@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-manrope: "Segoe UI";
+  --font-space-grotesk: "Trebuchet MS";
   --background: #f6f7f2;
   --background-alt: #eef2ea;
   --foreground: #102019;

@@ -250,3 +250,145 @@ export async function updateSettings(settings: {
     );
   }
 }
+
+export type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+type StreamChunkEvent = {
+  type: "chunk";
+  content: string;
+};
+
+type StreamDoneEvent = {
+  type: "done";
+  session_id: string;
+  response: string;
+};
+
+type StreamErrorEvent = {
+  type: "error";
+  error_code: string;
+  message: string;
+};
+
+type StreamEvent = StreamChunkEvent | StreamDoneEvent | StreamErrorEvent;
+
+type SendMessageStreamOptions = {
+  onChunk?: (chunk: string) => void;
+  signal?: AbortSignal;
+};
+
+export async function sendMessageStream(
+  sessionId: string,
+  message: string,
+  options: SendMessageStreamOptions = {}
+) {
+  if (!sessionId) {
+    throw new APIError(
+      400,
+      'VALIDATION_ERROR',
+      'Session ID is required',
+      { field: 'sessionId' }
+    );
+  }
+
+  if (!message || message.trim().length === 0) {
+    throw new APIError(
+      400,
+      'VALIDATION_ERROR',
+      'Message cannot be empty',
+      { field: 'message' }
+    );
+  }
+
+  const response = await fetch(`${API_URL}/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      session_id: sessionId,
+      message: message.trim(),
+    }),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    await handleResponse(response);
+  }
+
+  if (!response.body) {
+    throw new APIError(500, 'STREAM_ERROR', 'No streaming body returned by server');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalResponse = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          continue;
+        }
+
+        let event: StreamEvent;
+        try {
+          event = JSON.parse(trimmed) as StreamEvent;
+        } catch {
+          continue;
+        }
+
+        if (event.type === 'chunk') {
+          finalResponse += event.content;
+          options.onChunk?.(event.content);
+          continue;
+        }
+
+        if (event.type === 'done') {
+          return event.response || finalResponse;
+        }
+
+        if (event.type === 'error') {
+          throw new APIError(
+            500,
+            event.error_code || 'STREAM_ERROR',
+            event.message || 'Streaming chat failed'
+          );
+        }
+      }
+    }
+
+    return finalResponse;
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
+
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to stream message response',
+      { originalError: String(error) }
+    );
+  } finally {
+    reader.releaseLock();
+  }
+}

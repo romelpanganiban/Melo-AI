@@ -4,19 +4,47 @@ Current Architecture
 
 User
  ↓
-FastAPI
+Frontend (Next.js)
  ↓
-Chat API
+FastAPI Backend
  ↓
-Memory Manager
+Chat API (`/chat`, `/chat/stream`)
  ↓
-chat_history.json
+Chat Service
+ ↓
+Ollama Client
+ ↓
+Ollama Server
+ ↓
+Streamed Tokens / Final Response
 
-Session API
+Session API (`/sessions`)
  ↓
-Session Manager
+Session Service
  ↓
-sessions.json
+Database Repositories
+ ↓
+SQLite (`sessions`, `messages`, `settings`, `documents`)
+
+---
+
+Chat Streaming Flow
+
+User Message
+ ↓
+`POST /chat/stream`
+ ↓
+Store user message in DB
+ ↓
+Request Ollama with stream=true
+ ↓
+Backend emits NDJSON chunks (`chunk`)
+ ↓
+Frontend appends chunk text live
+ ↓
+Backend stores final assistant message
+ ↓
+Backend emits `done`
 
 ---
 

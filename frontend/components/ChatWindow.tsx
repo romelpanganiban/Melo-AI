@@ -1,61 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { getHistory, APIError } from "@/lib/api";
+import { useEffect, useRef } from "react";
+import { ChatMessage } from "@/lib/api";
 import MessageBubble from "./MessageBubble";
 
-type Message = {
-  role: string;
-  content: string;
+type MessageWithState = ChatMessage & {
+  id: string;
+  isStreaming?: boolean;
 };
 
 type Props = {
   sessionId: string | null;
-  refresh: number;
+  messages: MessageWithState[];
+  isLoading: boolean;
+  error: string | null;
+  onRetry: () => void;
 };
 
 export default function ChatWindow({
   sessionId,
-  refresh,
+  messages,
+  isLoading,
+  error,
+  onRetry,
 }: Props) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retryToken, setRetryToken] = useState(0);
   const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    async function loadHistory() {
-      if (!sessionId) {
-        setMessages([]);
-        setError(null);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = (await getHistory(sessionId)) as {
-          messages?: Message[];
-        };
-        setMessages(data.messages || []);
-        setError(null);
-      } catch (err) {
-        const message =
-          err instanceof APIError
-            ? err.message
-            : "Failed to load chat history";
-        setError(message);
-        setMessages([]);
-        console.error("Error loading history:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadHistory();
-  }, [sessionId, refresh, retryToken]);
 
   useEffect(() => {
     if (!messages.length) {
@@ -96,7 +65,7 @@ export default function ChatWindow({
           <p className="text-lg font-semibold text-red-700">Error</p>
           <p className="mt-2 text-emerald-950/80">{error}</p>
           <button
-            onClick={() => setRetryToken((prev) => prev + 1)}
+            onClick={onRetry}
             className="mt-4 rounded-lg bg-teal-700 px-4 py-2 font-medium text-teal-50 transition hover:bg-teal-800"
           >
             Retry
@@ -118,9 +87,10 @@ export default function ChatWindow({
         <div className="space-y-4">
           {messages.map((message, index) => (
             <MessageBubble
-              key={`${message.role}-${index}`}
+              key={message.id || `${message.role}-${index}`}
               role={message.role}
               content={message.content}
+              isStreaming={message.isStreaming}
             />
           ))}
           <div ref={endOfMessagesRef} aria-hidden="true" />
