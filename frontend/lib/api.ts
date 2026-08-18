@@ -55,6 +55,39 @@ export type AppSettings = {
   system_prompt?: string | null;
 };
 
+export type SessionSummary = {
+  id: string;
+  title: string;
+};
+
+export type SessionsResponse = {
+  sessions: SessionSummary[];
+  count: number;
+};
+
+/**
+ * Get all sessions
+ */
+export async function getSessions(): Promise<SessionsResponse> {
+  try {
+    const response = await fetch(`${API_URL}/sessions`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse<SessionsResponse>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to fetch sessions',
+      { originalError: String(error) }
+    );
+  }
+}
+
 /**
  * Create a new session
  */
