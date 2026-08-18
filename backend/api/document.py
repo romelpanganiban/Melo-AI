@@ -1,5 +1,7 @@
 """Document API endpoints"""
 
+from typing import Optional
+
 from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
 
@@ -17,18 +19,28 @@ class UploadDocumentRequest(BaseModel):
     filename: str = Field(..., min_length=1, max_length=255, description="Document filename")
     file_type: str = Field(..., description="File type: pdf, docx, or txt")
     content: str = Field(..., min_length=1, description="Document content")
-    session_id: str = Field(None, description="Optional session ID to associate document with")
+    session_id: Optional[str] = Field(None, description="Optional session ID to associate document with")
 
 
 class DocumentResponse(BaseModel):
     id: str
     filename: str
     file_type: str
+    chunk_count: int | None = None
     created_at: str = None
 
 
 class DocumentDetailResponse(DocumentResponse):
     content: str
+
+
+class DocumentChunkResponse(BaseModel):
+    id: str
+    document_id: str
+    chunk_index: int
+    content: str
+    tokens: int | None = None
+    created_at: str | None = None
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -150,6 +162,38 @@ def get_session_documents(session_id: str):
             extra={"session_id": session_id}
         )
         raise ChatServiceError(f"Failed to retrieve session documents: {str(e)}")
+
+
+@router.get("/documents/{document_id}/chunks", status_code=status.HTTP_200_OK)
+def get_document_chunks(document_id: str):
+    """Get stored chunks for a document.
+
+    This works offline with the current text-based chunking pipeline.
+    """
+    try:
+        document_id = validate_uuid(document_id, field_name="document_id")
+
+        logger.info(
+            "Retrieving document chunks",
+            extra={"document_id": document_id}
+        )
+
+        chunks = service.get_document_chunks(document_id)
+
+        return {
+            "document_id": document_id,
+            "chunks": chunks,
+            "count": len(chunks)
+        }
+
+    except ValidationError:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error retrieving document chunks: {str(e)}",
+            extra={"document_id": document_id}
+        )
+        raise ChatServiceError(f"Failed to retrieve document chunks: {str(e)}")
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

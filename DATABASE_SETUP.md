@@ -189,6 +189,58 @@ Stores text chunks from documents (for RAG)
 
 ---
 
+## RAG Setup
+
+Melo-AI already has the database tables needed for Knowledge Base and RAG storage, but the full retrieval pipeline still needs to be installed and wired up.
+
+### What You Already Have
+
+- `documents` table for uploaded files
+- `document_chunks` table for chunked text and embeddings
+- Backend service and API structure ready for document features
+
+### What You Still Need To Install
+
+Install these backend packages for RAG:
+
+```bash
+cd backend
+pip install qdrant-client sentence-transformers pypdf python-docx
+```
+
+Recommended local vector store:
+
+- Qdrant
+- Run locally with Docker or a local binary
+
+### What Each Package Is For
+
+- `qdrant-client` - store and search embeddings
+- `sentence-transformers` - generate vector embeddings
+- `pypdf` - extract text from PDF files
+- `python-docx` - extract text from DOCX files
+
+### RAG Pipeline Still To Build
+
+1. Upload PDF, DOCX, or TXT files
+2. Extract text from the file
+3. Split text into chunks
+4. Generate embeddings for each chunk
+5. Store chunks in Qdrant and the database
+6. Retrieve top matching chunks during chat
+7. Inject retrieved context into the Ollama prompt
+8. Show source references in the response
+
+### Offline Note
+
+If the machine has no internet, install everything on another machine first and copy:
+
+- Python wheels or a prepared virtual environment
+- Qdrant locally
+- Any embedding model files you plan to use
+
+---
+
 ## Migration from JSON
 
 ### Automatic Migration

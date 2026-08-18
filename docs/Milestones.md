@@ -138,12 +138,17 @@ Status: In Progress
 
 - [ ] PDF Upload
 - [ ] DOCX Upload
-- [ ] Text Chunking
+- [x] Text Chunking
 - [ ] Embeddings
 - [ ] Vector Search
 
 Deliverable:
 Document Intelligence
+
+Offline-safe progress:
+- Document storage is already wired to the database
+- Text chunking now stores chunks in `document_chunks`
+- RAG vector search is still pending Qdrant and embedding packages
 
 ---
 

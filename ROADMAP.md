@@ -93,7 +93,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 - [ ] PDF Upload
 - [ ] DOCX Upload
-- [ ] Text Chunking
+- [x] Text Chunking
 - [ ] Vector Search
 
 ---

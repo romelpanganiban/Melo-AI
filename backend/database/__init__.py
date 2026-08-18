@@ -6,7 +6,8 @@ from database.repositories import (
     SessionRepository,
     MessageRepository,
     SettingsRepository,
-    DocumentRepository
+    DocumentRepository,
+    ChunkRepository
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "MessageRepository",
     "SettingsRepository",
     "DocumentRepository",
+    "ChunkRepository",
 ]

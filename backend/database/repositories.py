@@ -251,3 +251,97 @@ class DocumentRepository:
         except Exception as e:
             logger.error(f"Error getting documents: {str(e)}")
             raise ChatServiceError(f"Failed to get documents: {str(e)}")
+
+
+class ChunkRepository:
+    """Repository for document chunk data access"""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(
+        self,
+        document_id: str,
+        chunk_index: int,
+        content: str,
+        embedding: Optional[str] = None,
+        tokens: Optional[int] = None,
+    ) -> DocumentChunk:
+        """Create a new document chunk"""
+        try:
+            chunk = DocumentChunk(
+                id=str(uuid.uuid4()),
+                document_id=document_id,
+                chunk_index=chunk_index,
+                content=content,
+                embedding=embedding,
+                tokens=tokens,
+            )
+            self.db.add(chunk)
+            self.db.commit()
+            self.db.refresh(chunk)
+            return chunk
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error creating document chunk: {str(e)}")
+            raise ChatServiceError(f"Failed to create document chunk: {str(e)}")
+
+    def create_many(self, document_id: str, chunks: list[dict]) -> List[DocumentChunk]:
+        """Create multiple chunks for a document"""
+        try:
+            created_chunks: List[DocumentChunk] = []
+            for chunk_data in chunks:
+                created_chunks.append(
+                    DocumentChunk(
+                        id=str(uuid.uuid4()),
+                        document_id=document_id,
+                        chunk_index=chunk_data["chunk_index"],
+                        content=chunk_data["content"],
+                        embedding=chunk_data.get("embedding"),
+                        tokens=chunk_data.get("tokens"),
+                    )
+                )
+
+            self.db.add_all(created_chunks)
+            self.db.commit()
+
+            for chunk in created_chunks:
+                self.db.refresh(chunk)
+
+            return created_chunks
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error creating document chunks: {str(e)}")
+            raise ChatServiceError(f"Failed to create document chunks: {str(e)}")
+
+    def get_by_document(self, document_id: str) -> List[DocumentChunk]:
+        """Get all chunks for a document"""
+        try:
+            return self.db.query(DocumentChunk).filter(
+                DocumentChunk.document_id == document_id
+            ).order_by(DocumentChunk.chunk_index).all()
+        except Exception as e:
+            logger.error(f"Error getting document chunks: {str(e)}")
+            raise ChatServiceError(f"Failed to get document chunks: {str(e)}")
+
+    def count_by_document(self, document_id: str) -> int:
+        """Count chunks for a document"""
+        try:
+            return self.db.query(DocumentChunk).filter(
+                DocumentChunk.document_id == document_id
+            ).count()
+        except Exception as e:
+            logger.error(f"Error counting document chunks: {str(e)}")
+            raise ChatServiceError(f"Failed to count document chunks: {str(e)}")
+
+    def delete_by_document(self, document_id: str) -> None:
+        """Delete all chunks for a document"""
+        try:
+            self.db.query(DocumentChunk).filter(
+                DocumentChunk.document_id == document_id
+            ).delete(synchronize_session=False)
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error deleting document chunks: {str(e)}")
+            raise ChatServiceError(f"Failed to delete document chunks: {str(e)}")
