@@ -46,29 +46,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   return response.json();
 }
-
-/**
- * Get all sessions
- */
-export async function getSessions() {
-  try {
-    const response = await fetch(`${API_URL}/sessions`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    return handleResponse(response);
-  } catch (error) {
-    if (error instanceof APIError) throw error;
-    throw new APIError(
-      500,
-      'NETWORK_ERROR',
-      'Failed to fetch sessions',
-      { originalError: String(error) }
-    );
-  }
-}
+export type AppSettings = {
+  model_name: string;
+  provider: string;
+  temperature: number;
+  top_p?: number;
+  top_k?: number;
+  system_prompt?: string | null;
+};
 
 /**
  * Create a new session
@@ -176,7 +161,7 @@ export async function sendMessage(
 /**
  * Get current settings
  */
-export async function getSettings() {
+export async function getSettings(): Promise<AppSettings> {
   try {
     const response = await fetch(`${API_URL}/settings`, {
       method: 'GET',
@@ -184,7 +169,7 @@ export async function getSettings() {
         'Content-Type': 'application/json',
       },
     });
-    return handleResponse(response);
+    return handleResponse<AppSettings>(response);
   } catch (error) {
     if (error instanceof APIError) throw error;
     throw new APIError(
