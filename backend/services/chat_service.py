@@ -6,6 +6,8 @@ from typing import Generator
 from sqlalchemy.orm import Session
 from database import get_db_session, SessionRepository, MessageRepository
 from services.ollama_client import OllamaClient
+from services.embedding_service import get_embedding_service
+from services.qdrant_client import get_qdrant_client
 from core.logging import logger
 from core.errors import SessionNotFoundError, ChatServiceError
 from core.settings import settings
@@ -29,6 +31,89 @@ class ChatService:
             self._check_ollama_availability()
             ChatService._availability_checked = True
 
+    def _search_documents(self, query: str, session_id: str = None, top_k: int = 5) -> dict:
+        """Search for relevant documents using vector similarity
+        
+        Args:
+            query: User query text
+            session_id: Optional session ID to filter documents
+            top_k: Number of top chunks to return
+            
+        Returns:
+            Dictionary with sources list and context text, or empty if no documents or Qdrant disabled
+        """
+        if not settings.QDRANT_ENABLED:
+            return {"sources": [], "context": ""}
+        
+        try:
+            embedding_service = get_embedding_service()
+            qdrant_client = get_qdrant_client()
+            
+            # Check if Qdrant is available
+            if not qdrant_client.is_available():
+                logger.warning("Qdrant not available, skipping document search")
+                return {"sources": [], "context": ""}
+            
+            # Embed the query
+            query_embedding = embedding_service.embed_query(query)
+            
+            # Search Qdrant for similar chunks
+            search_results = qdrant_client.search(
+                query_embedding=query_embedding,
+                limit=top_k,
+                score_threshold=0.5,
+                filters={"session_id": session_id} if session_id else None
+            )
+            
+            if not search_results:
+                logger.info("No documents found for query", extra={"query_len": len(query)})
+                return {"sources": [], "context": ""}
+            
+            # Build context from search results
+            sources = []
+            context_parts = []
+            
+            for result in search_results:
+                payload = result.get("payload", {})
+                filename = payload.get("filename", "Unknown")
+                content = payload.get("content", "")
+                score = result.get("score", 0)
+                
+                # Track unique sources
+                source_key = f"{filename}"
+                if source_key not in [s.get("filename") for s in sources]:
+                    sources.append({
+                        "filename": filename,
+                        "relevance": round(score * 100, 1)
+                    })
+                
+                # Add to context
+                context_parts.append(f"[{filename}]\n{content}")
+            
+            context = "\n\n".join(context_parts)
+            
+            logger.info(
+                "Document search completed",
+                extra={
+                    "query_len": len(query),
+                    "results_count": len(search_results),
+                    "sources_count": len(sources)
+                }
+            )
+            
+            return {
+                "sources": sources,
+                "context": context
+            }
+            
+        except Exception as e:
+            logger.error(
+                f"Document search failed: {str(e)}",
+                extra={"query_len": len(query)}
+            )
+            # Return empty results on error instead of failing
+            return {"sources": [], "context": ""}
+
     def process_message(self, session_id: str, message: str, db: Session = None) -> dict:
         """Process a user message
         
@@ -38,7 +123,7 @@ class ChatService:
             db: Optional database session (uses default if None)
             
         Returns:
-            Dictionary with response and recent history
+            Dictionary with response, recent history, and sources
             
         Raises:
             SessionNotFoundError: If session doesn't exist
@@ -71,9 +156,12 @@ class ChatService:
 
             # Get session history for context
             history = self._get_history_dicts(session_id, db)
+            
+            # Search for relevant documents
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5)
 
-            # Generate response
-            response = self._generate_response(session_id, history)
+            # Generate response with document context
+            response = self._generate_response(session_id, history, doc_context=doc_search.get("context", ""))
 
             # Store assistant response
             msg_repo.create(session_id, "assistant", response)
@@ -86,7 +174,8 @@ class ChatService:
             return {
                 "session_id": session_id,
                 "response": response,
-                "recent_history": history[-5:]
+                "recent_history": history[-5:],
+                "sources": doc_search.get("sources", [])
             }
             
         except SessionNotFoundError:
@@ -118,9 +207,12 @@ class ChatService:
             msg_repo = MessageRepository(db)
             msg_repo.create(session_id, "user", message)
             history = self._get_history_dicts(session_id, db)
+            
+            # Search for relevant documents
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5)
 
             chunks: list[str] = []
-            for chunk in self._generate_response_stream(session_id, history):
+            for chunk in self._generate_response_stream(session_id, history, doc_context=doc_search.get("context", "")):
                 if not chunk:
                     continue
                 chunks.append(chunk)
@@ -136,6 +228,7 @@ class ChatService:
                     "type": "done",
                     "session_id": session_id,
                     "response": response,
+                    "sources": doc_search.get("sources", [])
                 }
             ) + "\n"
 
@@ -238,12 +331,13 @@ class ChatService:
             if should_close:
                 db.close()
 
-    def _generate_response(self, session_id: str, history: list[dict]) -> str:
+    def _generate_response(self, session_id: str, history: list[dict], doc_context: str = "") -> str:
         """Generate response using Ollama LLM
         
         Args:
             session_id: Session identifier
             history: Chat history
+            doc_context: Optional document context from RAG search
             
         Returns:
             Generated response text
@@ -264,15 +358,19 @@ class ChatService:
             # Get the current user message (last message in history)
             current_message = history[-1].get("content", "") if history else ""
             
-            # Build prompt with context
-            prompt = f"{context}User: {current_message}\nAssistant:"
+            # Build prompt with document context if available
+            if doc_context.strip():
+                prompt = f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
+            else:
+                prompt = f"{context}User: {current_message}\nAssistant:"
             
             logger.info(
                 "Generating response with Ollama",
                 extra={
                     "session_id": session_id,
                     "model": settings.OLLAMA_MODEL,
-                    "context_length": len(context)
+                    "context_length": len(context),
+                    "has_doc_context": len(doc_context.strip()) > 0
                 }
             )
             
@@ -296,8 +394,17 @@ class ChatService:
             )
             raise ChatServiceError(f"Failed to generate response: {str(e)}")
 
-    def _generate_response_stream(self, session_id: str, history: list[dict]) -> Generator[str, None, None]:
-        """Generate streaming response chunks from Ollama."""
+    def _generate_response_stream(self, session_id: str, history: list[dict], doc_context: str = "") -> Generator[str, None, None]:
+        """Generate streaming response chunks from Ollama.
+        
+        Args:
+            session_id: Session identifier
+            history: Chat history
+            doc_context: Optional document context from RAG search
+            
+        Yields:
+            Response chunks as they are generated
+        """
         try:
             context_messages = history[-10:] if len(history) > 1 else []
 
@@ -307,7 +414,12 @@ class ChatService:
                 context += f"{role}: {msg.get('content', '')}\n"
 
             current_message = history[-1].get("content", "") if history else ""
-            prompt = f"{context}User: {current_message}\nAssistant:"
+            
+            # Build prompt with document context if available
+            if doc_context.strip():
+                prompt = f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
+            else:
+                prompt = f"{context}User: {current_message}\nAssistant:"
 
             for chunk in self.ollama.generate_response_stream(
                 prompt=prompt,

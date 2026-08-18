@@ -58,6 +58,18 @@ class Settings:
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./melo_ai.db")
     DEBUG_SQL: bool = os.getenv("DEBUG_SQL", "false").lower() == "true"
     
+    # Qdrant Vector Database Configuration
+    QDRANT_URL: str = os.getenv("QDRANT_URL", "http://localhost:6333")
+    QDRANT_API_KEY: Optional[str] = os.getenv("QDRANT_API_KEY", None)
+    QDRANT_COLLECTION_NAME: str = os.getenv("QDRANT_COLLECTION_NAME", "melo_documents")
+    QDRANT_VECTOR_SIZE: int = int(os.getenv("QDRANT_VECTOR_SIZE", "384"))  # sentence-transformers default
+    QDRANT_TIMEOUT: int = int(os.getenv("QDRANT_TIMEOUT", "30"))
+    QDRANT_ENABLED: bool = os.getenv("QDRANT_ENABLED", "true").lower() == "true"
+    
+    # Embeddings Configuration
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+    EMBEDDING_DEVICE: str = os.getenv("EMBEDDING_DEVICE", "cpu")  # "cpu" or "cuda"
+    
     @classmethod
     def ensure_data_dir(cls) -> None:
         """Ensure data directory exists"""

@@ -60,6 +60,25 @@ Version: 0.1.2
 - No manual refresh needed after sending a message
 - Session-based history loaded from database
 
+#### Document Intelligence (RAG)
+
+- Document Upload System
+- Automatic Text Chunking (1000 words, 150 word overlap)
+- Vector Embeddings (all-MiniLM-L6-v2, 384 dimensions)
+- Qdrant Vector Database Integration
+- Semantic Similarity Search
+- Document Context in Chat
+- Source Attribution
+- Batch Embedding Generation
+
+#### Vector Database
+
+- Qdrant Vector DB (Local + Cloud Support)
+- Collection Management
+- Vector Storage & Retrieval
+- Metadata Payload Storage
+- Health Monitoring
+
 #### Settings System
 
 - Settings API
@@ -81,7 +100,31 @@ Version: 0.1.2
 
 ---
 
-## Latest Update (v0.1.2)
+## Latest Update (v0.2.0)
+
+**RAG (Retrieval Augmented Generation) - Full Implementation**
+
+- Implemented document-enhanced chat using Qdrant vector database
+- Documents automatically chunked and embedded when uploaded
+- Chat searches documents for relevant context
+- AI responses now augmented with document knowledge
+- Chat responses include document sources and relevance scores
+- Fixed logging system to properly handle extra fields
+- Improved DocumentsPanel UX with better labels, help text, and feedback
+- SentenceTransformers embeddings (384-dimensional vectors)
+- Batch embedding generation for efficiency
+- Offline-capable (models pre-cached locally)
+
+**Files Changed:**
+- `services/document_service.py` - Added embedding generation on upload
+- `services/chat_service.py` - Added document search and context injection
+- `api/chat.py` - Added sources to chat response
+- `components/DocumentsPanel.tsx` - Complete UX overhaul
+- `core/logging.py` - Fixed LogRecord handling
+
+---
+
+## Previous Update (v0.1.2)
 
 - Added backend streaming endpoint using NDJSON event chunks.
 - Added streaming support in Ollama client and chat service.

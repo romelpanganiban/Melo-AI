@@ -65,7 +65,7 @@ def upload_document(request: UploadDocumentRequest):
         logger.info(
             f"Uploading document",
             extra={
-                "filename": request.filename,
+                "doc_filename": request.filename,
                 "file_type": request.file_type,
                 "session_id": request.session_id
             }
@@ -83,8 +83,17 @@ def upload_document(request: UploadDocumentRequest):
     except ValidationError:
         raise
     except Exception as e:
-        logger.error(f"Error uploading document: {str(e)}")
-        raise ChatServiceError(f"Failed to upload document: {str(e)}")
+        error_msg = str(e)
+        # Hide technical details from user, show friendly message
+        if "LogRecord" in error_msg or "overwrite" in error_msg:
+            user_friendly_msg = "Failed to save document. Please try again or contact support if the problem persists."
+        elif "filename" in error_msg.lower():
+            user_friendly_msg = "The filename format is invalid. Please use a valid filename."
+        else:
+            user_friendly_msg = "Failed to upload document. Please check your file and try again."
+        
+        logger.error(f"Document upload error: {str(e)}")
+        raise ChatServiceError(user_friendly_msg)
 
 
 @router.get("/documents/{document_id}", response_model=DocumentDetailResponse, status_code=status.HTTP_200_OK)
@@ -107,7 +116,7 @@ def get_document(document_id: str):
         
         logger.info(
             f"Retrieving document",
-            extra={"document_id": document_id}
+            extra={"doc_id": document_id}
         )
         
         document = service.get_document(document_id)
@@ -118,7 +127,7 @@ def get_document(document_id: str):
     except Exception as e:
         logger.error(
             f"Error retrieving document: {str(e)}",
-            extra={"document_id": document_id}
+            extra={"doc_id": document_id}
         )
         raise ChatServiceError(f"Failed to retrieve document: {str(e)}")
 
@@ -175,7 +184,7 @@ def get_document_chunks(document_id: str):
 
         logger.info(
             "Retrieving document chunks",
-            extra={"document_id": document_id}
+            extra={"doc_id": document_id}
         )
 
         chunks = service.get_document_chunks(document_id)
@@ -191,7 +200,7 @@ def get_document_chunks(document_id: str):
     except Exception as e:
         logger.error(
             f"Error retrieving document chunks: {str(e)}",
-            extra={"document_id": document_id}
+            extra={"doc_id": document_id}
         )
         raise ChatServiceError(f"Failed to retrieve document chunks: {str(e)}")
 
@@ -213,7 +222,7 @@ def delete_document(document_id: str):
         
         logger.info(
             f"Deleting document",
-            extra={"document_id": document_id}
+            extra={"doc_id": document_id}
         )
         
         service.delete_document(document_id)
@@ -223,6 +232,6 @@ def delete_document(document_id: str):
     except Exception as e:
         logger.error(
             f"Error deleting document: {str(e)}",
-            extra={"document_id": document_id}
+            extra={"doc_id": document_id}
         )
         raise ChatServiceError(f"Failed to delete document: {str(e)}")

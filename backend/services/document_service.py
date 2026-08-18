@@ -5,8 +5,11 @@ from __future__ import annotations
 import re
 
 from database import DocumentRepository, ChunkRepository, get_db_session
+from services.embedding_service import get_embedding_service
+from services.qdrant_client import get_qdrant_client
 from core.logging import logger
 from core.errors import SessionNotFoundError, ChatServiceError, ValidationError
+from core.settings import settings
 
 
 class DocumentService:
@@ -103,6 +106,51 @@ class DocumentService:
 
             if chunk_payload:
                 chunk_repo.create_many(document.id, chunk_payload)
+                
+                # Generate embeddings for chunks and store in Qdrant (if enabled)
+                if settings.QDRANT_ENABLED:
+                    try:
+                        embedding_service = get_embedding_service()
+                        qdrant_client = get_qdrant_client()
+                        
+                        # Extract chunk texts
+                        chunk_texts = [chunk["content"] for chunk in chunk_payload]
+                        
+                        # Generate embeddings for all chunks at once (more efficient)
+                        logger.info(
+                            f"Generating embeddings for {len(chunk_texts)} chunks",
+                            extra={"doc_id": document.id}
+                        )
+                        embeddings = embedding_service.embed_texts(chunk_texts)
+                        
+                        # Store embeddings in Qdrant
+                        for chunk_index, (chunk_text, embedding) in enumerate(zip(chunk_texts, embeddings)):
+                            qdrant_client.upsert_vector(
+                                document_id=document.id,
+                                chunk_index=chunk_index,
+                                embedding=embedding,
+                                payload={
+                                    "content": chunk_text,
+                                    "filename": filename,
+                                    "file_type": file_type,
+                                    "session_id": session_id,
+                                    "tokens": len(chunk_text.split())
+                                }
+                            )
+                        
+                        logger.info(
+                            f"Embeddings stored in Qdrant",
+                            extra={
+                                "doc_id": document.id,
+                                "chunk_count": len(chunk_payload)
+                            }
+                        )
+                    except Exception as e:
+                        # Log embedding error but don't fail the upload
+                        logger.error(
+                            f"Failed to store embeddings: {str(e)}",
+                            extra={"doc_id": document.id}
+                        )
 
             document.chunk_count = len(chunk_payload)
             db.commit()
@@ -112,7 +160,7 @@ class DocumentService:
                 f"Document uploaded",
                 extra={
                     "document_id": document.id,
-                    "filename": filename,
+                    "doc_filename": filename,
                     "file_type": file_type,
                     "chunk_count": document.chunk_count,
                 }
@@ -129,8 +177,17 @@ class DocumentService:
         except ValidationError:
             raise
         except Exception as e:
-            logger.error(f"Error uploading document: {str(e)}")
-            raise ChatServiceError(f"Failed to upload document: {str(e)}")
+            error_msg = str(e)
+            # Hide technical details from user, show friendly message
+            if "LogRecord" in error_msg or "overwrite" in error_msg:
+                user_friendly_msg = "Failed to save document to database. Please try again or contact support if the problem persists."
+            elif "filename" in error_msg.lower():
+                user_friendly_msg = "The filename format is invalid. Please use a valid filename."
+            else:
+                user_friendly_msg = "Failed to upload document. Please check your file and try again."
+            
+            logger.error(f"Document upload failed: {error_msg}")
+            raise ChatServiceError(user_friendly_msg)
         finally:
             db.close()
 

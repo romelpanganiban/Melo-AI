@@ -150,94 +150,135 @@ export default function DocumentsPanel({ sessionId }: Props) {
     <aside className="mx-3 mb-3 rounded-2xl border border-emerald-900/10 bg-white/85 p-4 shadow-sm md:mx-4 md:w-[360px] md:min-w-[320px] md:max-w-[380px]">
       <h2 className="brand-title text-lg font-semibold text-emerald-950">Documents</h2>
       <p className="mt-1 text-xs text-emerald-900/60">
-        Upload text now, then add PDF and DOCX parsing once package install is available.
+        Upload documents to enhance AI responses with your knowledge base.
       </p>
 
       {error && (
         <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
+          <strong>⚠️ Upload Failed:</strong> {error}
         </div>
       )}
 
       {!sessionId ? (
         <div className="mt-4 rounded-lg border border-emerald-900/10 bg-emerald-50/60 p-3 text-sm text-emerald-900/75">
-          Select a session to manage documents.
+          ℹ️ Select a chat session first to add documents.
         </div>
       ) : (
         <>
-          <div className="mt-4 space-y-2">
-            <input
-              type="text"
-              value={filename}
-              onChange={(e) => setFilename(e.target.value)}
-              placeholder="Filename (e.g. notes.txt)"
-              className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700"
-            />
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-emerald-900 mb-1">
+                📄 Filename
+              </label>
+              <input
+                type="text"
+                value={filename}
+                onChange={(e) => setFilename(e.target.value)}
+                placeholder="e.g., company_guide.txt"
+                className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-200"
+              />
+              <p className="mt-1 text-xs text-emerald-900/50">
+                Give your document a descriptive name
+              </p>
+            </div>
 
-            <select
-              value={fileType}
-              onChange={(e) => setFileType(e.target.value as "txt" | "pdf" | "docx")}
-              className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700"
-            >
-              <option value="txt">txt</option>
-              <option value="pdf">pdf</option>
-              <option value="docx">docx</option>
-            </select>
+            <div>
+              <label className="block text-xs font-semibold text-emerald-900 mb-1">
+                📋 Document Type
+              </label>
+              <select
+                value={fileType}
+                onChange={(e) => setFileType(e.target.value as "txt" | "pdf" | "docx")}
+                className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-200"
+              >
+                <option value="txt">📝 Plain Text (.txt)</option>
+                <option value="pdf">📕 PDF (.pdf - Coming Soon)</option>
+                <option value="docx">📗 Word Doc (.docx - Coming Soon)</option>
+              </select>
+            </div>
 
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={4}
-              placeholder="Paste document content..."
-              className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700"
-            />
+            <div>
+              <label className="block text-xs font-semibold text-emerald-900 mb-1">
+                ✍️ Content
+              </label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={5}
+                placeholder="Paste or type your document content here..."
+                className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-200 resize-none"
+              />
+              <p className="mt-1 text-xs text-emerald-900/50">
+                {content.length} characters
+              </p>
+            </div>
 
             <button
               type="button"
               onClick={handleUpload}
-              disabled={uploading}
-              className="w-full rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-teal-50 transition hover:bg-teal-800 disabled:bg-gray-400"
+              disabled={uploading || !filename.trim() || !content.trim()}
+              className="w-full rounded-lg bg-teal-700 px-3 py-2.5 text-sm font-semibold text-teal-50 transition hover:bg-teal-800 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {uploading ? "Uploading..." : "Upload Document"}
+              {uploading ? "📤 Uploading..." : "📤 Upload Document"}
             </button>
+
+            {documents.length === 0 && !uploading && (
+              <div className="mt-3 text-center text-xs text-emerald-900/50 p-3 rounded bg-emerald-50">
+                No documents yet. Upload one to get started!
+              </div>
+            )}
           </div>
 
-          <div className="mt-4 max-h-[340px] space-y-2 overflow-y-auto pr-1">
+          <div className="mt-6 max-h-[400px] space-y-2 overflow-y-auto pr-1">
+            <h3 className="text-xs font-semibold text-emerald-900 mb-2">
+              📚 Documents in this Session
+            </h3>
+            
             {loading ? (
-              <p className="text-sm text-emerald-900/70">Loading documents...</p>
+              <p className="text-sm text-emerald-900/70">⏳ Loading documents...</p>
             ) : documents.length === 0 ? (
-              <p className="text-sm text-emerald-900/65">No documents in this session yet.</p>
+              <p className="text-sm text-emerald-900/65">✨ No documents yet. Upload one above!</p>
             ) : (
               documents.map((doc) => (
-                <div key={doc.id} className="rounded-lg border border-emerald-900/10 bg-white/75 p-3">
-                  <p className="truncate text-sm font-semibold text-emerald-950">{doc.filename}</p>
-                  <p className="mt-1 text-xs text-emerald-900/65">
-                    Type: {doc.file_type} | Chunks: {doc.chunk_count ?? 0}
-                  </p>
+                <div key={doc.id} className="rounded-lg border border-emerald-900/10 bg-gradient-to-r from-white to-emerald-50/30 p-3 hover:border-emerald-900/20 transition">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-semibold text-emerald-950" title={doc.filename}>
+                        📄 {doc.filename}
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-900/65">
+                        {doc.file_type.toUpperCase()} • {doc.chunk_count ?? 0} chunk{(doc.chunk_count ?? 0) !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
 
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-3 flex gap-2">
                     <button
                       type="button"
                       onClick={() => void handleToggleChunks(doc.id)}
-                      className="rounded-md border border-emerald-900/20 px-2 py-1 text-xs font-medium text-emerald-900 hover:bg-emerald-100"
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition flex-1"
                     >
-                      {chunkMap[doc.id] ? "Hide Chunks" : "View Chunks"}
+                      {chunkMap[doc.id] ? "📋 Hide Chunks" : "📖 View Chunks"}
                     </button>
                     <button
                       type="button"
                       onClick={() => void handleDelete(doc.id)}
-                      className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition"
+                      title="Delete this document"
                     >
-                      Delete
+                      🗑️
                     </button>
                   </div>
 
                   {chunkMap[doc.id] && (
-                    <div className="mt-2 space-y-1 rounded-md border border-emerald-900/10 bg-emerald-50/60 p-2">
-                      {chunkMap[doc.id].map((chunk) => (
-                        <div key={chunk.id} className="text-xs text-emerald-900/80">
-                          <p className="font-semibold">Chunk {chunk.chunk_index + 1}</p>
-                          <p className="line-clamp-3">{chunk.content}</p>
+                    <div className="mt-3 space-y-2 rounded-md border border-emerald-900/10 bg-emerald-50/80 p-2.5 max-h-[200px] overflow-y-auto">
+                      <p className="text-xs font-semibold text-emerald-900 mb-2">
+                        📑 Chunks ({chunkMap[doc.id].length})
+                      </p>
+                      {chunkMap[doc.id].map((chunk, idx) => (
+                        <div key={chunk.id} className="text-xs text-emerald-900/80 border-l-2 border-teal-600 pl-2 py-1">
+                          <p className="font-semibold text-emerald-900">Chunk {chunk.chunk_index + 1}</p>
+                          <p className="line-clamp-2 text-emerald-900/70 mt-0.5">{chunk.content}</p>
                         </div>
                       ))}
                     </div>

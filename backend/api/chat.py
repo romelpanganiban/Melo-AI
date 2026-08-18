@@ -21,6 +21,7 @@ class ChatResponse(BaseModel):
     session_id: str
     response: str
     recent_history: list[dict]
+    sources: list[dict] = []  # List of {"filename": str, "relevance": float}
 
 
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
