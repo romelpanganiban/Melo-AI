@@ -65,6 +65,42 @@ export type SessionsResponse = {
   count: number;
 };
 
+export type DocumentSummary = {
+  id: string;
+  filename: string;
+  file_type: "pdf" | "docx" | "txt";
+  chunk_count?: number;
+  created_at?: string | null;
+};
+
+export type SessionDocumentsResponse = {
+  session_id: string;
+  documents: DocumentSummary[];
+  count: number;
+};
+
+export type DocumentChunk = {
+  id: string;
+  document_id: string;
+  chunk_index: number;
+  content: string;
+  tokens?: number | null;
+  created_at?: string | null;
+};
+
+export type DocumentChunksResponse = {
+  document_id: string;
+  chunks: DocumentChunk[];
+  count: number;
+};
+
+export type UploadDocumentPayload = {
+  filename: string;
+  file_type: "pdf" | "docx" | "txt";
+  content: string;
+  session_id?: string;
+};
+
 /**
  * Get all sessions
  */
@@ -408,5 +444,113 @@ export async function sendMessageStream(
     );
   } finally {
     reader.releaseLock();
+  }
+}
+
+export async function uploadDocument(payload: UploadDocumentPayload): Promise<DocumentSummary> {
+  try {
+    const response = await fetch(`${API_URL}/documents`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<DocumentSummary>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to upload document',
+      { originalError: String(error) }
+    );
+  }
+}
+
+export async function getSessionDocuments(sessionId: string): Promise<SessionDocumentsResponse> {
+  try {
+    if (!sessionId) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Session ID is required',
+        { field: 'sessionId' }
+      );
+    }
+
+    const response = await fetch(`${API_URL}/sessions/${sessionId}/documents`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse<SessionDocumentsResponse>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to fetch session documents',
+      { originalError: String(error) }
+    );
+  }
+}
+
+export async function getDocumentChunks(documentId: string): Promise<DocumentChunksResponse> {
+  try {
+    if (!documentId) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Document ID is required',
+        { field: 'documentId' }
+      );
+    }
+
+    const response = await fetch(`${API_URL}/documents/${documentId}/chunks`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse<DocumentChunksResponse>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to fetch document chunks',
+      { originalError: String(error) }
+    );
+  }
+}
+
+export async function deleteDocument(documentId: string): Promise<void> {
+  try {
+    if (!documentId) {
+      throw new APIError(
+        400,
+        'VALIDATION_ERROR',
+        'Document ID is required',
+        { field: 'documentId' }
+      );
+    }
+
+    const response = await fetch(`${API_URL}/documents/${documentId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      await handleResponse(response);
+    }
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to delete document',
+      { originalError: String(error) }
+    );
   }
 }

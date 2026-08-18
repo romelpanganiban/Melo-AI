@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import ChatWindow from "@/components/ChatWindow";
 import MessageInput from "@/components/MessageInput";
+import DocumentsPanel from "@/components/DocumentsPanel";
 import {
   APIError,
   ChatMessage,
@@ -229,25 +230,31 @@ export default function ChatPage() {
           </nav>
         </header>
 
-        <ChatWindow
-          sessionId={
-            selectedSession
-          }
-          messages={messages}
-          isLoading={isHistoryLoading}
-          error={error}
-          onRetry={() => {
-            setRefresh((prev) => prev + 1);
-          }}
-        />
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ChatWindow
+              sessionId={
+                selectedSession
+              }
+              messages={messages}
+              isLoading={isHistoryLoading}
+              error={error}
+              onRetry={() => {
+                setRefresh((prev) => prev + 1);
+              }}
+            />
 
-        <MessageInput
-          sessionId={
-            selectedSession
-          }
-          onSendMessage={handleSendMessage}
-          isSending={isSending}
-        />
+            <MessageInput
+              sessionId={
+                selectedSession
+              }
+              onSendMessage={handleSendMessage}
+              isSending={isSending}
+            />
+          </div>
+
+          <DocumentsPanel sessionId={selectedSession} />
+        </div>
       </div>
     </div>
   );
