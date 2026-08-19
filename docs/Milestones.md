@@ -136,11 +136,11 @@ Production-ready PostgreSQL integration with full test coverage
 
 Status: In Progress
 
-- [ ] PDF Upload
-- [ ] DOCX Upload
+- [ ] PDF Upload and text extraction
+- [ ] DOCX Upload and text extraction
 - [x] Text Chunking
-- [ ] Embeddings
-- [ ] Vector Search
+- [x] Embeddings
+- [x] Vector Search
 
 Deliverable:
 Document Intelligence
@@ -148,18 +148,20 @@ Document Intelligence
 Offline-safe progress:
 - Document storage is already wired to the database
 - Text chunking now stores chunks in `document_chunks`
-- RAG vector search is still pending Qdrant and embedding packages
+- Embeddings and Qdrant indexing are implemented when the optional services are enabled
+- PDF and DOCX parsing are still pending; the current UI accepts pasted text with a file type label
 
 ---
 
 ## Milestone 9 - RAG
 
-Status: Planned
+Status: In Progress
 
-- [ ] Qdrant Integration
-- [ ] Retrieval Pipeline
-- [ ] Context Injection
-- [ ] Source Referencing
+- [x] Qdrant Integration
+- [x] Retrieval Pipeline
+- [x] Context Injection
+- [x] Source metadata in chat responses
+- [ ] Source display in the frontend
 
 Deliverable:
 Knowledge Base Support

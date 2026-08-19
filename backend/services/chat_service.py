@@ -74,10 +74,10 @@ class ChatService:
             context_parts = []
             
             for result in search_results:
-                payload = result.get("payload", {})
+                payload = result.get("payload") or result.get("metadata", {})
                 filename = payload.get("filename", "Unknown")
-                content = payload.get("content", "")
-                score = result.get("score", 0)
+                content = result.get("content") or payload.get("content", "")
+                score = result.get("score", result.get("similarity_score", 0))
                 
                 # Track unique sources
                 source_key = f"{filename}"

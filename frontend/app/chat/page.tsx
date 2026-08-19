@@ -39,9 +39,12 @@ export default function ChatPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const historyRequestRef = useRef(0);
   const activeStreamRef = useRef<AbortController | null>(null);
 
   const loadHistory = useCallback(async () => {
+    const requestId = ++historyRequestRef.current;
+
     if (!selectedSession) {
       setMessages([]);
       setError(null);
@@ -62,8 +65,14 @@ export default function ChatPage() {
         content: message.content,
       }));
 
-      setMessages(mapped);
+      if (requestId === historyRequestRef.current) {
+        setMessages(mapped);
+      }
     } catch (err) {
+      if (requestId !== historyRequestRef.current) {
+        return;
+      }
+
       const message =
         err instanceof APIError
           ? err.message
@@ -71,7 +80,9 @@ export default function ChatPage() {
       setError(message);
       setMessages([]);
     } finally {
-      setIsHistoryLoading(false);
+      if (requestId === historyRequestRef.current) {
+        setIsHistoryLoading(false);
+      }
     }
   }, [selectedSession]);
 
