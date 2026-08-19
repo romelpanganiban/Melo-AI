@@ -289,6 +289,17 @@ class DocumentService:
             
             if not document:
                 raise ChatServiceError(f"Document not found: {document_id}")
+
+            if settings.QDRANT_ENABLED:
+                try:
+                    qdrant_client = get_qdrant_client()
+                    if qdrant_client.is_available():
+                        qdrant_client.delete_vectors(document_id)
+                except Exception as e:
+                    logger.error(
+                        f"Failed to delete document vectors: {str(e)}",
+                        extra={"document_id": document_id},
+                    )
             
             chunk_repo.delete_by_document(document_id)
             db.delete(document)

@@ -1,5 +1,7 @@
 # UI/UX Improvements - Document Upload Panel
 
+> Historical implementation notes. PDF and DOCX file uploads are now supported through the file picker; the examples below describe the earlier pasted-text-only interface.
+
 **Date:** 2026-08-19  
 **Status:** ✅ Complete  
 **Focus:** Making the Documents panel more user-friendly
@@ -112,8 +114,8 @@ else:
 
 // After
 <option value="txt">📝 Plain Text (.txt)</option>
-<option value="pdf">📕 PDF (.pdf - Coming Soon)</option>
-<option value="docx">📗 Word Doc (.docx - Coming Soon)</option>
+<option value="pdf">📕 PDF (.pdf)</option>
+<option value="docx">📗 Word Doc (.docx)</option>
 ```
 
 **3. Better Upload Button**

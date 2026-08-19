@@ -127,7 +127,7 @@ export async function getSessions(): Promise<SessionsResponse> {
 /**
  * Create a new session
  */
-export async function createSession() {
+export async function createSession(): Promise<SessionSummary> {
   try {
     const response = await fetch(`${API_URL}/sessions`, {
       method: 'POST',
@@ -135,7 +135,7 @@ export async function createSession() {
         'Content-Type': 'application/json',
       },
     });
-    return handleResponse(response);
+    return handleResponse<SessionSummary>(response);
   } catch (error) {
     if (error instanceof APIError) throw error;
     throw new APIError(
@@ -308,6 +308,12 @@ export async function updateSettings(settings: {
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  sources?: ChatSource[];
+};
+
+export type ChatSource = {
+  filename: string;
+  relevance: number;
 };
 
 type StreamChunkEvent = {
@@ -319,6 +325,7 @@ type StreamDoneEvent = {
   type: "done";
   session_id: string;
   response: string;
+  sources?: ChatSource[];
 };
 
 type StreamErrorEvent = {
@@ -331,6 +338,7 @@ type StreamEvent = StreamChunkEvent | StreamDoneEvent | StreamErrorEvent;
 
 type SendMessageStreamOptions = {
   onChunk?: (chunk: string) => void;
+  onSources?: (sources: ChatSource[]) => void;
   signal?: AbortSignal;
 };
 
@@ -413,6 +421,7 @@ export async function sendMessageStream(
         }
 
         if (event.type === 'done') {
+          options.onSources?.(event.sources || []);
           return event.response || finalResponse;
         }
 
@@ -550,6 +559,35 @@ export async function deleteDocument(documentId: string): Promise<void> {
       500,
       'NETWORK_ERROR',
       'Failed to delete document',
+      { originalError: String(error) }
+    );
+  }
+}
+
+export async function uploadDocumentFile(
+  file: File,
+  sessionId: string
+): Promise<DocumentSummary> {
+  if (!sessionId) {
+    throw new APIError(400, 'VALIDATION_ERROR', 'Session ID is required');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('session_id', sessionId);
+
+  try {
+    const response = await fetch(`${API_URL}/documents/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    return handleResponse<DocumentSummary>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to upload document file',
       { originalError: String(error) }
     );
   }

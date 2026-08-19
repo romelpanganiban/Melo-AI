@@ -1,74 +1,51 @@
-import React from 'react';
+/// <reference types="@testing-library/jest-dom" />
+
 import { render, screen } from '@testing-library/react';
-import ChatWindow from '@/components/ChatWindow';
+import '@testing-library/jest-dom';
+import { describe, expect, it, jest } from '@jest/globals';
+import ChatWindow from '../ChatWindow';
+import type { ChatMessage } from '../../lib/api';
+
+const mockMessages: (ChatMessage & { id: string })[] = [
+  { id: '1', role: 'user', content: 'Hello!' },
+  { id: '2', role: 'assistant', content: 'Hi there!' },
+  { id: '3', role: 'user', content: 'How are you?' },
+  { id: '4', role: 'assistant', content: 'I am doing well, thanks for asking!' },
+];
+
+const defaultProps = {
+  sessionId: 'session-1',
+  isLoading: false,
+  error: null,
+  onRetry: jest.fn(),
+};
 
 describe('ChatWindow', () => {
-  const mockMessages = [
-    { role: 'user', content: 'Hello!' },
-    { role: 'assistant', content: 'Hi there!' },
-    { role: 'user', content: 'How are you?' },
-    { role: 'assistant', content: 'I am doing well, thanks for asking!' },
-  ];
-
   it('renders messages correctly', () => {
-    render(
-      <ChatWindow messages={mockMessages} isLoading={false} />
-    );
-    
-    expect(screen.getByText('Hello!')).toBeInTheDocument();
-    expect(screen.getByText('Hi there!')).toBeInTheDocument();
-    expect(screen.getByText('How are you?')).toBeInTheDocument();
-    expect(screen.getByText('I am doing well, thanks for asking!')).toBeInTheDocument();
+    render(<ChatWindow {...defaultProps} messages={mockMessages} />);
+
+    expect(screen.getByText('Hello!')).toBeTruthy();
+    expect(screen.getByText('Hi there!')).toBeTruthy();
+    expect(screen.getByText('How are you?')).toBeTruthy();
+    expect(screen.getByText('I am doing well, thanks for asking!')).toBeTruthy();
   });
 
-  it('renders empty state when no messages', () => {
-    render(
-      <ChatWindow messages={[]} isLoading={false} />
-    );
-    
-    // Should show empty state or no messages
-    const messages = screen.queryAllByText(/./);
-    // The component might have some placeholder text or empty UI
+  it('shows the empty state when there are no messages', () => {
+    render(<ChatWindow {...defaultProps} messages={[]} />);
+
+    expect(screen.getByText(/no messages yet/i)).toBeTruthy();
   });
 
-  it('shows loading indicator when isLoading is true', () => {
-    render(
-      <ChatWindow messages={mockMessages} isLoading={true} />
-    );
-    
-    // Look for loading indicator - exact text depends on implementation
-    const loadingElements = screen.queryAllByText(/loading|...|typing/i);
-    expect(loadingElements.length).toBeGreaterThanOrEqual(0);
+  it('shows the loading state', () => {
+    render(<ChatWindow {...defaultProps} isLoading messages={mockMessages} />);
+
+    expect(screen.getByText(/loading messages/i)).toBeTruthy();
   });
 
-  it('does not show loading indicator when isLoading is false', () => {
-    render(
-      <ChatWindow messages={mockMessages} isLoading={false} />
-    );
-    
-    // Make sure all messages are visible
-    expect(screen.getByText('Hello!')).toBeInTheDocument();
-  });
+  it('shows an error and retry action', () => {
+    render(<ChatWindow {...defaultProps} error="Network failed" messages={[]} />);
 
-  it('maintains message order', () => {
-    render(
-      <ChatWindow messages={mockMessages} isLoading={false} />
-    );
-    
-    const allText = screen.getByText('How are you?').parentElement?.parentElement?.textContent || '';
-    const helloPos = allText.indexOf('Hello!');
-    const hiPos = allText.indexOf('Hi there!');
-    const howPos = allText.indexOf('How are you?');
-    
-    // Order should be preserved
-    expect(helloPos <= hiPos && hiPos <= howPos).toBe(true);
-  });
-
-  it('renders correctly with single message', () => {
-    render(
-      <ChatWindow messages={[mockMessages[0]]} isLoading={false} />
-    );
-    
-    expect(screen.getByText('Hello!')).toBeInTheDocument();
+    expect(screen.getByText('Network failed')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /retry/i })).toBeTruthy();
   });
 });

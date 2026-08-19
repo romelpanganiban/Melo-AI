@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import MessageBubble from '@/components/MessageBubble';
 
 describe('MessageBubble', () => {
@@ -39,8 +39,8 @@ describe('MessageBubble', () => {
     );
 
     // User messages should have different styling than assistant
-    const userBubble = userContainer.querySelector('[class*="bg-blue"]');
-    const assistantBubble = assistantContainer.querySelector('[class*="bg-gray"]');
+    const userBubble = userContainer.querySelector('[class*="bg-teal-700"]');
+    const assistantBubble = assistantContainer.querySelector('[class*="bg-emerald-50"]');
     
     expect(userBubble || assistantBubble).toBeInTheDocument();
   });

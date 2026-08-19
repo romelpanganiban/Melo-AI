@@ -1,6 +1,6 @@
 # Melo-AI Architecture
 
-Current Architecture
+## Current Architecture
 
 User
  ↓
@@ -18,13 +18,25 @@ Ollama Server
  ↓
 Streamed Tokens / Final Response
 
-Session API (`/sessions`)
+Session and document APIs (`/sessions`, `/documents`)
  ↓
-Session Service
+Session/Document Services
  ↓
 Database Repositories
  ↓
-SQLite (`sessions`, `messages`, `settings`, `documents`)
+SQLite or PostgreSQL (`sessions`, `messages`, `settings`, `documents`, `document_chunks`)
+
+Document ingestion:
+
+`POST /documents/upload`
+ ↓
+TXT/PDF/DOCX text extraction
+ ↓
+Document Service
+ ↓
+Chunk storage + optional embeddings
+ ↓
+Qdrant vector collection
 
 ---
 
@@ -38,39 +50,19 @@ Store user message in DB
  ↓
 Request Ollama with stream=true
  ↓
+Search session documents through embeddings and Qdrant
+ ↓
+Inject retrieved context into the Ollama prompt
+ ↓
 Backend emits NDJSON chunks (`chunk`)
  ↓
 Frontend appends chunk text live
  ↓
 Backend stores final assistant message
  ↓
-Backend emits `done`
+Backend emits `done` with document sources
 
----
-
-Future Architecture
-
-User
- ↓
-Frontend (Next.js)
- ↓
-Backend (FastAPI)
- ↓
-Session Manager
- ↓
-Memory Manager
- ↓
-RAG Engine
- ↓
-Ollama
- ↓
-Qwen3-8B
- ↓
-Response
-
----
-
-Future Components
+## Planned Components
 
 - Ollama
 - Qwen3-8B

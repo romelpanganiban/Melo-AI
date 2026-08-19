@@ -132,36 +132,40 @@ Production-ready PostgreSQL integration with full test coverage
 
 ---
 
-## Milestone 8 - Knowledge Base
+## Milestone 8 - Knowledge Base ✅
 
-Status: In Progress
+Status: Completed
 
-- [ ] PDF Upload and text extraction
-- [ ] DOCX Upload and text extraction
+- [x] PDF Upload and text extraction
+- [x] DOCX Upload and text extraction
 - [x] Text Chunking
 - [x] Embeddings
 - [x] Vector Search
+- [x] TXT, PDF, and DOCX frontend file picker
+- [x] Document chunk viewer
 
 Deliverable:
 Document Intelligence
 
-Offline-safe progress:
+Implementation notes:
 - Document storage is already wired to the database
 - Text chunking now stores chunks in `document_chunks`
-- Embeddings and Qdrant indexing are implemented when the optional services are enabled
-- PDF and DOCX parsing are still pending; the current UI accepts pasted text with a file type label
+- Embeddings and Qdrant indexing are best-effort when optional services are enabled
+- PDF and DOCX text extraction uses `pypdf` and `python-docx`
+- Multipart uploads are handled by `POST /documents/upload`
 
 ---
 
-## Milestone 9 - RAG
+## Milestone 9 - RAG ✅
 
-Status: In Progress
+Status: Completed
 
 - [x] Qdrant Integration
 - [x] Retrieval Pipeline
 - [x] Context Injection
 - [x] Source metadata in chat responses
-- [ ] Source display in the frontend
+- [x] Source display in assistant messages
+- [x] Graceful degradation when Qdrant is unavailable
 
 Deliverable:
 Knowledge Base Support

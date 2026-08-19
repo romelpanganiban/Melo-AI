@@ -18,6 +18,7 @@ type SidebarProps = {
   setSelectedSession: (sessionId: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  refreshKey?: number;
 };
 
 export default function Sidebar({
@@ -25,6 +26,7 @@ export default function Sidebar({
   setSelectedSession,
   isOpen,
   onClose,
+  refreshKey = 0,
 }: SidebarProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,7 +62,8 @@ export default function Sidebar({
     setError(null);
 
     try {
-      await createSession();
+      const newSession = await createSession();
+      setSelectedSession(newSession.id);
       await loadSessions();
       setError(null);
     } catch (err) {
@@ -83,7 +86,7 @@ export default function Sidebar({
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, []);
+  }, [refreshKey]);
 
   return (
     <>

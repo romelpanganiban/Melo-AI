@@ -28,7 +28,7 @@ The goal is to build an AI assistant that can:
 
 ## Current Status
 
-Version: 0.1.2
+Early development. The current implementation includes database-backed chat, document ingestion, and RAG.
 
 ### Completed
 
@@ -38,6 +38,7 @@ Version: 0.1.2
 - Health Endpoint
 - Chat Endpoint
 - Streaming Chat Endpoint (`/chat/stream`)
+- Service health reporting for Ollama and Qdrant
 - Swagger Documentation
 
 #### Memory System
@@ -59,16 +60,20 @@ Version: 0.1.2
 - Live typing effect in frontend while model responds
 - No manual refresh needed after sending a message
 - Session-based history loaded from database
+- Automatic session titles from the first user message
 
 #### Document Intelligence (RAG)
 
 - Document Upload System
+- TXT, PDF, and DOCX file uploads
+- PDF/DOCX text extraction with `pypdf` and `python-docx`
 - Automatic Text Chunking (1000 words, 150 word overlap)
 - Vector Embeddings (all-MiniLM-L6-v2, 384 dimensions)
 - Qdrant Vector Database Integration
 - Semantic Similarity Search
 - Document Context in Chat
 - Source Attribution
+- Source display in assistant messages
 - Batch Embedding Generation
 
 #### Vector Database
@@ -100,9 +105,9 @@ Version: 0.1.2
 
 ---
 
-## Latest Update (v0.2.0)
+## Latest Update
 
-**RAG (Retrieval Augmented Generation) - Full Implementation**
+**Knowledge Base and RAG - Implemented**
 
 - Implemented document-enhanced chat using Qdrant vector database
 - Documents automatically chunked and embedded when uploaded
@@ -114,6 +119,8 @@ Version: 0.1.2
 - SentenceTransformers embeddings (384-dimensional vectors)
 - Batch embedding generation for efficiency
 - Offline-capable (models pre-cached locally)
+- Multipart file uploads with a 10 MB limit
+- Health endpoint reports optional service availability
 
 **Files Changed:**
 - `services/document_service.py` - Added embedding generation on upload
@@ -153,8 +160,9 @@ Version: 0.1.2
 
 ### Knowledge Base
 
-- PDF Processing
-- DOCX Processing
+- PDF Processing (implemented)
+- DOCX Processing (implemented)
+- TXT Processing (implemented)
 - Qdrant
 - Retrieval-Augmented Generation (RAG)
 

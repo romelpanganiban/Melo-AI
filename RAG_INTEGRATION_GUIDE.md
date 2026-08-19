@@ -1,5 +1,7 @@
 # RAG (Retrieval Augmented Generation) Integration Guide
 
+> RAG is already integrated into `services/chat_service.py`. This document is retained as an implementation reference; the example `ChatServiceRAG` and `/chat/rag` endpoint below are historical patterns and are not runtime components.
+
 This guide explains how to implement RAG (Retrieval Augmented Generation) in Melo-AI using Qdrant vector database and document embeddings.
 
 ---
@@ -102,7 +104,7 @@ User Question
 
 ---
 
-## Implementation Steps
+## Implemented Integration
 
 ### Step 1: Update Document Service
 

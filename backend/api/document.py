@@ -2,10 +2,11 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, File, Form, UploadFile, status
 from pydantic import BaseModel, Field
 
 from services.document_service import DocumentService
+from services.document_parser import get_document_parser
 from core.errors import ValidationError, ChatServiceError
 from core.validation import validate_uuid
 from core.logging import logger
@@ -13,6 +14,8 @@ from core.logging import logger
 router = APIRouter()
 
 service = DocumentService()
+parser = get_document_parser()
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 
 
 class UploadDocumentRequest(BaseModel):
@@ -41,6 +44,34 @@ class DocumentChunkResponse(BaseModel):
     content: str
     tokens: int | None = None
     created_at: str | None = None
+
+
+@router.post("/documents/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+def upload_document_file(
+    file: UploadFile = File(...),
+    session_id: Optional[str] = Form(None),
+):
+    """Extract and store a TXT, PDF, or DOCX upload."""
+    try:
+        if session_id:
+            session_id = validate_uuid(session_id, field_name="session_id")
+
+        content_bytes = file.file.read(MAX_UPLOAD_SIZE + 1)
+        if len(content_bytes) > MAX_UPLOAD_SIZE:
+            raise ValidationError("File exceeds the 10 MB upload limit")
+
+        file_type, content = parser.parse(file.filename or "", content_bytes)
+        return service.upload_document(
+            filename=file.filename or "uploaded-document",
+            file_type=file_type,
+            content=content,
+            session_id=session_id,
+        )
+    except ValidationError:
+        raise
+    except Exception as e:
+        logger.error(f"Document file upload error: {str(e)}")
+        raise ChatServiceError("Failed to extract and upload document")
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)

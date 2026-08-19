@@ -204,7 +204,7 @@ casual on office days and casual on Fridays.
 ### 3. Example
 ```
 📤 Upload: "training_guide.pdf"
-❌ PDF not supported yet (coming soon)
+✅ PDF text is extracted and indexed automatically
 
 📤 Upload: "training_guide.txt" (copy-paste content)
 ✅ Uploaded!

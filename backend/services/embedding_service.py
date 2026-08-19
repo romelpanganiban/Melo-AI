@@ -3,7 +3,10 @@
 from typing import List, Optional
 import numpy as np
 
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:
+    SentenceTransformer = None
 
 from core.logging import logger
 from core.errors import ChatServiceError
@@ -28,6 +31,11 @@ class EmbeddingService:
         self.device = device or settings.EMBEDDING_DEVICE
         
         try:
+            if SentenceTransformer is None:
+                raise ChatServiceError(
+                    "SentenceTransformers is unavailable; install the embedding dependencies"
+                )
+
             logger.info(
                 f"Loading embedding model",
                 extra={

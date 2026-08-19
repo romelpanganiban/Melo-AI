@@ -82,27 +82,33 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ## Phase 7 - Local AI
 
-- [ ] Install Ollama
-- [ ] Install Qwen3-8B
-- [ ] Connect Ollama API
-- [ ] Replace Mock Responses
+- [x] Install Ollama
+- [x] Install Qwen3-8B
+- [x] Connect Ollama API
+- [x] Replace Mock Responses
 
 ---
 
-## Phase 8 - Knowledge Base
+## Phase 8 - Knowledge Base ✅
 
-- [ ] PDF Upload
-- [ ] DOCX Upload
-- [x] Text Chunking
-- [ ] Vector Search
+- [x] PDF parsing and upload
+- [x] DOCX parsing and upload
+- [x] Text chunking for pasted content
+- [x] Vector search for indexed content
+- [x] TXT, PDF, and DOCX file picker
+- [x] Document chunk viewer
 
 ---
 
-## Phase 9 - RAG
+## Phase 9 - RAG ✅
 
-- [ ] Qdrant Integration
-- [ ] Embeddings
-- [ ] Retrieval Pipeline
+- [x] Qdrant integration
+- [x] Embeddings
+- [x] Retrieval pipeline
+- [x] Context injection into chat
+- [x] Source metadata in API responses
+- [x] Source display in assistant messages
+- [x] Graceful fallback when Qdrant or embeddings are unavailable
 
 ---
 
@@ -151,5 +157,5 @@ Commercial SaaS Version
 - [ ] Local Claude Alternative
 - [ ] Memory
 - [ ] Sessions
-- [ ] RAG
+- [x] RAG
 - [ ] Coding Assistant

@@ -44,7 +44,7 @@ class ChatService:
         """
         if not settings.QDRANT_ENABLED:
             return {"sources": [], "context": ""}
-        
+
         try:
             embedding_service = get_embedding_service()
             qdrant_client = get_qdrant_client()
@@ -114,6 +114,18 @@ class ChatService:
             # Return empty results on error instead of failing
             return {"sources": [], "context": ""}
 
+    def _set_initial_session_title(self, session, message: str, session_repo: SessionRepository) -> None:
+        """Use the first user message as the title for untouched sessions."""
+        if session.title != "New Chat":
+            return
+
+        title = " ".join(message.split())
+        max_title_length = 50
+        if len(title) > max_title_length:
+            title = f"{title[:max_title_length].rstrip()}..."
+        if title:
+            session_repo.update_title(session.id, title)
+
     def process_message(self, session_id: str, message: str, db: Session = None) -> dict:
         """Process a user message
         
@@ -153,6 +165,7 @@ class ChatService:
             # Store user message
             msg_repo = MessageRepository(db)
             msg_repo.create(session_id, "user", message)
+            self._set_initial_session_title(session, message, session_repo)
 
             # Get session history for context
             history = self._get_history_dicts(session_id, db)
@@ -206,6 +219,7 @@ class ChatService:
 
             msg_repo = MessageRepository(db)
             msg_repo.create(session_id, "user", message)
+            self._set_initial_session_title(session, message, session_repo)
             history = self._get_history_dicts(session_id, db)
             
             # Search for relevant documents

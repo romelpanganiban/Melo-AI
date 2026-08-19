@@ -1,8 +1,10 @@
 # Melo-AI Codebase - Comprehensive Analysis
 
-**Analysis Date:** 2026-08-15  
-**Project Version:** 0.1.1  
-**Status:** Early Development (Phase 7/13)
+**Analysis Date:** Historical snapshot (2026-08-15)  
+**Project Version:** Historical 0.1.1 snapshot  
+**Status:** Superseded by the current implementation
+
+> This document describes an earlier codebase state. For current behavior, use `ARCHITECTURE.md`, `README.md`, and `docs/Milestones.md`.
 
 ---
 
@@ -37,8 +39,8 @@ backend/
 │   ├── health.py             # Health check endpoint
 │   └── settings.py           # Settings endpoints
 ├── services/                  # Business logic layer
-│   ├── chat_service.py       # JSON-based chat service (legacy)
-│   ├── chat_service_db.py    # Database-backed chat service (current)
+│   ├── chat_service.py       # Database-backed chat service with streaming and RAG (active)
+│   ├── chat_service_db.py    # Older database service retained for legacy tests
 │   ├── session_service.py    # Session operations
 │   ├── settings_service.py   # Settings management
 │   ├── settings_manager.py   # Settings file I/O

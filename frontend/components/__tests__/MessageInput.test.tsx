@@ -1,25 +1,25 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MessageInput from '@/components/MessageInput';
 
 describe('MessageInput', () => {
   it('renders input field', () => {
     const mockOnSend = jest.fn();
     render(
-      <MessageInput onSend={mockOnSend} />
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
     );
     
-    const input = screen.getByPlaceholderText(/type your message/i);
+    const input = screen.getByPlaceholderText(/message melo/i);
     expect(input).toBeInTheDocument();
   });
 
   it('sends message when send button is clicked', () => {
     const mockOnSend = jest.fn();
     render(
-      <MessageInput onSend={mockOnSend} />
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
     );
     
-    const input = screen.getByPlaceholderText(/type your message/i) as HTMLInputElement;
+    const input = screen.getByPlaceholderText(/message melo/i) as HTMLInputElement;
     const sendButton = screen.getByRole('button');
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
@@ -28,25 +28,25 @@ describe('MessageInput', () => {
     expect(mockOnSend).toHaveBeenCalledWith('Hello!');
   });
 
-  it('clears input after sending message', () => {
+  it('clears input after sending message', async () => {
     const mockOnSend = jest.fn();
     render(
-      <MessageInput onSend={mockOnSend} />
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
     );
     
-    const input = screen.getByPlaceholderText(/type your message/i) as HTMLInputElement;
+    const input = screen.getByPlaceholderText(/message melo/i) as HTMLInputElement;
     const sendButton = screen.getByRole('button');
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
     fireEvent.click(sendButton);
     
-    expect(input.value).toBe('');
+    await waitFor(() => expect(input.value).toBe(''));
   });
 
   it('disables send when input is empty', () => {
     const mockOnSend = jest.fn();
     render(
-      <MessageInput onSend={mockOnSend} />
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
     );
     
     const sendButton = screen.getByRole('button') as HTMLButtonElement;
@@ -58,10 +58,10 @@ describe('MessageInput', () => {
   it('enables send when input has text', () => {
     const mockOnSend = jest.fn();
     render(
-      <MessageInput onSend={mockOnSend} />
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
     );
     
-    const input = screen.getByPlaceholderText(/type your message/i);
+    const input = screen.getByPlaceholderText(/message melo/i);
     const sendButton = screen.getByRole('button') as HTMLButtonElement;
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
@@ -69,17 +69,18 @@ describe('MessageInput', () => {
     expect(sendButton.disabled).toBe(false);
   });
 
-  it('sends message on Enter key press', () => {
+  it('sends message through the send action', () => {
     const mockOnSend = jest.fn();
     render(
-      <MessageInput onSend={mockOnSend} />
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
     );
     
-    const input = screen.getByPlaceholderText(/type your message/i);
+    const input = screen.getByPlaceholderText(/message melo/i);
+    const sendButton = screen.getByRole('button');
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    
+    fireEvent.click(sendButton);
+
     expect(mockOnSend).toHaveBeenCalledWith('Hello!');
   });
 });

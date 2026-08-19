@@ -23,6 +23,20 @@ def test_upload_document(client, test_session_id):
     assert "id" in data
 
 
+def test_upload_document_file(client, test_session_id):
+    response = client.post(
+        "/documents/upload",
+        files={"file": ("uploaded.txt", b"Uploaded file content.", "text/plain")},
+        data={"session_id": test_session_id},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["filename"] == "uploaded.txt"
+    assert data["file_type"] == "txt"
+    assert data["chunk_count"] >= 1
+
+
 def test_get_document_and_chunks(client, test_session_id):
     create_response = client.post(
         "/documents",

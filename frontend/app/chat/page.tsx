@@ -10,6 +10,7 @@ import DocumentsPanel from "@/components/DocumentsPanel";
 import {
   APIError,
   ChatMessage,
+  ChatSource,
   getHistory,
   sendMessageStream,
 } from "@/lib/api";
@@ -32,6 +33,8 @@ export default function ChatPage() {
   );
 
   const [refresh, setRefresh] =
+    useState(0);
+  const [sessionRefresh, setSessionRefresh] =
     useState(0);
   const [sidebarOpen, setSidebarOpen] =
     useState(false);
@@ -151,6 +154,15 @@ export default function ChatPage() {
             )
           );
         },
+        onSources: (sources: ChatSource[]) => {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantMessageId
+                ? { ...message, sources }
+                : message
+            )
+          );
+        },
       });
 
       setMessages((prev) =>
@@ -164,6 +176,7 @@ export default function ChatPage() {
             : message
         )
       );
+      setSessionRefresh((prev) => prev + 1);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         return;
@@ -206,6 +219,7 @@ export default function ChatPage() {
         }
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        refreshKey={sessionRefresh}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">

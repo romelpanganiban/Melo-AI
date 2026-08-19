@@ -13,4 +13,6 @@ def test_health():
 
     data = response.json()
 
-    assert data["status"] == "healthy"
+    assert data["status"] in {"healthy", "degraded"}
+    assert "ollama" in data["components"]
+    assert "qdrant" in data["components"]
