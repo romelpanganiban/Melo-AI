@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+#### Knowledge Base and RAG
+
+- TXT, PDF, and DOCX document uploads through `POST /documents/upload`
+- PDF text extraction with `pypdf`
+- DOCX text extraction with `python-docx`
+- Document chunking, embeddings, Qdrant indexing, and retrieval
+- Document source metadata in chat responses and assistant messages
+- Qdrant vector cleanup when documents are deleted
+
+#### Coding Assistant
+
+- Read-only code analysis through `POST /analysis/code`
+- Workspace file reading through `POST /files/read`
+- Confirmation-gated file writes through `POST /files/write`
+- Confirmation-gated file deletion through `DELETE /files`
+- Python AST analysis and JavaScript/TypeScript structure detection
+- Workspace path, protected-directory, file-type, and file-size safeguards
+- Atomic file replacement for safe updates
+
+### Improved
+
+- Automatic session titles generated from the first user message
+- Sidebar refresh after a chat response so generated titles appear immediately
+- Health endpoint reporting for Ollama, the configured model, and Qdrant
+- Document panel overflow handling and chunk viewing layout
+- Frontend test configuration and stale component test contracts
+
 ## v0.1.2
 
 ### Added
