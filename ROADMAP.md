@@ -114,7 +114,10 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ## Phase 10 - Coding Assistant
 
-- [ ] Code Analysis
+- [x] Read-only code analysis API
+- [x] Python structure analysis
+- [x] JavaScript/TypeScript structure analysis
+- [x] Workspace path and file-size safety limits
 - [ ] File Operations
 - [ ] Git Integration
 

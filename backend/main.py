@@ -8,6 +8,7 @@ from api.chat import router as chat_router
 from api.session import router as session_router
 from api.settings import router as settings_router
 from api.document import router as document_router
+from api.code_analysis import router as code_analysis_router
 from core.errors import MeloAIException
 from core.settings import settings
 from core.logging import logger
@@ -75,6 +76,7 @@ app.include_router(chat_router)
 app.include_router(session_router)
 app.include_router(settings_router)
 app.include_router(document_router)
+app.include_router(code_analysis_router)
 
 @app.get("/")
 def home():

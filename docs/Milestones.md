@@ -174,10 +174,13 @@ Knowledge Base Support
 
 ## Milestone 10 - Coding Assistant
 
-Status: Planned
+Status: In Progress
 
+- [x] Read-only code analysis API
+- [x] Python and JavaScript/TypeScript structure analysis
+- [x] Workspace path safety validation
 - [ ] Code Generation
-- [ ] File Analysis
+- [ ] File Operations
 - [ ] Code Review
 - [ ] Git Integration
 
