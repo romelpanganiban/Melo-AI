@@ -118,7 +118,10 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 - [x] Python structure analysis
 - [x] JavaScript/TypeScript structure analysis
 - [x] Workspace path and file-size safety limits
-- [ ] File Operations
+- [x] Read-only workspace file endpoint
+- [x] Confirmation-gated file writes
+- [x] Atomic workspace file replacement
+- [x] Confirmation-gated file deletion
 - [ ] Git Integration
 
 ---

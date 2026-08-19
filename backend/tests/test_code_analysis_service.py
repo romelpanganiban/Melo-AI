@@ -24,6 +24,14 @@ def test_analyze_typescript_file():
     assert "sendMessage" in result["functions"]
 
 
+def test_read_file_returns_content():
+    result = CodeAnalysisService().read_file("backend/services/code_analysis_service.py")
+
+    assert result["path"] == "backend/services/code_analysis_service.py"
+    assert "class CodeAnalysisService" in result["content"]
+    assert result["line_count"] > 1
+
+
 @pytest.mark.parametrize("path", ["missing.py", "..\\outside.txt"])
 def test_rejects_invalid_paths(path):
     with pytest.raises(ValidationError):

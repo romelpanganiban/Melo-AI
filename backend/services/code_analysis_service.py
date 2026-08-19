@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
+import tempfile
 from pathlib import Path
 
 from core.errors import ChatServiceError, ValidationError
@@ -19,26 +21,9 @@ class CodeAnalysisService:
     }
 
     def analyze_file(self, relative_path: str) -> dict:
-        if not relative_path or not relative_path.strip():
-            raise ValidationError("path is required", field="path")
-
+        requested = self._resolve_file(relative_path)
+        content = self._read_text(requested)
         workspace = Path(settings.BASE_DIR).resolve()
-        requested = (workspace / relative_path).resolve()
-        if requested != workspace and workspace not in requested.parents:
-            raise ValidationError("path must stay inside the workspace", field="path")
-        if not requested.is_file():
-            raise ValidationError("file was not found", field="path")
-        if requested.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
-            raise ValidationError("file type is not supported", field="path")
-        if requested.stat().st_size > self.MAX_FILE_SIZE:
-            raise ValidationError("file exceeds the 1 MB analysis limit", field="path")
-
-        try:
-            content = requested.read_text(encoding="utf-8")
-        except UnicodeDecodeError as exc:
-            raise ValidationError("file must be UTF-8 text", field="path") from exc
-        except OSError as exc:
-            raise ChatServiceError("failed to read file") from exc
 
         analysis = {
             "path": requested.relative_to(workspace).as_posix(),
@@ -63,6 +48,112 @@ class CodeAnalysisService:
             )
 
         return analysis
+
+    def read_file(self, relative_path: str) -> dict:
+        """Read a supported workspace file without modifying it."""
+        requested = self._resolve_file(relative_path)
+        content = self._read_text(requested)
+        workspace = Path(settings.BASE_DIR).resolve()
+        return {
+            "path": requested.relative_to(workspace).as_posix(),
+            "size_bytes": requested.stat().st_size,
+            "line_count": len(content.splitlines()),
+            "content": content,
+        }
+
+    def write_file(self, relative_path: str, content: str, confirm: bool) -> dict:
+        """Write a UTF-8 workspace file using an atomic replacement."""
+        if not confirm:
+            raise ValidationError("confirm must be true before writing a file", field="confirm")
+        if not isinstance(content, str):
+            raise ValidationError("content must be a string", field="content")
+        if len(content.encode("utf-8")) > self.MAX_FILE_SIZE:
+            raise ValidationError("content exceeds the 1 MB write limit", field="content")
+
+        workspace = Path(settings.BASE_DIR).resolve()
+        if not relative_path or not relative_path.strip():
+            raise ValidationError("path is required", field="path")
+        requested = (workspace / relative_path).resolve()
+        if requested != workspace and workspace not in requested.parents:
+            raise ValidationError("path must stay inside the workspace", field="path")
+        if requested.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
+            raise ValidationError("file type is not supported", field="path")
+        if requested.name.startswith(".") or any(part in {".git", ".venv", "node_modules"} for part in requested.parts):
+            raise ValidationError("protected paths cannot be modified", field="path")
+
+        existed = requested.exists()
+        requested.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path: str | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=requested.parent, delete=False
+            ) as temporary:
+                temporary.write(content)
+                temporary.flush()
+                os.fsync(temporary.fileno())
+                temporary_path = temporary.name
+            os.replace(temporary_path, requested)
+        except OSError as exc:
+            if temporary_path:
+                try:
+                    os.unlink(temporary_path)
+                except OSError:
+                    pass
+            raise ChatServiceError("failed to write file") from exc
+
+        return {
+            "path": requested.relative_to(workspace).as_posix(),
+            "size_bytes": requested.stat().st_size,
+            "line_count": len(content.splitlines()),
+            "created": not existed,
+        }
+
+    def delete_file(self, relative_path: str, confirm: bool) -> dict:
+        """Delete one supported workspace file after explicit confirmation."""
+        if not confirm:
+            raise ValidationError("confirm must be true before deleting a file", field="confirm")
+
+        requested = self._resolve_file(relative_path)
+        if requested.name.startswith(".") or any(
+            part in {".git", ".venv", "node_modules"} for part in requested.parts
+        ):
+            raise ValidationError("protected paths cannot be modified", field="path")
+
+        try:
+            requested.unlink()
+        except OSError as exc:
+            raise ChatServiceError("failed to delete file") from exc
+
+        workspace = Path(settings.BASE_DIR).resolve()
+        return {
+            "path": requested.relative_to(workspace).as_posix(),
+            "deleted": True,
+        }
+
+    def _resolve_file(self, relative_path: str) -> Path:
+        if not relative_path or not relative_path.strip():
+            raise ValidationError("path is required", field="path")
+
+        workspace = Path(settings.BASE_DIR).resolve()
+        requested = (workspace / relative_path).resolve()
+        if requested != workspace and workspace not in requested.parents:
+            raise ValidationError("path must stay inside the workspace", field="path")
+        if not requested.is_file():
+            raise ValidationError("file was not found", field="path")
+        if requested.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
+            raise ValidationError("file type is not supported", field="path")
+        if requested.stat().st_size > self.MAX_FILE_SIZE:
+            raise ValidationError("file exceeds the 1 MB analysis limit", field="path")
+        return requested
+
+    @staticmethod
+    def _read_text(requested: Path) -> str:
+        try:
+            return requested.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValidationError("file must be UTF-8 text", field="path") from exc
+        except OSError as exc:
+            raise ChatServiceError("failed to read file") from exc
 
     @staticmethod
     def _language_for(extension: str) -> str:

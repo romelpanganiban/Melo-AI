@@ -179,6 +179,10 @@ Status: In Progress
 - [x] Read-only code analysis API
 - [x] Python and JavaScript/TypeScript structure analysis
 - [x] Workspace path safety validation
+- [x] Read-only workspace file endpoint
+- [x] Confirmation-gated file writes
+- [x] Atomic workspace file replacement
+- [x] Confirmation-gated file deletion
 - [ ] Code Generation
 - [ ] File Operations
 - [ ] Code Review
