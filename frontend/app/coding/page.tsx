@@ -38,6 +38,11 @@ export default function CodingPage() {
   const [gitDiff, setGitDiff] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
   const [gitBusy, setGitBusy] = useState(false);
+  const [selectedGitPaths, setSelectedGitPaths] = useState<string[]>([]);
+
+  function isGeneratedPath(path: string) {
+    return path.endsWith(".db") || /^backend\/data\/.*\.json$/.test(path);
+  }
 
   async function handleInspect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,16 +74,25 @@ export default function CodingPage() {
       const [status, diff] = await Promise.all([getGitStatus(), getGitDiff()]);
       setGitStatus(status);
       setGitDiff(diff.diff);
+      setSelectedGitPaths((current) => {
+        const available = new Set(status.files.map((file) => file.path));
+        const retained = current.filter((path) => available.has(path));
+        return retained.length > 0 || current.length > 0
+          ? retained
+          : status.files
+              .filter((file) => !isGeneratedPath(file.path))
+              .map((file) => file.path);
+      });
     } catch (err) {
       setError(err instanceof APIError ? err.message : "Failed to load Git status");
     }
   }
 
   async function handleStage() {
-    if (!gitStatus || !gitStatus.files.length || !window.confirm("Stage all listed changes?")) return;
+    if (!selectedGitPaths.length || !window.confirm(`Stage ${selectedGitPaths.length} selected file${selectedGitPaths.length === 1 ? "" : "s"}?`)) return;
     setGitBusy(true);
     try {
-      await stageGitFiles(gitStatus.files.map((file) => file.path));
+      await stageGitFiles(selectedGitPaths);
       await refreshGit();
     } catch (err) {
       setError(err instanceof APIError ? err.message : "Failed to stage changes");
@@ -190,10 +204,10 @@ export default function CodingPage() {
           {gitStatus && (
             <>
               <p className="mt-4 text-sm text-emerald-900/80"><span className="font-semibold">Branch:</span> {gitStatus.branch || "Unknown"} · {gitStatus.count} changed file{gitStatus.count === 1 ? "" : "s"}</p>
-              {gitStatus.files.length > 0 && <ul className="mt-3 grid gap-1 text-xs text-emerald-900/75 sm:grid-cols-2">{gitStatus.files.map((file) => <li key={`${file.status}-${file.path}`} className="min-w-0 truncate"><span className="mr-2 font-mono font-semibold">{file.status}</span>{file.path}</li>)}</ul>}
+              {gitStatus.files.length > 0 && <ul className="mt-3 grid gap-2 text-xs text-emerald-900/75 sm:grid-cols-2">{gitStatus.files.map((file) => <li key={`${file.status}-${file.path}`} className="min-w-0"><label className="flex min-w-0 items-center gap-2"><input type="checkbox" checked={selectedGitPaths.includes(file.path)} onChange={(event) => setSelectedGitPaths((current) => event.target.checked ? [...current, file.path] : current.filter((path) => path !== file.path))} className="shrink-0 accent-teal-700" /><span className="min-w-0 truncate"><span className="mr-2 font-mono font-semibold">{file.status}</span>{file.path}</span></label></li>)}</ul>}
               <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-950 p-3 text-xs leading-5 text-emerald-50">{gitDiff || "Working tree is clean."}</pre>
               <div className="mt-4 flex flex-col gap-2 border-t border-emerald-900/10 pt-4 sm:flex-row">
-                <button type="button" onClick={() => void handleStage()} disabled={gitBusy || gitStatus.files.length === 0} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50 disabled:bg-gray-100">{gitBusy ? "Working..." : "Stage Changes"}</button>
+                <button type="button" onClick={() => void handleStage()} disabled={gitBusy || selectedGitPaths.length === 0} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50 disabled:bg-gray-100">{gitBusy ? "Working..." : `Stage Selected (${selectedGitPaths.length})`}</button>
                 <input value={commitMessage} onChange={(event) => setCommitMessage(event.target.value)} placeholder="Commit message" maxLength={200} className="min-w-0 flex-1 rounded-lg border border-emerald-900/20 px-3 py-2 text-xs outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-200" />
                 <button type="button" onClick={() => void handleCommit()} disabled={gitBusy || !commitMessage.trim()} className="rounded-lg bg-emerald-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:bg-gray-400">Commit</button>
               </div>
