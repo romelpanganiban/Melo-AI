@@ -1,9 +1,8 @@
 """Database models for Melo-AI"""
 
 from sqlalchemy import Column, String, DateTime, Text, Integer, Float, ForeignKey, Index
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.orm import declarative_base, relationship
+from datetime import datetime, timezone
 import uuid
 
 Base = declarative_base()
@@ -15,8 +14,8 @@ class Session(Base):
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String(255), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     messages = relationship("Message", back_populates="session", cascade="all, delete-orphan")
@@ -33,7 +32,7 @@ class Message(Base):
     session_id = Column(String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, index=True)
     role = Column(String(20), nullable=False)  # "user" or "assistant"
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     tokens_used = Column(Integer, nullable=True)  # For tracking API usage
     
     # Relationships
@@ -60,7 +59,7 @@ class Settings(Base):
     top_p = Column(Float, default=0.9, nullable=False)
     top_k = Column(Integer, default=40, nullable=False)
     system_prompt = Column(Text, nullable=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self) -> str:
         return f"<Settings(model={self.model_name}, provider={self.provider})>"
@@ -76,8 +75,8 @@ class Document(Base):
     file_type = Column(String(20), nullable=False)  # "pdf", "docx", "txt"
     content = Column(Text, nullable=False)
     chunk_count = Column(Integer, default=0, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
@@ -96,7 +95,7 @@ class DocumentChunk(Base):
     content = Column(Text, nullable=False)
     embedding = Column(Text, nullable=True)  # JSON array stored as text
     tokens = Column(Integer, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     document = relationship("Document", back_populates="chunks")

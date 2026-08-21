@@ -94,31 +94,6 @@ def get_db_session() -> Session:
     return SessionLocal()
 
 
-def DatabaseSession():
-    """Context manager for database sessions
-    
-    Usage:
-        with DatabaseSession() as db:
-            # Use db, auto commits on success
-            pass
-    """
-    from contextlib import contextmanager
-    
-    @contextmanager
-    def _session_context():
-        db = SessionLocal()
-        try:
-            yield db
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
-    
-    return _session_context()
-
-
 class DatabaseSession:
     """Context manager for database sessions
     

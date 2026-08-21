@@ -3,7 +3,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from database.models import Session as SessionModel, Message, Settings, Document, DocumentChunk
@@ -59,7 +59,7 @@ class SessionRepository:
                 raise SessionNotFoundError(session_id)
             
             session.title = title
-            session.updated_at = datetime.utcnow()
+            session.updated_at = datetime.now(timezone.utc)
             self.db.commit()
             self.db.refresh(session)
             logger.info(f"Session updated: {session_id}")
@@ -197,7 +197,7 @@ class SettingsRepository:
                 if hasattr(settings, key):
                     setattr(settings, key, value)
             
-            settings.updated_at = datetime.utcnow()
+            settings.updated_at = datetime.now(timezone.utc)
             self.db.commit()
             self.db.refresh(settings)
             logger.info("Settings updated")
