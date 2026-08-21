@@ -100,10 +100,9 @@ class QdrantVectorClient:
                     size=self.vector_size,
                     distance=models.Distance.COSINE
                 ),
-                # Enable payload indexing for filtering
+                # Keep collection options compatible with current Qdrant clients.
                 optimizers_config=models.OptimizersConfigDiff(
-                    default_segment_number=5,
-                    snapshot_on_idle=False
+                    default_segment_number=5
                 )
             )
             

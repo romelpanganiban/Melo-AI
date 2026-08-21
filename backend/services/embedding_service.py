@@ -50,9 +50,13 @@ class EmbeddingService:
                 device=self.device
             )
             
-            # Get embedding dimension
-            dummy_embedding = self.model.encode("test")
-            self.embedding_dim = len(dummy_embedding)
+            # Read dimension metadata without performing an inference request.
+            embedding_dim = self.model.get_sentence_embedding_dimension()
+            self.embedding_dim = (
+                embedding_dim
+                if isinstance(embedding_dim, int) and embedding_dim > 0
+                else settings.QDRANT_VECTOR_SIZE
+            )
             
             logger.info(
                 f"Embedding model loaded successfully",

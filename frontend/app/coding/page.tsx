@@ -9,6 +9,8 @@ import {
   CodeFile,
   deleteWorkspaceFile,
   generateWorkspaceCode,
+  getGitDiff,
+  getGitStatus,
   readWorkspaceFile,
   reviewWorkspaceFile,
   writeWorkspaceFile,
@@ -30,6 +32,8 @@ export default function CodingPage() {
   const [saving, setSaving] = useState(false);
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gitStatus, setGitStatus] = useState<{ branch: string; files: { status: string; path: string }[]; count: number } | null>(null);
+  const [gitDiff, setGitDiff] = useState("");
 
   async function handleInspect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,6 +56,17 @@ export default function CodingPage() {
       setError(err instanceof APIError ? err.message : "Failed to inspect file");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function refreshGit() {
+    setError(null);
+    try {
+      const [status, diff] = await Promise.all([getGitStatus(), getGitDiff()]);
+      setGitStatus(status);
+      setGitDiff(diff.diff);
+    } catch (err) {
+      setError(err instanceof APIError ? err.message : "Failed to load Git status");
     }
   }
 
@@ -132,6 +147,23 @@ export default function CodingPage() {
           </div>
           <p className="mt-2 text-xs text-emerald-900/60">Supported source and text files are limited to 1 MB. Reads and analysis do not modify files.</p>
         </form>
+
+        <section className="rounded-2xl border border-emerald-900/10 bg-white/80 p-4 shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-emerald-950">Git Workspace</h2>
+              <p className="mt-1 text-xs text-emerald-900/60">Read-only branch, file status, and working-tree diff.</p>
+            </div>
+            <button type="button" onClick={() => void refreshGit()} className="rounded-lg bg-emerald-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800">Refresh Git</button>
+          </div>
+          {gitStatus && (
+            <>
+              <p className="mt-4 text-sm text-emerald-900/80"><span className="font-semibold">Branch:</span> {gitStatus.branch || "Unknown"} · {gitStatus.count} changed file{gitStatus.count === 1 ? "" : "s"}</p>
+              {gitStatus.files.length > 0 && <ul className="mt-3 grid gap-1 text-xs text-emerald-900/75 sm:grid-cols-2">{gitStatus.files.map((file) => <li key={`${file.status}-${file.path}`} className="min-w-0 truncate"><span className="mr-2 font-mono font-semibold">{file.status}</span>{file.path}</li>)}</ul>}
+              <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-950 p-3 text-xs leading-5 text-emerald-50">{gitDiff || "Working tree is clean."}</pre>
+            </>
+          )}
+        </section>
 
         {error && <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 

@@ -317,7 +317,7 @@ export default function DocumentsPanel({ sessionId }: Props) {
                       <p className="text-xs font-semibold text-emerald-900 mb-2">
                         📑 Chunks ({chunkMap[doc.id].length})
                       </p>
-                      {chunkMap[doc.id].map((chunk, idx) => (
+                      {chunkMap[doc.id].map((chunk) => (
                         <div key={chunk.id} className="min-w-0 max-w-full break-words border-l-2 border-teal-600 py-1 pl-2 text-xs text-emerald-900/80 [overflow-wrap:anywhere]">
                           <p className="font-semibold text-emerald-900">Chunk {chunk.chunk_index + 1}</p>
                           <p className="line-clamp-2 text-emerald-900/70 mt-0.5">{chunk.content}</p>

@@ -74,7 +74,8 @@ class TestQdrantVectorClient:
         """Test collection creation when it already exists"""
         with patch('services.qdrant_client.QdrantClient') as mock_qdrant:
             mock_instance = MagicMock()
-            existing_collection = Mock(name="melo_documents")
+            existing_collection = Mock()
+            existing_collection.name = "melo_documents"
             mock_instance.get_collections.return_value = Mock(
                 collections=[existing_collection]
             )
@@ -208,7 +209,8 @@ class TestQdrantVectorClient:
         """Test getting collection info"""
         with patch('services.qdrant_client.QdrantClient') as mock_qdrant:
             mock_instance = MagicMock()
-            mock_info = Mock(name="melo_documents", points_count=100)
+            mock_info = Mock(points_count=100)
+            mock_info.name = "melo_documents"
             mock_instance.get_collection.return_value = mock_info
             mock_qdrant.return_value = mock_instance
             

@@ -7,10 +7,12 @@ from core.errors import ChatServiceError, ValidationError
 from core.logging import logger
 from services.code_analysis_service import get_code_analysis_service
 from services.code_assistant_service import CodeAssistantService
+from services.git_service import GitService
 
 router = APIRouter()
 service = get_code_analysis_service()
 assistant_service = CodeAssistantService()
+git_service = GitService()
 
 
 class CodeAnalysisRequest(BaseModel):
@@ -100,3 +102,25 @@ def generate_code(request: CodeAssistantRequest):
     except Exception as exc:
         logger.error("Code generation failed", extra={"path": request.path})
         raise ChatServiceError("Failed to generate code") from exc
+
+
+@router.get("/git/status", status_code=status.HTTP_200_OK)
+def git_status():
+    """Return the current branch and changed workspace files."""
+    try:
+        return git_service.status()
+    except Exception as exc:
+        logger.error("Git status failed")
+        raise ChatServiceError("Failed to read Git status") from exc
+
+
+@router.get("/git/diff", status_code=status.HTTP_200_OK)
+def git_diff(path: str | None = None):
+    """Return the working-tree diff, optionally limited to one workspace path."""
+    try:
+        return git_service.diff(path)
+    except ValidationError:
+        raise
+    except Exception as exc:
+        logger.error("Git diff failed", extra={"path": path})
+        raise ChatServiceError("Failed to read Git diff") from exc

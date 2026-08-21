@@ -82,6 +82,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ## Phase 7 - Local AI
 
+- [x] Local AI integration
 - [x] Install Ollama
 - [x] Install Qwen3-8B
 - [x] Connect Ollama API
@@ -125,6 +126,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 - [x] Atomic workspace file replacement
 - [x] Confirmation-gated file deletion
 - [ ] Git Integration
+- [x] Read-only Git branch, status, and diff inspection
 
 ---
 
@@ -162,8 +164,8 @@ Commercial SaaS Version
 
 ## Version 1.0
 
-- [ ] Local Claude Alternative
-- [ ] Memory
-- [ ] Sessions
+- [x] Local Claude Alternative
+- [x] Memory
+- [x] Sessions
 - [x] RAG
-- [ ] Coding Assistant
+- [x] Coding Assistant

@@ -5,6 +5,7 @@ backend/venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+.pytest-temp/
 
 # Environment
 .env

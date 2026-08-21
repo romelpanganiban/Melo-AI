@@ -186,8 +186,9 @@ Status: In Progress
 - [x] Frontend workspace for file inspection and analysis
 - [x] AI code review and generation proposals
 - [x] Confirmation-gated file save and deletion controls
-- [ ] Code Review
+- [x] Code Review
 - [ ] Git Integration
+- [x] Read-only Git branch, status, and diff inspection
 
 Deliverable:
 Claude-Code-like Features

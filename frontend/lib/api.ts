@@ -92,6 +92,17 @@ export type CodeAssistantResult = {
   result: string;
 };
 
+export type GitStatus = {
+  branch: string;
+  files: { status: string; path: string }[];
+  count: number;
+};
+
+export type GitDiff = {
+  path: string | null;
+  diff: string;
+};
+
 export type SessionSummary = {
   id: string;
   title: string;
@@ -730,4 +741,15 @@ export async function generateWorkspaceCode(path: string, instruction: string): 
     body: JSON.stringify({ path, instruction }),
   });
   return handleResponse<CodeAssistantResult>(response);
+}
+
+export async function getGitStatus(): Promise<GitStatus> {
+  const response = await fetch(`${API_URL}/git/status`);
+  return handleResponse<GitStatus>(response);
+}
+
+export async function getGitDiff(path?: string): Promise<GitDiff> {
+  const query = path ? `?path=${encodeURIComponent(path)}` : '';
+  const response = await fetch(`${API_URL}/git/diff${query}`);
+  return handleResponse<GitDiff>(response);
 }
