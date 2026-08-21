@@ -11,6 +11,8 @@ import {
   generateWorkspaceCode,
   getGitDiff,
   getGitStatus,
+  commitGitChanges,
+  stageGitFiles,
   readWorkspaceFile,
   reviewWorkspaceFile,
   writeWorkspaceFile,
@@ -34,6 +36,8 @@ export default function CodingPage() {
   const [error, setError] = useState<string | null>(null);
   const [gitStatus, setGitStatus] = useState<{ branch: string; files: { status: string; path: string }[]; count: number } | null>(null);
   const [gitDiff, setGitDiff] = useState("");
+  const [commitMessage, setCommitMessage] = useState("");
+  const [gitBusy, setGitBusy] = useState(false);
 
   async function handleInspect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,6 +71,33 @@ export default function CodingPage() {
       setGitDiff(diff.diff);
     } catch (err) {
       setError(err instanceof APIError ? err.message : "Failed to load Git status");
+    }
+  }
+
+  async function handleStage() {
+    if (!gitStatus || !gitStatus.files.length || !window.confirm("Stage all listed changes?")) return;
+    setGitBusy(true);
+    try {
+      await stageGitFiles(gitStatus.files.map((file) => file.path));
+      await refreshGit();
+    } catch (err) {
+      setError(err instanceof APIError ? err.message : "Failed to stage changes");
+    } finally {
+      setGitBusy(false);
+    }
+  }
+
+  async function handleCommit() {
+    if (!commitMessage.trim() || !window.confirm(`Create commit: ${commitMessage.trim()}?`)) return;
+    setGitBusy(true);
+    try {
+      await commitGitChanges(commitMessage.trim());
+      setCommitMessage("");
+      await refreshGit();
+    } catch (err) {
+      setError(err instanceof APIError ? err.message : "Failed to create commit");
+    } finally {
+      setGitBusy(false);
     }
   }
 
@@ -152,7 +183,7 @@ export default function CodingPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold text-emerald-950">Git Workspace</h2>
-              <p className="mt-1 text-xs text-emerald-900/60">Read-only branch, file status, and working-tree diff.</p>
+              <p className="mt-1 text-xs text-emerald-900/60">Review branch, file status, and working-tree changes.</p>
             </div>
             <button type="button" onClick={() => void refreshGit()} className="rounded-lg bg-emerald-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800">Refresh Git</button>
           </div>
@@ -161,6 +192,11 @@ export default function CodingPage() {
               <p className="mt-4 text-sm text-emerald-900/80"><span className="font-semibold">Branch:</span> {gitStatus.branch || "Unknown"} · {gitStatus.count} changed file{gitStatus.count === 1 ? "" : "s"}</p>
               {gitStatus.files.length > 0 && <ul className="mt-3 grid gap-1 text-xs text-emerald-900/75 sm:grid-cols-2">{gitStatus.files.map((file) => <li key={`${file.status}-${file.path}`} className="min-w-0 truncate"><span className="mr-2 font-mono font-semibold">{file.status}</span>{file.path}</li>)}</ul>}
               <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-950 p-3 text-xs leading-5 text-emerald-50">{gitDiff || "Working tree is clean."}</pre>
+              <div className="mt-4 flex flex-col gap-2 border-t border-emerald-900/10 pt-4 sm:flex-row">
+                <button type="button" onClick={() => void handleStage()} disabled={gitBusy || gitStatus.files.length === 0} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50 disabled:bg-gray-100">{gitBusy ? "Working..." : "Stage Changes"}</button>
+                <input value={commitMessage} onChange={(event) => setCommitMessage(event.target.value)} placeholder="Commit message" maxLength={200} className="min-w-0 flex-1 rounded-lg border border-emerald-900/20 px-3 py-2 text-xs outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-200" />
+                <button type="button" onClick={() => void handleCommit()} disabled={gitBusy || !commitMessage.trim()} className="rounded-lg bg-emerald-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:bg-gray-400">Commit</button>
+              </div>
             </>
           )}
         </section>

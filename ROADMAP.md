@@ -125,8 +125,8 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 - [x] Confirmation-gated file writes
 - [x] Atomic workspace file replacement
 - [x] Confirmation-gated file deletion
-- [ ] Git Integration
-- [x] Read-only Git branch, status, and diff inspection
+- [x] Git Integration
+- [x] Git branch, status, diff, staging, and confirmation-gated commits
 
 ---
 

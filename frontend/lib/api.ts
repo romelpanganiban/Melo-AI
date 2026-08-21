@@ -753,3 +753,21 @@ export async function getGitDiff(path?: string): Promise<GitDiff> {
   const response = await fetch(`${API_URL}/git/diff${query}`);
   return handleResponse<GitDiff>(response);
 }
+
+export async function stageGitFiles(paths: string[]): Promise<{ staged: string[]; count: number }> {
+  const response = await fetch(`${API_URL}/git/stage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paths, confirm: true }),
+  });
+  return handleResponse(response);
+}
+
+export async function commitGitChanges(message: string): Promise<{ message: string; output: string }> {
+  const response = await fetch(`${API_URL}/git/commit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, confirm: true }),
+  });
+  return handleResponse(response);
+}

@@ -187,8 +187,8 @@ Status: In Progress
 - [x] AI code review and generation proposals
 - [x] Confirmation-gated file save and deletion controls
 - [x] Code Review
-- [ ] Git Integration
-- [x] Read-only Git branch, status, and diff inspection
+- [x] Git Integration
+- [x] Git branch, status, diff, staging, and confirmation-gated commits
 
 Deliverable:
 Claude-Code-like Features

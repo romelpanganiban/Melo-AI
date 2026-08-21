@@ -32,6 +32,16 @@ class CodeAssistantRequest(CodeAnalysisRequest):
     instruction: str | None = Field(default=None, max_length=4000)
 
 
+class GitStageRequest(BaseModel):
+    paths: list[str] = Field(..., min_length=1, max_length=100)
+    confirm: bool = False
+
+
+class GitCommitRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=200)
+    confirm: bool = False
+
+
 @router.delete("/files", status_code=status.HTTP_200_OK)
 def delete_workspace_file(request: FileDeleteRequest):
     """Delete a workspace file only when the caller explicitly confirms."""
@@ -124,3 +134,27 @@ def git_diff(path: str | None = None):
     except Exception as exc:
         logger.error("Git diff failed", extra={"path": path})
         raise ChatServiceError("Failed to read Git diff") from exc
+
+
+@router.post("/git/stage", status_code=status.HTTP_200_OK)
+def git_stage(request: GitStageRequest):
+    """Stage selected workspace paths after explicit confirmation."""
+    try:
+        return git_service.stage(request.paths, request.confirm)
+    except ValidationError:
+        raise
+    except Exception as exc:
+        logger.error("Git stage failed")
+        raise ChatServiceError("Failed to stage Git files") from exc
+
+
+@router.post("/git/commit", status_code=status.HTTP_200_OK)
+def git_commit(request: GitCommitRequest):
+    """Create a commit after explicit confirmation."""
+    try:
+        return git_service.commit(request.message, request.confirm)
+    except ValidationError:
+        raise
+    except Exception as exc:
+        logger.error("Git commit failed")
+        raise ChatServiceError("Failed to create Git commit") from exc

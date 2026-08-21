@@ -39,6 +39,25 @@ class GitService:
             command.extend(["--", self._validate_path(path)])
         return {"path": path, "diff": self._run(*command)}
 
+    def stage(self, paths: list[str], confirm: bool) -> dict:
+        if not confirm:
+            raise ValidationError("confirm must be true before staging files", field="confirm")
+        if not paths:
+            raise ValidationError("at least one path is required", field="paths")
+
+        validated_paths = [self._validate_path(path) for path in paths]
+        self._run("add", "--", *validated_paths)
+        return {"staged": validated_paths, "count": len(validated_paths)}
+
+    def commit(self, message: str, confirm: bool) -> dict:
+        if not confirm:
+            raise ValidationError("confirm must be true before committing", field="confirm")
+        if not message or not message.strip():
+            raise ValidationError("commit message is required", field="message")
+
+        output = self._run("commit", "-m", message.strip())
+        return {"message": message.strip(), "output": output}
+
     def _validate_path(self, relative_path: str) -> str:
         if not relative_path.strip():
             raise ValidationError("path cannot be empty", field="path")
