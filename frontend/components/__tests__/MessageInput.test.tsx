@@ -83,4 +83,17 @@ describe('MessageInput', () => {
 
     expect(mockOnSend).toHaveBeenCalledWith('Hello!');
   });
+
+  it('keeps a newline when Shift+Enter is pressed', () => {
+    const mockOnSend = jest.fn();
+    render(
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
+    );
+
+    const input = screen.getByPlaceholderText(/message melo/i);
+    fireEvent.change(input, { target: { value: 'First line' } });
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
+
+    expect(mockOnSend).not.toHaveBeenCalled();
+  });
 });
