@@ -103,6 +103,13 @@ export type GitDiff = {
   diff: string;
 };
 
+export type TrainingDataset = {
+  name: string;
+  path: string;
+  example_count?: number;
+  size_bytes?: number;
+};
+
 export type SessionSummary = {
   id: string;
   title: string;
@@ -770,4 +777,21 @@ export async function commitGitChanges(message: string): Promise<{ message: stri
     body: JSON.stringify({ message, confirm: true }),
   });
   return handleResponse(response);
+}
+
+export async function getTrainingDatasets(): Promise<{ datasets: TrainingDataset[] }> {
+  const response = await fetch(`${API_URL}/training/datasets`);
+  return handleResponse(response);
+}
+
+export async function createTrainingDataset(
+  name: string,
+  examples: { messages: { role: string; content: string }[] }[]
+): Promise<TrainingDataset> {
+  const response = await fetch(`${API_URL}/training/datasets`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, examples }),
+  });
+  return handleResponse<TrainingDataset>(response);
 }

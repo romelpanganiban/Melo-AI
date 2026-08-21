@@ -153,6 +153,12 @@ export default function Sidebar({
           >
             Coding
           </Link>
+          <Link
+            href="/training"
+            className="rounded-lg border border-emerald-900/15 bg-white/70 px-3 py-2 text-center font-medium text-emerald-900 transition hover:bg-white"
+          >
+            Training
+          </Link>
         </div>
 
         {error && (

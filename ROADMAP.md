@@ -132,7 +132,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ## Phase 11 - Fine Tuning
 
-- [ ] Dataset Preparation
+- [x] Dataset Preparation (JSONL conversation datasets and UI)
 - [ ] Unsloth Setup
 - [ ] Qwen3 Fine-Tuning
 

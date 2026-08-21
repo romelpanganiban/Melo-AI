@@ -22,6 +22,7 @@ class Settings:
     SETTINGS_FILE: Path = DATA_DIR / "settings.json"
     CHAT_HISTORY_FILE: Path = DATA_DIR / "chat_history.json"
     SESSIONS_FILE: Path = DATA_DIR / "sessions.json"
+    TRAINING_DATA_DIR: Path = DATA_DIR / "datasets"
     
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

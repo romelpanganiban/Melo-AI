@@ -258,6 +258,12 @@ export default function ChatPage() {
             >
               Coding
             </Link>
+            <Link
+              href="/training"
+              className="rounded-lg px-3 py-1.5 font-medium text-emerald-900 transition hover:bg-emerald-100"
+            >
+              Training
+            </Link>
           </nav>
         </header>
 

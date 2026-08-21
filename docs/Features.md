@@ -19,6 +19,10 @@
 ### Memory
 - Long-term memory
 
+### Training
+- Conversation dataset preparation
+- JSONL export for fine-tuning
+
 ### Documents
 - PDF analysis
 - DOCX analysis
@@ -28,8 +32,8 @@
 ## Planned
 
 ### Training
-- Qwen3
-- Unsloth
+- Unsloth training pipeline
+- Qwen3 fine-tuning
 
 ### Git
 - Branch status and diff integration

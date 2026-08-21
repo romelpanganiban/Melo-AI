@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { ChatSource } from "@/lib/api";
 
 type MessageBubbleProps = {
@@ -37,6 +38,25 @@ function splitMessage(content: string): MessagePart[] {
   }
 
   return parts.length ? parts : [{ type: "text", content }];
+}
+
+function renderText(content: string): ReactNode {
+  const cleaned = content
+    .split("\n")
+    .filter((line) => !/^\s*(?:\*{3,}|-{3,}|_{3,})\s*$/.test(line))
+    .map((line) => line.replace(/^\s*#{1,6}\s+/, ""))
+    .join("\n");
+  const parts = cleaned.split(/(\*\*[^*]+\*\*|__[^_]+__|`[^`]+`)/g);
+
+  return parts.map((part, index) => {
+    if ((part.startsWith("**") && part.endsWith("**")) || (part.startsWith("__") && part.endsWith("__"))) {
+      return <strong key={`bold-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={`inline-code-${index}`} className="rounded bg-emerald-900/10 px-1 py-0.5 font-mono text-[0.9em]">{part.slice(1, -1)}</code>;
+    }
+    return <span key={`text-${index}`}>{part}</span>;
+  });
 }
 
 function CodeBlock({ language, content }: { language: string; content: string }) {
@@ -90,7 +110,7 @@ export default function MessageBubble({
           part.type === "code" ? (
             <CodeBlock key={`code-${index}`} language={part.language} content={part.content} />
           ) : (
-            <span key={`text-${index}`}>{part.content}</span>
+            <span key={`text-${index}`}>{renderText(part.content)}</span>
           )
         )}
         {isStreaming && (

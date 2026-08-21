@@ -55,4 +55,18 @@ describe('MessageBubble', () => {
     );
     expect(screen.getByText(longText)).toBeInTheDocument();
   });
+
+  it('cleans Markdown heading, separator, and bold markers', () => {
+    render(
+      <MessageBubble
+        role="assistant"
+        content={'### Notes\n***\n**Important** details'}
+      />
+    );
+
+    expect(screen.getByText('Notes')).toBeInTheDocument();
+    expect(screen.getByText('Important')).toBeInTheDocument();
+    expect(screen.queryByText('### Notes')).not.toBeInTheDocument();
+    expect(screen.queryByText('***')).not.toBeInTheDocument();
+  });
 });

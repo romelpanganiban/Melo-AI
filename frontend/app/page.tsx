@@ -37,6 +37,12 @@ export default function Home() {
           >
             Open Coding
           </Link>
+          <Link
+            href="/training"
+            className="rounded-xl border border-emerald-900/20 bg-white/70 px-5 py-3 text-center font-semibold text-emerald-900 transition hover:bg-white"
+          >
+            Training Data
+          </Link>
         </div>
       </section>
     </main>
