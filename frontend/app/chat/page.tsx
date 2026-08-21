@@ -252,6 +252,12 @@ export default function ChatPage() {
             >
               Settings
             </Link>
+            <Link
+              href="/coding"
+              className="rounded-lg px-3 py-1.5 font-medium text-emerald-900 transition hover:bg-emerald-100"
+            >
+              Coding
+            </Link>
           </nav>
         </header>
 

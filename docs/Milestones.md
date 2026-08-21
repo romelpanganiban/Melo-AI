@@ -183,8 +183,9 @@ Status: In Progress
 - [x] Confirmation-gated file writes
 - [x] Atomic workspace file replacement
 - [x] Confirmation-gated file deletion
-- [ ] Code Generation
-- [ ] File Operations
+- [x] Frontend workspace for file inspection and analysis
+- [x] AI code review and generation proposals
+- [x] Confirmation-gated file save and deletion controls
 - [ ] Code Review
 - [ ] Git Integration
 

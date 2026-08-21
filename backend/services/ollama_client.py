@@ -27,6 +27,16 @@ class OllamaClient:
         self.model = model
         self.timeout = timeout
         self.client = httpx.Client(timeout=timeout)
+
+    def list_models(self) -> list[dict]:
+        """Return the models installed in the Ollama instance."""
+        response = self.client.get(f"{self.base_url}/api/tags")
+        if response.status_code != 200:
+            raise ChatServiceError(
+                f"Ollama API error: {response.status_code} - {response.text}"
+            )
+
+        return response.json().get("models", [])
     
     def is_available(self) -> bool:
         """Check if Ollama server is available

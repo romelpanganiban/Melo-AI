@@ -6,9 +6,11 @@ from pydantic import BaseModel, Field
 from core.errors import ChatServiceError, ValidationError
 from core.logging import logger
 from services.code_analysis_service import get_code_analysis_service
+from services.code_assistant_service import CodeAssistantService
 
 router = APIRouter()
 service = get_code_analysis_service()
+assistant_service = CodeAssistantService()
 
 
 class CodeAnalysisRequest(BaseModel):
@@ -22,6 +24,10 @@ class FileWriteRequest(CodeAnalysisRequest):
 
 class FileDeleteRequest(CodeAnalysisRequest):
     confirm: bool = False
+
+
+class CodeAssistantRequest(CodeAnalysisRequest):
+    instruction: str | None = Field(default=None, max_length=4000)
 
 
 @router.delete("/files", status_code=status.HTTP_200_OK)
@@ -70,3 +76,27 @@ def analyze_code(request: CodeAnalysisRequest):
     except Exception as exc:
         logger.error("Code analysis failed", extra={"path": request.path})
         raise ChatServiceError("Failed to analyze code file") from exc
+
+
+@router.post("/coding/review", status_code=status.HTTP_200_OK)
+def review_code(request: CodeAssistantRequest):
+    """Review a workspace file with the configured local model."""
+    try:
+        return assistant_service.review_file(request.path, request.instruction)
+    except ValidationError:
+        raise
+    except Exception as exc:
+        logger.error("Code review failed", extra={"path": request.path})
+        raise ChatServiceError("Failed to review code file") from exc
+
+
+@router.post("/coding/generate", status_code=status.HTTP_200_OK)
+def generate_code(request: CodeAssistantRequest):
+    """Generate a proposed replacement for a workspace file."""
+    try:
+        return assistant_service.generate_code(request.path, request.instruction or "")
+    except ValidationError:
+        raise
+    except Exception as exc:
+        logger.error("Code generation failed", extra={"path": request.path})
+        raise ChatServiceError("Failed to generate code") from exc

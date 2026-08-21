@@ -9,6 +9,37 @@ from services.qdrant_client import get_qdrant_client
 router = APIRouter()
 
 
+@router.get("/models", status_code=status.HTTP_200_OK)
+def list_models():
+    """List models installed in the configured Ollama instance."""
+    try:
+        client = OllamaClient(
+            base_url=settings.OLLAMA_BASE_URL,
+            model=settings.OLLAMA_MODEL,
+            timeout=min(settings.OLLAMA_TIMEOUT, 10),
+        )
+        models = client.list_models()
+        return {
+            "models": [
+                {
+                    "name": model.get("name", ""),
+                    "size": model.get("size"),
+                    "modified_at": model.get("modified_at"),
+                }
+                for model in models
+                if model.get("name")
+            ],
+            "count": len(models),
+        }
+    except Exception as exc:
+        logger.error(f"Model listing failed: {str(exc)}")
+        return {
+            "models": [],
+            "count": 0,
+            "error": "Ollama is unavailable",
+        }
+
+
 @router.get("/health", status_code=status.HTTP_200_OK)
 def health():
     """Health check endpoint

@@ -47,12 +47,49 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 export type AppSettings = {
-  model_name: string;
+  model: string;
   provider: string;
   temperature: number;
   top_p?: number;
   top_k?: number;
   system_prompt?: string | null;
+};
+
+export type InstalledModel = {
+  name: string;
+  size?: number | null;
+  modified_at?: string | null;
+};
+
+export type CodeFile = {
+  path: string;
+  size_bytes: number;
+  line_count: number;
+  content: string;
+};
+
+export type CodeFileWriteResult = {
+  path: string;
+  size_bytes: number;
+  line_count: number;
+  created: boolean;
+};
+
+export type CodeAnalysis = {
+  path: string;
+  extension: string;
+  language: string;
+  size_bytes: number;
+  line_count: number;
+  imports: string[];
+  functions: string[];
+  classes: string[];
+  syntax_error?: string;
+};
+
+export type CodeAssistantResult = {
+  path: string;
+  result: string;
 };
 
 export type SessionSummary = {
@@ -64,6 +101,58 @@ export type SessionsResponse = {
   sessions: SessionSummary[];
   count: number;
 };
+
+export async function readWorkspaceFile(path: string): Promise<CodeFile> {
+  try {
+    const response = await fetch(`${API_URL}/files/read`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    return handleResponse<CodeFile>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(500, 'NETWORK_ERROR', 'Failed to read workspace file', {
+      originalError: String(error),
+    });
+  }
+}
+
+export async function analyzeWorkspaceFile(path: string): Promise<CodeAnalysis> {
+  try {
+    const response = await fetch(`${API_URL}/analysis/code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    return handleResponse<CodeAnalysis>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(500, 'NETWORK_ERROR', 'Failed to analyze workspace file', {
+      originalError: String(error),
+    });
+  }
+}
+
+export async function getModels(): Promise<{ models: InstalledModel[]; count: number; error?: string }> {
+  try {
+    const response = await fetch(`${API_URL}/models`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to fetch installed models',
+      { originalError: String(error) }
+    );
+  }
+}
 
 export type DocumentSummary = {
   id: string;
@@ -591,4 +680,54 @@ export async function uploadDocumentFile(
       { originalError: String(error) }
     );
   }
+}
+
+export async function writeWorkspaceFile(path: string, content: string): Promise<CodeFileWriteResult> {
+  try {
+    const response = await fetch(`${API_URL}/files/write`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, content, confirm: true }),
+    });
+    return handleResponse<CodeFileWriteResult>(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(500, 'NETWORK_ERROR', 'Failed to save workspace file', {
+      originalError: String(error),
+    });
+  }
+}
+
+export async function deleteWorkspaceFile(path: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/files`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, confirm: true }),
+    });
+    await handleResponse(response);
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(500, 'NETWORK_ERROR', 'Failed to delete workspace file', {
+      originalError: String(error),
+    });
+  }
+}
+
+export async function reviewWorkspaceFile(path: string, instruction?: string): Promise<CodeAssistantResult> {
+  const response = await fetch(`${API_URL}/coding/review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, instruction }),
+  });
+  return handleResponse<CodeAssistantResult>(response);
+}
+
+export async function generateWorkspaceCode(path: string, instruction: string): Promise<CodeAssistantResult> {
+  const response = await fetch(`${API_URL}/coding/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, instruction }),
+  });
+  return handleResponse<CodeAssistantResult>(response);
 }

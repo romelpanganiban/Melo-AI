@@ -100,7 +100,7 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 transform border-r border-emerald-900/15 bg-gradient-to-b from-emerald-50 to-lime-50 p-4 transition-transform duration-300 md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[calc(100vw-1rem)] min-w-0 flex-none transform overflow-x-hidden border-r border-emerald-900/15 bg-gradient-to-b from-emerald-50 to-lime-50 p-4 transition-transform duration-300 md:static md:w-72 md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -147,6 +147,12 @@ export default function Sidebar({
           >
             Settings
           </Link>
+          <Link
+            href="/coding"
+            className="rounded-lg border border-emerald-900/15 bg-white/70 px-3 py-2 text-center font-medium text-emerald-900 transition hover:bg-white"
+          >
+            Coding
+          </Link>
         </div>
 
         {error && (
@@ -161,7 +167,7 @@ export default function Sidebar({
           </div>
         )}
 
-        <div className="mt-4 space-y-2 overflow-y-auto">
+        <div className="mt-4 min-w-0 space-y-2 overflow-y-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="inline-block h-6 w-6 animate-spin rounded-full border-b-2 border-teal-700" />

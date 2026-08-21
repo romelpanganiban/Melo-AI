@@ -31,6 +31,12 @@ export default function Home() {
           >
             Open Settings
           </Link>
+          <Link
+            href="/coding"
+            className="rounded-xl border border-emerald-900/20 bg-emerald-100/50 px-5 py-3 text-center font-semibold text-emerald-900 transition hover:bg-emerald-100"
+          >
+            Open Coding
+          </Link>
         </div>
       </section>
     </main>

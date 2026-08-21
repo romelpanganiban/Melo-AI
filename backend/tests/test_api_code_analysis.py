@@ -59,3 +59,23 @@ def test_delete_workspace_file_requires_confirmation(client):
     )
 
     assert response.status_code == 422
+
+
+def test_code_review_rejects_missing_file(client):
+    response = client.post(
+        "/coding/review",
+        json={"path": "frontend/does-not-exist.ts"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["details"]["field"] == "path"
+
+
+def test_code_generation_requires_instruction(client):
+    response = client.post(
+        "/coding/generate",
+        json={"path": "frontend/lib/api.ts"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["details"]["field"] == "instruction"

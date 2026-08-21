@@ -19,7 +19,7 @@ export default function SettingsPage() {
       try {
         setError(null);
         const settings = await getSettings();
-        setModel(settings.model_name || "qwen3:8b");
+        setModel(settings.model || "qwen3:8b");
         setProvider(settings.provider || "ollama");
         setTemperature(settings.temperature || 0.7);
       } catch (err) {
