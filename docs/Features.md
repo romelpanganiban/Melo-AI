@@ -14,7 +14,7 @@
 - Code generation
 - AI code review
 - Confirmation-gated file save and deletion
-- Refactoring
+- Git status, diff, staging, and confirmation-gated commits
 
 ### Memory
 - Long-term memory
@@ -22,6 +22,7 @@
 ### Training
 - Conversation dataset preparation
 - JSONL export for fine-tuning
+- Unsloth environment setup
 
 ### Documents
 - PDF analysis
@@ -29,14 +30,16 @@
 - TXT, PDF, and DOCX upload
 - RAG retrieval and source attribution
 
+### UI
+- Light and Dark appearance modes
+
 ## Planned
 
 ### Training
-- Unsloth training pipeline
 - Qwen3 fine-tuning
 
-### Git
-- Branch status and diff integration
+### Productivity
+- Tasks, reminders, and calendar tools
 
 ### Voice
 - Whisper speech-to-text

@@ -18,10 +18,10 @@ Melo-AI is a **local-first AI assistant** built with:
 - **Session Management:** Multi-session chat with persistent history
 
 ### Key Metrics
-- **13 API endpoints** (Health, Chat, Sessions, Settings)
+- **Current API surface** includes health, chat, sessions, settings, documents, models, coding, Git, and training routes
 - **5 database repositories** (Sessions, Messages, Settings, Documents, Chunks)
-- **13 test files** with 120+ unit/integration tests
-- **8 frontend components** (core chat functionality)
+- **25 test files** with 150+ test functions
+- **Frontend pages and reusable components** covering chat, models, settings, coding, and training
 - **Modular architecture** with clear separation of concerns
 
 ---
@@ -69,8 +69,8 @@ backend/
 │   ├── sessions.json
 │   └── settings.json
 └── tests/                     # Test suite
-    ├── 13 test files
-    └── 120+ test cases
+    ├── 25 test files
+    └── 150+ test functions
 ```
 
 ### 1.2 API Endpoints
@@ -110,7 +110,7 @@ backend/
 | POST | `/sessions` | Create new session | ✅ Implemented |
 | GET | `/sessions` | List all sessions | ✅ Implemented |
 | PUT | `/sessions/{session_id}` | Rename session | ✅ Implemented |
-| DELETE | `/sessions/{session_id}` | Delete session | ⚠️ Planned (API exists in tests) |
+| DELETE | `/sessions/{session_id}` | Delete session | ✅ Implemented |
 
 **SessionResponse Structure:**
 ```python
@@ -125,6 +125,17 @@ backend/
 |--------|----------|---------|--------|
 | GET | `/settings` | Get current settings | ✅ Implemented |
 | PUT | `/settings` | Update settings | ✅ Implemented |
+
+#### Additional Current APIs
+
+| Method | Endpoint | Purpose | Status |
+|--------|----------|---------|--------|
+| POST | `/chat/stream` | Stream assistant response as NDJSON | ✅ Implemented |
+| GET | `/models` | List installed Ollama models | ✅ Implemented |
+| GET/POST | `/training/datasets` | List and create JSONL training datasets | ✅ Implemented |
+| POST | `/documents/upload` | Upload and index documents | ✅ Implemented |
+| POST | `/files/read` | Read a workspace file | ✅ Implemented |
+| POST | `/analysis/code` | Analyze workspace code | ✅ Implemented |
 
 **SettingsRequest Structure:**
 ```python
@@ -324,7 +335,7 @@ LOG_FORMAT=text
 
 ### 1.6 Testing Coverage
 
-**Test Files (13 total):** 120+ test cases
+**Test Files (25 total):** 150+ test functions
 
 | Test File | Focus | Coverage |
 |-----------|-------|----------|
@@ -363,8 +374,14 @@ frontend/
 │   ├── globals.css           # Global styles
 │   ├── chat/
 │   │   └── page.tsx          # Chat page layout
-│   └── settings/
-│       └── page.tsx          # Settings page (planned)
+│   ├── settings/
+│   │   └── page.tsx          # Runtime model and appearance settings
+│   ├── models/
+│   │   └── page.tsx          # Installed model view
+│   ├── coding/
+│   │   └── page.tsx          # Workspace and Git tools
+│   └── training/
+│       └── page.tsx          # Dataset preparation UI
 ├── components/
 │   ├── ChatWindow.tsx        # Message display area
 │   ├── MessageBubble.tsx     # Individual message component
@@ -388,7 +405,10 @@ frontend/
 |-----------|-------|---------|--------|
 | **Home** | `/` | Landing page with link to chat | ✅ Basic |
 | **ChatPage** | `/chat` | Main chat interface | ✅ Functional |
-| **SettingsPage** | `/settings` | Settings management | ⚠️ Planned |
+| **SettingsPage** | `/settings` | Model and appearance settings | ✅ Implemented |
+| **ModelsPage** | `/models` | Installed model view | ✅ Implemented |
+| **CodingPage** | `/coding` | Workspace and Git tools | ✅ Implemented |
+| **TrainingPage** | `/training` | Dataset preparation | ✅ Implemented |
 
 #### Chat UI Components
 
@@ -695,32 +715,20 @@ Return: {id: UUID, title: "Chat N"}
 
 ### 5.2 Partially Implemented ⚠️
 
-- ⚠️ Settings page (frontend route exists, no implementation)
 - ⚠️ Dual storage system (JSON + DB for sessions)
-- ⚠️ Delete session endpoint (logic ready, not exposed)
-- ⚠️ Document management API (models ready, endpoints pending)
+- ⚠️ Optional service availability depends on local Ollama and Qdrant processes
 
-### 5.3 Planned/Not Started 📋
+### 5.3 Current and Planned Work
 
-#### Phase 8 - Knowledge Base
-- [ ] PDF upload endpoint
-- [ ] DOCX upload endpoint
-- [ ] Text chunking service
-- [ ] Vector search
-
-#### Phase 9 - RAG
-- [ ] Qdrant integration
-- [ ] Embedding generation
-- [ ] Retrieval pipeline
-
-#### Phase 10 - Coding Assistant
-- [ ] Code analysis
-- [ ] File operations
-- [ ] Git integration
+#### Completed Phases 8-10 - Knowledge Base, RAG, and Coding
+- [x] PDF/DOCX/TXT upload and parsing
+- [x] Text chunking and vector search
+- [x] Qdrant integration and retrieval pipeline
+- [x] Workspace code analysis and Git integration
 
 #### Phase 11 - Fine-Tuning
-- [ ] Dataset preparation
-- [ ] Unsloth setup
+- [x] Dataset preparation
+- [x] Unsloth setup
 - [ ] Model fine-tuning
 
 #### Phase 12-13 - Cloud & SaaS

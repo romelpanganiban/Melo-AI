@@ -9,6 +9,9 @@ Next.js App Router frontend for Melo-AI.
 - Live assistant typing effect during generation
 - Settings page for model/provider/temperature
 - Models page with local model guidance
+- Coding workspace for file inspection, analysis, and Git workflows
+- Training dataset preparation and JSONL export
+- Persistent Light and Dark appearance modes
 
 ## Getting Started
 
@@ -37,6 +40,8 @@ Streaming chat uses:
 - `/chat` Chat UI
 - `/models` Model recommendations and setup tips
 - `/settings` Runtime model settings
+- `/coding` Workspace file inspection, code analysis, and Git tools
+- `/training` Conversation dataset preparation
 
 ## Build and Lint
 
