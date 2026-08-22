@@ -253,6 +253,26 @@ Status: Planned
 - [ ] Local AI Integration
 - [ ] RAG Integration
 - [ ] Ask, Study, Plan, Agent, and Auto modes
+
+---
+
+## Milestone 15 - Cloud Readiness
+
+Status: Planned
+
+- [ ] Authentication and user accounts
+- [ ] Organizations, workspaces, and role-based access
+- [ ] Ownership fields and authorization checks for all resources
+- [ ] Cross-tenant isolation tests, including RAG and IDOR coverage
+- [ ] PostgreSQL as the single configuration and data source
+- [ ] Alembic migrations and deployment-safe schema changes
+- [ ] Rate limits, quotas, and token usage/cost ledger
+- [ ] Safe sandbox for file and Git tools
+- [ ] Hosted model provider abstraction
+- [ ] Production deployment, backups, monitoring, and CI/CD
+
+Deliverable:
+Secure multi-tenant cloud foundation ready for private beta
 - [ ] Voice Support
 - [ ] Installer Package
 

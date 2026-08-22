@@ -187,3 +187,21 @@ Commercial SaaS Version
 - [x] RAG
 - [x] Coding Assistant
 - [ ] Ask, Study, Plan, Agent, and Auto modes
+
+---
+
+## Version 1.1 - Cloud Readiness
+
+- [ ] Authentication and user accounts
+- [ ] Organizations and workspace ownership
+- [ ] Tenant-isolated sessions, documents, settings, and vector search
+- [ ] PostgreSQL as the single source of truth
+- [ ] Alembic database migrations
+- [ ] Rate limits, quotas, and token usage ledger
+- [ ] Secure production configuration and secret management
+- [ ] Sandbox or disable server file and Git tools
+- [ ] Provider abstraction for hosted Qwen and other model APIs
+- [ ] Production deployment, backups, monitoring, and CI/CD
+
+Deliverable:
+Secure multi-tenant cloud foundation for Melo-AI
