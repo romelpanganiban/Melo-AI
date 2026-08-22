@@ -2,6 +2,7 @@
 
 from services.code_analysis_service import get_code_analysis_service
 from services.ollama_client import OllamaClient
+from services.settings_manager import SettingsManager
 from core.errors import ValidationError
 from core.settings import settings
 
@@ -11,10 +12,17 @@ class CodeAssistantService:
 
     def __init__(self):
         self.files = get_code_analysis_service()
+        saved_settings = SettingsManager().get_settings()
+        selected_model = saved_settings.get("model", settings.OLLAMA_MODEL)
+        if selected_model == "auto":
+            selected_model = settings.OLLAMA_MODEL
         self.ollama = OllamaClient(
             base_url=settings.OLLAMA_BASE_URL,
-            model=settings.OLLAMA_MODEL,
+            model=selected_model,
             timeout=settings.OLLAMA_TIMEOUT,
+            num_predict=settings.OLLAMA_NUM_PREDICT,
+            keep_alive=settings.OLLAMA_KEEP_ALIVE,
+            num_ctx=saved_settings.get("context_size", settings.OLLAMA_CONTEXT_SIZE),
         )
 
     def review_file(self, path: str, instruction: str | None = None) -> dict:
