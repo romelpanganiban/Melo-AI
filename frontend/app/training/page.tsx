@@ -33,6 +33,10 @@ export default function TrainingPage() {
     setMessages((current) => [...current, { role, content: "" }]);
   }
 
+  function removeMessage(index: number) {
+    setMessages((current) => current.filter((_, messageIndex) => messageIndex !== index));
+  }
+
   async function saveDataset() {
     setSaving(true);
     setError(null);
@@ -70,18 +74,26 @@ export default function TrainingPage() {
           <input id="dataset-name" value={name} onChange={(event) => setName(event.target.value)} className="mt-2 w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-200" />
           <div className="mt-5 space-y-3">
             {messages.map((message, index) => (
-              <div key={index} className="grid gap-2 sm:grid-cols-[8rem_minmax(0,1fr)]">
+              <div key={index} className="grid gap-2 sm:grid-cols-[8rem_minmax(0,1fr)_auto]">
                 <select value={message.role} onChange={(event) => updateMessage(index, "role", event.target.value)} className="rounded-lg border border-emerald-900/20 p-2 text-sm">
                   <option value="user">User</option>
                   <option value="assistant">Assistant</option>
                 </select>
                 <textarea value={message.content} onChange={(event) => updateMessage(index, "content", event.target.value)} placeholder="Message content" className="min-h-20 rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-200" />
+                <button
+                  type="button"
+                  onClick={() => removeMessage(index)}
+                  className="self-start rounded-lg border border-red-300 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+                  aria-label={`Remove message ${index + 1}`}
+                >
+                  Remove
+                </button>
               </div>
             ))}
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" onClick={() => addMessage("user")} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50">Add User Message</button>
-            <button type="button" onClick={() => addMessage("assistant")} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50">Add Assistant Message</button>
+            <button type="button" onClick={() => addMessage("user")} className="training-add-button rounded-lg border px-3 py-2 text-xs font-semibold transition duration-150">Add User Message</button>
+            <button type="button" onClick={() => addMessage("assistant")} className="training-add-button rounded-lg border px-3 py-2 text-xs font-semibold transition duration-150">Add Assistant Message</button>
             <button type="button" onClick={() => void saveDataset()} disabled={saving || loading} className="rounded-lg bg-teal-700 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-800 disabled:bg-gray-400">{saving ? "Saving..." : "Save JSONL Dataset"}</button>
           </div>
         </section>

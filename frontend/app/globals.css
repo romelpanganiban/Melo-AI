@@ -362,6 +362,44 @@ body::after {
   color: #d6e7e0 !important;
 }
 
+.training-add-button {
+  border-color: rgba(16, 32, 25, 0.2);
+  background: rgba(255, 255, 255, 0.7);
+  color: #245247;
+}
+
+.training-add-button:hover {
+  border-color: #0f766e !important;
+  background: #ccfbf1 !important;
+  color: #0f4f46 !important;
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.18) !important;
+  transform: translateY(-1px) !important;
+}
+
+.training-add-button:focus-visible {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.25) !important;
+  outline: none;
+}
+
+.training-add-button:active {
+  transform: translateY(0) !important;
+}
+
+:root[data-theme="dark"] .training-add-button {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #d6e7e0;
+}
+
+:root[data-theme="dark"] .training-add-button:hover {
+  border-color: #5eead4 !important;
+  background: #115e59 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 14px rgba(20, 184, 166, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
 :root[data-theme="dark"] .models-page .bg-white\/80 {
   background: rgba(18, 24, 22, 0.92) !important;
   color: #edf5f1 !important;
