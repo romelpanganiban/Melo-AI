@@ -195,7 +195,27 @@ Claude-Code-like Features
 
 ---
 
-## Milestone 11 - Fine Tuning
+## Milestone 11 - Private Knowledge & Intelligence Modes
+
+Status: Planned
+
+- [ ] Private knowledge workspace and document collections
+- [ ] Standalone semantic knowledge search
+- [ ] Ask mode with cited private-knowledge answers
+- [ ] Study mode for summaries, flashcards, quizzes, and explanations
+- [ ] Plan mode for goals and ordered action plans
+- [ ] Agent mode with a registered tool system
+- [ ] Approval workflow for side-effecting actions
+- [ ] Auto mode with task-aware model selection
+- [ ] Persistent learning preferences and study progress
+- [ ] End-to-end tests for modes, search, and approvals
+
+Deliverable:
+Local knowledge assistant with transparent, controllable intelligence modes
+
+---
+
+## Milestone 12 - Fine Tuning
 
 Status: Planned
 
@@ -209,7 +229,7 @@ Melo-AI Custom Model
 
 ---
 
-## Milestone 12 - Voice
+## Milestone 13 - Voice
 
 Status: Planned
 
@@ -223,7 +243,7 @@ Voice AI
 
 ---
 
-## Milestone 13 - Melo-AI v1
+## Milestone 14 - Melo-AI v1
 
 Status: Planned
 
@@ -232,6 +252,7 @@ Status: Planned
 - [ ] Stable Frontend
 - [ ] Local AI Integration
 - [ ] RAG Integration
+- [ ] Ask, Study, Plan, Agent, and Auto modes
 - [ ] Voice Support
 - [ ] Installer Package
 

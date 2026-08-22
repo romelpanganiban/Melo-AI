@@ -130,7 +130,24 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ---
 
-## Phase 11 - Fine Tuning
+## Phase 11 - Private Knowledge & Intelligence Modes
+
+- [ ] Private knowledge workspace and document collections
+- [ ] Standalone semantic knowledge search
+- [ ] Ask mode with cited answers from private knowledge
+- [ ] Study mode with summaries, flashcards, quizzes, and explanations
+- [ ] Plan mode with goals, tasks, and ordered action plans
+- [ ] Agent mode with multi-step tool execution
+- [ ] Approval gates for file, Git, and other side-effecting actions
+- [ ] Auto mode with task-aware model selection
+- [ ] Persistent learning preferences and study progress
+
+Deliverable:
+Local knowledge assistant with Ask, Study, Plan, Agent, and Auto modes
+
+---
+
+## Phase 12 - Fine Tuning
 
 - [x] Dataset Preparation (JSONL conversation datasets and UI)
 - [x] Unsloth Setup
@@ -138,7 +155,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ---
 
-## Phase 12 - Cloud Platform
+## Phase 13 - Cloud Platform
 
 - [ ] User Accounts
 - [ ] Authentication
@@ -151,7 +168,7 @@ Hosted Melo-AI Platform
 
 ---
 
-## Phase 13 - Subscriptions
+## Phase 14 - Subscriptions
 
 - [ ] Free Tier
 - [ ] Pro Tier
@@ -169,3 +186,4 @@ Commercial SaaS Version
 - [x] Sessions
 - [x] RAG
 - [x] Coding Assistant
+- [ ] Ask, Study, Plan, Agent, and Auto modes
