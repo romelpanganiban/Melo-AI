@@ -809,3 +809,29 @@ export async function createTrainingDataset(
   });
   return handleResponse<TrainingDataset>(response);
 }
+
+/**
+ * Delete a chat session
+ */
+export async function deleteSession(sessionId: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      await handleResponse(response);
+    }
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(
+      500,
+      'NETWORK_ERROR',
+      'Failed to delete session',
+      { originalError: String(error) }
+    );
+  }
+}

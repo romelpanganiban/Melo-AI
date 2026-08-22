@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   getSessions,
   createSession,
+  deleteSession,
   APIError,
 } from "@/lib/api";
 
@@ -18,6 +19,7 @@ type SidebarProps = {
   setSelectedSession: (sessionId: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  onSessionDeleted: (sessionId: string, remainingSessions: Session[]) => void;
   refreshKey?: number;
 };
 
@@ -26,6 +28,7 @@ export default function Sidebar({
   setSelectedSession,
   isOpen,
   onClose,
+  onSessionDeleted,
   refreshKey = 0,
 }: SidebarProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -75,6 +78,24 @@ export default function Sidebar({
       console.error("Error creating session:", err);
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function handleDeleteChat(event: React.MouseEvent, session: Session) {
+    event.stopPropagation();
+    if (!window.confirm(`Delete "${session.title}"? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await deleteSession(session.id);
+      const remainingSessions = sessions.filter((item) => item.id !== session.id);
+      setSessions(remainingSessions);
+      onSessionDeleted(session.id, remainingSessions);
+    } catch (err) {
+      const message = err instanceof APIError ? err.message : "Failed to delete session";
+      setError(message);
     }
   }
 
@@ -185,19 +206,32 @@ export default function Sidebar({
             </div>
           ) : (
             sessions.map((session) => (
-              <button
+              <div
                 key={session.id}
-                type="button"
-                onClick={() => setSelectedSession(session.id)}
-                className={`w-full truncate rounded-lg px-3 py-2 text-left text-sm transition ${
+                className={`group flex w-full items-center gap-1 rounded-lg transition ${
                   selectedSession === session.id
                     ? "bg-teal-500/20 font-semibold text-teal-200"
                     : "text-slate-300/80 hover:bg-white/10"
                 }`}
-                title={session.title}
               >
-                {session.title}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSession(session.id)}
+                  className="min-w-0 flex-1 truncate px-3 py-2 text-left text-sm"
+                  title={session.title}
+                >
+                  {session.title}
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => void handleDeleteChat(event, session)}
+                  className="mr-1 rounded-md px-2 py-1 text-slate-400/60 opacity-0 transition hover:bg-red-500/20 hover:text-red-300 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
+                  aria-label={`Delete ${session.title}`}
+                  title="Delete chat"
+                >
+                  &#128465;
+                </button>
+              </div>
             ))
           )}
         </div>

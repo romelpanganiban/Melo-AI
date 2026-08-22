@@ -91,6 +91,27 @@ export default function ChatPage() {
     return `local-${Date.now()}`;
   }
 
+  async function handleSessionDeleted(sessionId: string, remainingSessions: { id: string }[]) {
+    if (selectedSession !== sessionId) {
+      return;
+    }
+
+    const nextSession = remainingSessions[0];
+    if (nextSession) {
+      setSelectedSession(nextSession.id);
+      return;
+    }
+
+    try {
+      const createdSession = await createSession();
+      setSelectedSession(createdSession.id);
+      setSessionRefresh((current) => current + 1);
+    } catch {
+      localSessionRef.current = createLocalSessionId();
+      setSelectedSession(localSessionRef.current);
+    }
+  }
+
   useEffect(() => {
     if (sessionBootstrapRef.current || selectedSession) {
       return;
@@ -303,6 +324,9 @@ export default function ChatPage() {
         }
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onSessionDeleted={(sessionId, remainingSessions) => {
+          void handleSessionDeleted(sessionId, remainingSessions);
+        }}
         refreshKey={sessionRefresh}
       />
 
