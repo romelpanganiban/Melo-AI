@@ -200,7 +200,7 @@ Claude-Code-like Features
 Status: Planned
 
 - [x] Dataset Preparation (JSONL conversation datasets and UI)
-- [ ] Unsloth Setup
+- [x] Unsloth Setup
 - [ ] Training Pipeline
 - [ ] Qwen3 Fine-Tuning
 
