@@ -11,6 +11,8 @@ import {
   APIError,
   ChatMessage,
   ChatSource,
+  createSession,
+  getSessions,
   getHistory,
   sendMessageStream,
 } from "@/lib/api";
@@ -44,6 +46,36 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const historyRequestRef = useRef(0);
   const activeStreamRef = useRef<AbortController | null>(null);
+  const sessionBootstrapRef = useRef(false);
+  const localSessionRef = useRef<string | null>(null);
+
+  function createLocalSessionId() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return `local-${Date.now()}`;
+  }
+
+  useEffect(() => {
+    if (sessionBootstrapRef.current || selectedSession) {
+      return;
+    }
+
+    sessionBootstrapRef.current = true;
+    void (async () => {
+      try {
+        const response = await getSessions();
+        const sessions = Array.isArray(response.sessions) ? response.sessions : [];
+        const session = sessions[0] ?? await createSession();
+        setSelectedSession(session.id);
+        setSessionRefresh((current) => current + 1);
+      } catch {
+        localSessionRef.current = createLocalSessionId();
+        setSelectedSession(localSessionRef.current);
+        setError(null);
+      }
+    })();
+  }, [selectedSession]);
 
   const loadHistory = useCallback(async () => {
     const requestId = ++historyRequestRef.current;
@@ -51,6 +83,12 @@ export default function ChatPage() {
     if (!selectedSession) {
       setMessages([]);
       setError(null);
+      return;
+    }
+
+    if (localSessionRef.current === selectedSession) {
+      setMessages([]);
+      setIsHistoryLoading(false);
       return;
     }
 
