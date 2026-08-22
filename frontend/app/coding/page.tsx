@@ -23,6 +23,16 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
+  function cleanReviewFormatting(result: string) {
+    return result
+      .replace(/^\s*#{1,6}\s*/gm, "")
+      .replace(/^\s*(?:\*{3,}|-{3,}|_{3,})\s*$/gm, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/^\s*[-*]\s+/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
 export default function CodingPage() {
   const [path, setPath] = useState("backend/services/code_analysis_service.py");
   const [file, setFile] = useState<CodeFile | null>(null);
@@ -30,6 +40,7 @@ export default function CodingPage() {
   const [analysis, setAnalysis] = useState<CodeAnalysis | null>(null);
   const [instruction, setInstruction] = useState("");
   const [assistantResult, setAssistantResult] = useState<string | null>(null);
+    const [assistantAction, setAssistantAction] = useState<"review" | "generate" | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [assistantLoading, setAssistantLoading] = useState(false);
@@ -133,6 +144,7 @@ export default function CodingPage() {
         ? await reviewWorkspaceFile(file.path, instruction)
         : await generateWorkspaceCode(file.path, instruction);
       setAssistantResult(response.result);
+      setAssistantAction(action);
     } catch (err) {
       setError(
         err instanceof APIError
@@ -247,7 +259,11 @@ export default function CodingPage() {
                   <button type="button" onClick={() => void runAssistant("review")} disabled={assistantLoading} className="rounded-lg border border-teal-700/30 px-2 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50 disabled:bg-gray-100">Review</button>
                   <button type="button" onClick={() => void runAssistant("generate")} disabled={assistantLoading || !instruction.trim()} className="rounded-lg bg-teal-700 px-2 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-gray-400">Generate</button>
                 </div>
-                {assistantResult && <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-950 p-3 text-xs leading-5 text-emerald-50">{assistantResult}</pre>}
+                {assistantResult && (
+                  <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-950 p-3 text-xs leading-5 text-emerald-50">
+                    {assistantAction === "review" ? cleanReviewFormatting(assistantResult) : assistantResult}
+                  </pre>
+                )}
               </section>
               <section className="rounded-2xl border border-emerald-900/10 bg-white/80 p-4 shadow-sm">
                 <h2 className="font-semibold text-emerald-950">File Profile</h2>
