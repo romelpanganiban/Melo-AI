@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSettings, updateSettings, APIError } from "@/lib/api";
+import { useTheme, type Theme } from "@/components/ThemeProvider";
 
 export default function SettingsPage() {
+  const { theme, setTheme } = useTheme();
   const [model, setModel] = useState("");
   const [provider, setProvider] = useState("");
   const [temperature, setTemperature] = useState(0.7);
@@ -58,16 +60,18 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="page-shell min-h-screen px-6 py-10">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-emerald-900/10 bg-white/80 p-8 text-center shadow-sm">
-          Loading settings...
+      <div className="settings-page page-shell flex min-h-screen items-center justify-center px-6 py-10" aria-busy="true">
+        <div className="settings-loading rounded-2xl border p-8 text-center shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
+          <div className="settings-loading-spinner mx-auto h-10 w-10 animate-spin rounded-full border-2" />
+          <p className="settings-loading-title mt-4 text-base font-semibold">Loading your settings</p>
+          <p className="settings-loading-copy mt-1 text-sm">Connecting to the local configuration store...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <main className="page-shell min-h-screen px-6 py-10">
+    <main className="settings-page page-shell min-h-screen px-6 py-10">
       <div className="mx-auto max-w-2xl space-y-6">
         <header className="glass-panel rounded-2xl p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-teal-800/80">Configuration</p>
@@ -75,7 +79,7 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-emerald-900/75">Tune how Melo responds and which provider/model pair to use.</p>
           <Link
             href="/chat"
-            className="mt-4 inline-flex rounded-lg border border-emerald-900/20 bg-white/70 px-3 py-1.5 text-sm font-medium text-emerald-900 transition hover:bg-white"
+            className="back-to-chat mt-4 inline-flex rounded-lg border px-3 py-1.5 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Back to Chat
           </Link>
@@ -95,6 +99,23 @@ export default function SettingsPage() {
 
         <section className="rounded-2xl border border-emerald-900/10 bg-white/80 p-5 shadow-sm">
           <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">
+                Appearance
+              </label>
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value as Theme)}
+                className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200"
+              >
+                <option value="dark">Dark mode</option>
+                <option value="light">Light mode</option>
+              </select>
+              <p className="mt-1 text-xs text-emerald-900/60">
+                Choose how Melo-AI looks across the workspace.
+              </p>
+            </div>
+
             <div>
               <label className="mb-2 block text-sm font-medium text-emerald-900">
                 Model Name

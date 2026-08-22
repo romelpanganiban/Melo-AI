@@ -96,14 +96,14 @@ export default function MessageBubble({
 
   return (
     <div className={`max-w-3xl ${isUser ? "ml-auto" : "mr-auto"}`}>
-      <p className={`mb-1 text-xs font-semibold uppercase tracking-wider ${isUser ? "text-teal-800" : "text-emerald-900/55"}`}>
+      <p className={`mb-1 text-xs font-semibold uppercase tracking-wider ${isUser ? "text-teal-300" : "text-slate-400/65"}`}>
         {isUser ? "You" : "Melo"}
       </p>
       <div
         className={`whitespace-pre-wrap rounded-2xl p-3 text-sm leading-relaxed shadow ${
           isUser
-            ? "bg-teal-700 text-teal-50"
-            : "border border-emerald-900/10 bg-emerald-50/65 text-emerald-950"
+            ? "bg-teal-600 text-white"
+            : "assistant-bubble border border-white/10 bg-[#17211d] text-slate-100"
         }`}
       >
         {splitMessage(content).map((part, index) =>
@@ -114,11 +114,11 @@ export default function MessageBubble({
           )
         )}
         {isStreaming && (
-          <span className="ml-1 inline-block animate-pulse align-middle text-emerald-800">|</span>
+          <span className="ml-1 inline-block animate-pulse align-middle text-teal-300">|</span>
         )}
       </div>
       {!isUser && !isStreaming && sources.length > 0 && (
-        <div className="mt-2 text-xs text-emerald-900/70">
+        <div className="mt-2 text-xs text-slate-400/75">
           <p className="font-semibold">Sources</p>
           <ul className="mt-1 space-y-1">
             {sources.map((source) => (

@@ -20,7 +20,7 @@ export default function TrainingPage() {
 
   useEffect(() => {
     getTrainingDatasets()
-      .then((data) => setDatasets(data.datasets))
+      .then((data) => setDatasets(Array.isArray(data.datasets) ? data.datasets : []))
       .catch((err) => setError(err instanceof APIError ? err.message : "Failed to load datasets"))
       .finally(() => setLoading(false));
   }, []);
@@ -49,7 +49,7 @@ export default function TrainingPage() {
   }
 
   return (
-    <main className="page-shell min-h-screen px-4 py-6 sm:px-6 sm:py-10">
+    <main className="training-page page-shell min-h-screen px-4 py-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-4xl space-y-6">
         <header className="glass-panel rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -58,7 +58,7 @@ export default function TrainingPage() {
               <h1 className="brand-title mt-3 text-3xl font-bold text-emerald-950">Training Dataset</h1>
               <p className="mt-2 text-sm text-emerald-900/75">Prepare validated conversation data before running an Unsloth training job.</p>
             </div>
-            <Link href="/chat" className="rounded-lg border border-emerald-900/20 bg-white/70 px-3 py-1.5 text-sm font-medium text-emerald-900 hover:bg-white">Back to Chat</Link>
+            <Link href="/chat" className="back-to-chat rounded-lg border px-3 py-1.5 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2">Back to Chat</Link>
           </div>
         </header>
 

@@ -46,14 +46,14 @@ export default function MessageInput({
   }
 
   return (
-    <div className="border-t border-gray-300 p-4 bg-white text-gray-900">
+    <div className="chat-composer border-t border-white/10 bg-black/20 p-3 text-slate-100 md:p-4">
       {error && (
-        <div className="mb-3 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-3 rounded-xl border border-red-300/15 bg-red-950/40 p-3 text-red-200">
           <p className="text-sm">{error}</p>
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="composer-box flex items-end gap-2 rounded-2xl border border-white/15 bg-[#131a17]/95 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.3)] focus-within:border-teal-400/60 focus-within:shadow-[0_12px_30px_rgba(15,118,110,0.18)]">
         <textarea
           value={message}
           onChange={(e) => {
@@ -64,7 +64,7 @@ export default function MessageInput({
           disabled={isSending || !sessionId}
           maxLength={4096}
           rows={2}
-          className="max-h-44 min-h-11 flex-1 resize-y rounded border p-2 disabled:bg-gray-100 disabled:text-gray-500"
+          className="max-h-44 min-h-11 flex-1 resize-y border-0 bg-transparent px-2 py-2 text-sm leading-6 text-slate-100 outline-none disabled:text-slate-100/35"
           placeholder={
             sessionId ? "Message Melo..." : "Select a session to start"
           }
@@ -74,12 +74,12 @@ export default function MessageInput({
           type="button"
           onClick={handleSend}
           disabled={isSending || !sessionId || !message.trim()}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          className="min-h-11 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
         >
           {isSending ? (
             <span className="inline-flex items-center gap-1">
               <span className="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-              Sending
+              Working
             </span>
           ) : (
             "Send"
@@ -88,7 +88,7 @@ export default function MessageInput({
       </div>
 
       {message.length > 0 && (
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="mt-2 px-2 text-xs text-slate-300/45">
           {message.length} / 4096
         </p>
       )}

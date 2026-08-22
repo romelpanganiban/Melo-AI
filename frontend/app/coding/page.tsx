@@ -55,9 +55,15 @@ export default function CodingPage() {
         readWorkspaceFile(path.trim()),
         analyzeWorkspaceFile(path.trim()),
       ]);
+      const normalizedAnalysis: CodeAnalysis = {
+        ...analysisData,
+        imports: Array.isArray(analysisData.imports) ? analysisData.imports : [],
+        functions: Array.isArray(analysisData.functions) ? analysisData.functions : [],
+        classes: Array.isArray(analysisData.classes) ? analysisData.classes : [],
+      };
       setFile(fileData);
       setContent(fileData.content);
-      setAnalysis(analysisData);
+      setAnalysis(normalizedAnalysis);
       setAssistantResult(null);
     } catch (err) {
       setFile(null);
@@ -72,14 +78,16 @@ export default function CodingPage() {
     setError(null);
     try {
       const [status, diff] = await Promise.all([getGitStatus(), getGitDiff()]);
-      setGitStatus(status);
+      const files = Array.isArray(status.files) ? status.files : [];
+      const normalizedStatus = { ...status, files };
+      setGitStatus(normalizedStatus);
       setGitDiff(diff.diff);
       setSelectedGitPaths((current) => {
-        const available = new Set(status.files.map((file) => file.path));
+        const available = new Set(files.map((file) => file.path));
         const retained = current.filter((path) => available.has(path));
         return retained.length > 0 || current.length > 0
           ? retained
-          : status.files
+          : files
               .filter((file) => !isGeneratedPath(file.path))
               .map((file) => file.path);
       });
@@ -171,7 +179,7 @@ export default function CodingPage() {
   }
 
   return (
-    <main className="page-shell min-h-screen px-4 py-6 sm:px-6 sm:py-10">
+    <main className="coding-page page-shell min-h-screen px-4 py-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="glass-panel rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -180,7 +188,7 @@ export default function CodingPage() {
               <h1 className="brand-title mt-3 text-3xl font-bold text-emerald-950">Coding Assistant</h1>
               <p className="mt-2 max-w-2xl text-sm text-emerald-900/75">Read and understand source files inside the Melo-AI workspace.</p>
             </div>
-            <Link href="/chat" className="rounded-lg border border-emerald-900/20 bg-white/70 px-3 py-1.5 text-sm font-medium text-emerald-900 transition hover:bg-white">Back to Chat</Link>
+            <Link href="/chat" className="back-to-chat rounded-lg border px-3 py-1.5 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2">Back to Chat</Link>
           </div>
         </header>
 
@@ -207,9 +215,9 @@ export default function CodingPage() {
               {gitStatus.files.length > 0 && <ul className="mt-3 grid gap-2 text-xs text-emerald-900/75 sm:grid-cols-2">{gitStatus.files.map((file) => <li key={`${file.status}-${file.path}`} className="min-w-0"><label className="flex min-w-0 items-center gap-2"><input type="checkbox" checked={selectedGitPaths.includes(file.path)} onChange={(event) => setSelectedGitPaths((current) => event.target.checked ? [...current, file.path] : current.filter((path) => path !== file.path))} className="shrink-0 accent-teal-700" /><span className="min-w-0 truncate"><span className="mr-2 font-mono font-semibold">{file.status}</span>{file.path}</span></label></li>)}</ul>}
               <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-950 p-3 text-xs leading-5 text-emerald-50">{gitDiff || "Working tree is clean."}</pre>
               <div className="mt-4 flex flex-col gap-2 border-t border-emerald-900/10 pt-4 sm:flex-row">
-                <button type="button" onClick={() => void handleStage()} disabled={gitBusy || selectedGitPaths.length === 0} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50 disabled:bg-gray-100">{gitBusy ? "Working..." : `Stage Selected (${selectedGitPaths.length})`}</button>
-                <input value={commitMessage} onChange={(event) => setCommitMessage(event.target.value)} placeholder="Commit message" maxLength={200} className="min-w-0 flex-1 rounded-lg border border-emerald-900/20 px-3 py-2 text-xs outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-200" />
-                <button type="button" onClick={() => void handleCommit()} disabled={gitBusy || !commitMessage.trim()} className="rounded-lg bg-emerald-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:bg-gray-400">Commit</button>
+                <button type="button" onClick={() => void handleStage()} disabled={gitBusy || selectedGitPaths.length === 0} className="stage-button rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed">{gitBusy ? "Working..." : `Stage Selected (${selectedGitPaths.length})`}</button>
+                <input value={commitMessage} onChange={(event) => setCommitMessage(event.target.value)} placeholder="Commit message" maxLength={200} className="commit-message min-w-0 flex-1 rounded-lg border px-3 py-2 text-xs outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-200" />
+                <button type="button" onClick={() => void handleCommit()} disabled={gitBusy || !commitMessage.trim()} className="commit-button rounded-lg px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed">Commit</button>
               </div>
             </>
           )}
@@ -245,18 +253,18 @@ export default function CodingPage() {
                 <h2 className="font-semibold text-emerald-950">File Profile</h2>
                 <dl className="mt-3 space-y-2 text-sm text-emerald-900/75">
                   <div className="flex justify-between gap-3"><dt>Language</dt><dd className="font-medium text-emerald-950">{analysis.language}</dd></div>
-                  <div className="flex justify-between gap-3"><dt>Imports</dt><dd className="font-medium text-emerald-950">{analysis.imports.length}</dd></div>
-                  <div className="flex justify-between gap-3"><dt>Functions</dt><dd className="font-medium text-emerald-950">{analysis.functions.length}</dd></div>
-                  <div className="flex justify-between gap-3"><dt>Classes</dt><dd className="font-medium text-emerald-950">{analysis.classes.length}</dd></div>
+                  <div className="flex justify-between gap-3"><dt>Imports</dt><dd className="font-medium text-emerald-950">{analysis.imports?.length ?? 0}</dd></div>
+                  <div className="flex justify-between gap-3"><dt>Functions</dt><dd className="font-medium text-emerald-950">{analysis.functions?.length ?? 0}</dd></div>
+                  <div className="flex justify-between gap-3"><dt>Classes</dt><dd className="font-medium text-emerald-950">{analysis.classes?.length ?? 0}</dd></div>
                 </dl>
                 {analysis.syntax_error && <p className="mt-3 rounded-lg bg-red-50 p-2 text-xs text-red-700">{analysis.syntax_error}</p>}
               </section>
               <section className="rounded-2xl border border-emerald-900/10 bg-white/80 p-4 shadow-sm">
                 <h2 className="font-semibold text-emerald-950">Symbols</h2>
                 <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-emerald-900/55">Classes</p>
-                <p className="mt-1 break-words text-sm text-emerald-900/75">{analysis.classes.join(", ") || "None detected"}</p>
+                <p className="mt-1 break-words text-sm text-emerald-900/75">{analysis.classes?.join(", ") || "None detected"}</p>
                 <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-emerald-900/55">Functions</p>
-                <p className="mt-1 break-words text-sm text-emerald-900/75">{analysis.functions.join(", ") || "None detected"}</p>
+                <p className="mt-1 break-words text-sm text-emerald-900/75">{analysis.functions?.join(", ") || "None detected"}</p>
               </section>
             </aside>
           </div>

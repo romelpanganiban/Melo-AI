@@ -37,10 +37,16 @@ export default function ChatWindow({
 
   if (!sessionId) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4 bg-white">
-        <div className="text-center">
-          <p className="text-emerald-900/80 text-lg font-medium">
-            Select a session to start chatting
+      <div className="flex flex-1 items-center justify-center p-6">
+        <div className="max-w-md text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-teal-300/15 bg-teal-600 text-2xl text-white shadow-lg shadow-black/30">
+            M
+          </div>
+          <p className="brand-title text-2xl font-semibold text-slate-100">
+            A quieter place to think
+          </p>
+          <p className="empty-chat-copy mt-2 text-sm leading-6 text-slate-300/65">
+            Choose a conversation from the sidebar, or create a new one to begin.
           </p>
         </div>
       </div>
@@ -49,10 +55,10 @@ export default function ChatWindow({
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center p-4">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-teal-700" />
-          <p className="mt-2 font-medium text-emerald-900/75">Loading messages...</p>
+          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-teal-900/10 border-t-teal-700" />
+          <p className="mt-3 text-sm font-medium text-slate-300/70">Opening conversation</p>
         </div>
       </div>
     );
@@ -60,13 +66,13 @@ export default function ChatWindow({
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-red-700">Error</p>
-          <p className="mt-2 text-emerald-950/80">{error}</p>
+      <div className="flex flex-1 items-center justify-center p-6">
+        <div className="max-w-md rounded-2xl border border-red-900/10 bg-red-50/80 p-6 text-center shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-red-700">Unable to load chat</p>
+          <p className="mt-2 text-sm leading-6 text-red-950/75">{error}</p>
           <button
             onClick={onRetry}
-            className="mt-4 rounded-lg bg-teal-700 px-4 py-2 font-medium text-teal-50 transition hover:bg-teal-800"
+            className="mt-5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400"
           >
             Retry
           </button>
@@ -76,12 +82,15 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="mx-3 my-3 flex-1 overflow-y-auto rounded-2xl border border-emerald-900/10 bg-white/75 p-4 text-emerald-950 shadow-sm md:mx-4">
+    <div className="chat-panel chat-scrollbar mx-3 my-3 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-4 text-slate-100 shadow-[0_14px_36px_rgba(0,0,0,0.25)] md:mx-4 md:p-6">
       {messages.length === 0 ? (
         <div className="flex items-center justify-center h-full">
-          <p className="text-lg text-emerald-900/55">
-            No messages yet. Start a conversation!
-          </p>
+          <div className="max-w-sm text-center">
+            <p className="brand-title text-xl font-semibold text-slate-100">What is on your mind?</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300/55">
+              Ask a question, bring in a document, or use the composer below to get started.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">

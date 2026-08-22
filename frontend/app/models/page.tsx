@@ -18,8 +18,9 @@ export default function ModelsPage() {
     async function loadModels() {
       try {
         const [modelData, settings] = await Promise.all([getModels(), getSettings()]);
-        setModels(modelData.models);
-        setSelectedModel(settings.model || modelData.models[0]?.name || "");
+        const availableModels = Array.isArray(modelData.models) ? modelData.models : [];
+        setModels(availableModels);
+        setSelectedModel(settings.model || availableModels[0]?.name || "");
         setProvider(settings.provider || "ollama");
         setTemperature(settings.temperature ?? 0.7);
       } catch (err) {
@@ -48,17 +49,25 @@ export default function ModelsPage() {
   }
 
   if (loading) {
-    return <main className="page-shell min-h-screen px-6 py-10"><div className="mx-auto max-w-2xl rounded-2xl border border-emerald-900/10 bg-white/80 p-8 text-center">Loading models...</div></main>;
+    return (
+      <main className="models-page page-shell flex min-h-screen items-center justify-center px-6 py-10" aria-busy="true">
+        <div className="settings-loading rounded-2xl border p-8 text-center shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
+          <div className="settings-loading-spinner mx-auto h-10 w-10 animate-spin rounded-full border-2" />
+          <p className="settings-loading-title mt-4 text-base font-semibold">Loading installed models</p>
+          <p className="settings-loading-copy mt-1 text-sm">Checking the local Ollama service...</p>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main className="page-shell min-h-screen px-6 py-10">
+    <main className="models-page page-shell min-h-screen px-6 py-10">
       <div className="mx-auto max-w-2xl space-y-6">
         <header className="glass-panel rounded-2xl p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-teal-800/80">Ollama</p>
           <h1 className="brand-title mt-3 text-3xl font-bold text-emerald-950">Installed Models</h1>
           <p className="mt-2 text-sm text-emerald-900/75">Choose a model already installed on this machine.</p>
-          <Link href="/chat" className="mt-4 inline-flex rounded-lg border border-emerald-900/20 bg-white/70 px-3 py-1.5 text-sm font-medium text-emerald-900 transition hover:bg-white">Back to Chat</Link>
+          <Link href="/chat" className="back-to-chat mt-4 inline-flex rounded-lg border px-3 py-1.5 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2">Back to Chat</Link>
         </header>
 
         {error && <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">{error}</div>}

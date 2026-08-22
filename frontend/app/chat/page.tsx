@@ -228,39 +228,39 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className="rounded-lg border border-emerald-900/20 bg-white/70 px-3 py-1.5 text-sm font-medium text-emerald-900 transition hover:bg-white md:hidden"
+              className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-white/10 md:hidden"
               aria-label="Toggle sidebar"
             >
               Menu
             </button>
             <div>
-              <h1 className="brand-title text-lg font-semibold text-emerald-950 md:text-xl">Melo Chat</h1>
-              <p className="text-xs text-emerald-900/65">Private by design, local by default</p>
+              <h1 className="brand-title text-lg font-semibold text-slate-100 md:text-xl">Melo Chat</h1>
+              <p className="text-xs text-slate-400/70">Private by design, local by default</p>
             </div>
           </div>
 
-          <nav className="flex items-center gap-2 text-sm">
+          <nav className="hidden items-center gap-2 text-sm md:flex">
             <Link
               href="/models"
-              className="rounded-lg px-3 py-1.5 font-medium text-emerald-900 transition hover:bg-emerald-100"
+              className="rounded-lg px-3 py-1.5 font-medium text-slate-300 transition hover:bg-white/10"
             >
               Models
             </Link>
             <Link
               href="/settings"
-              className="rounded-lg px-3 py-1.5 font-medium text-emerald-900 transition hover:bg-emerald-100"
+              className="rounded-lg px-3 py-1.5 font-medium text-slate-300 transition hover:bg-white/10"
             >
               Settings
             </Link>
             <Link
               href="/coding"
-              className="rounded-lg px-3 py-1.5 font-medium text-emerald-900 transition hover:bg-emerald-100"
+              className="rounded-lg px-3 py-1.5 font-medium text-slate-300 transition hover:bg-white/10"
             >
               Coding
             </Link>
             <Link
               href="/training"
-              className="rounded-lg px-3 py-1.5 font-medium text-emerald-900 transition hover:bg-emerald-100"
+              className="rounded-lg px-3 py-1.5 font-medium text-slate-300 transition hover:bg-white/10"
             >
               Training
             </Link>

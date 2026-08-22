@@ -169,9 +169,9 @@ export default function DocumentsPanel({ sessionId }: Props) {
   }
 
   return (
-    <aside className="mx-3 mb-3 flex min-w-0 max-w-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white/85 p-4 shadow-sm md:mx-4 md:h-full md:w-[360px] md:min-w-[320px] md:max-w-[380px]">
-      <h2 className="brand-title text-lg font-semibold text-emerald-950">Documents</h2>
-      <p className="mt-1 text-xs text-emerald-900/60">
+    <aside className="documents-panel mx-3 mb-3 flex min-w-0 max-w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111916]/95 p-4 shadow-[0_14px_36px_rgba(0,0,0,0.22)] md:mx-4 md:h-full md:w-[360px] md:min-w-[320px] md:max-w-[380px]">
+      <h2 className="brand-title text-lg font-semibold text-slate-100">Documents</h2>
+      <p className="mt-1 text-xs text-slate-400/70">
         Upload documents to enhance AI responses with your knowledge base.
       </p>
 
@@ -182,14 +182,14 @@ export default function DocumentsPanel({ sessionId }: Props) {
       )}
 
       {!sessionId ? (
-        <div className="mt-4 rounded-lg border border-emerald-900/10 bg-emerald-50/60 p-3 text-sm text-emerald-900/75">
+        <div className="mt-4 rounded-lg border border-teal-300/10 bg-teal-950/35 p-3 text-sm text-teal-100/75">
           ℹ️ Select a chat session first to add documents.
         </div>
       ) : (
         <>
           <div className="mt-4 space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-emerald-900 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
                 📄 Filename
               </label>
               <input
@@ -197,21 +197,21 @@ export default function DocumentsPanel({ sessionId }: Props) {
                 value={filename}
                 onChange={(e) => setFilename(e.target.value)}
                 placeholder="e.g., company_guide.txt"
-                className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-200"
+                className="w-full rounded-lg border border-white/15 bg-white/5 p-2 text-sm text-slate-100 outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/30"
               />
-              <p className="mt-1 text-xs text-emerald-900/50">
+              <p className="mt-1 text-xs text-slate-400/55">
                 Give your document a descriptive name
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-emerald-900 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
                 📋 Document Type
               </label>
               <select
                 value={fileType}
                 onChange={(e) => setFileType(e.target.value as "txt" | "pdf" | "docx")}
-                className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-200"
+                className="w-full rounded-lg border border-white/15 bg-white/5 p-2 text-sm text-slate-100 outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/30"
               >
                 <option value="txt">📝 Plain Text (.txt)</option>
                 <option value="pdf">📕 PDF (.pdf)</option>
@@ -220,27 +220,27 @@ export default function DocumentsPanel({ sessionId }: Props) {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-emerald-900">
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
                 📎 Upload a file
               </label>
               <input
                 type="file"
                 accept=".txt,.pdf,.docx"
                 onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
-                className="w-full min-w-0 text-xs text-emerald-900 file:mr-2 file:rounded-md file:border-0 file:bg-emerald-100 file:px-2 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-800"
+                className="document-file-input w-full min-w-0 text-xs text-slate-300"
               />
               <button
                 type="button"
                 onClick={() => void handleFileUpload()}
                 disabled={uploading || !selectedFile}
-                className="mt-2 w-full rounded-lg bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                className="mt-2 w-full rounded-lg bg-teal-500/15 px-3 py-2 text-xs font-semibold text-teal-200 transition hover:bg-teal-500/25 disabled:cursor-not-allowed disabled:bg-white/5 disabled:text-white/30"
               >
                 {uploading ? "Uploading file..." : "Upload selected file"}
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-emerald-900 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
                 ✍️ Content
               </label>
               <textarea
@@ -248,9 +248,9 @@ export default function DocumentsPanel({ sessionId }: Props) {
                 onChange={(e) => setContent(e.target.value)}
                 rows={5}
                 placeholder="Paste or type your document content here..."
-                className="w-full rounded-lg border border-emerald-900/20 p-2 text-sm outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-200 resize-none"
+                className="w-full resize-none rounded-lg border border-white/15 bg-white/5 p-2 text-sm text-slate-100 outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/30"
               />
-              <p className="mt-1 text-xs text-emerald-900/50">
+              <p className="mt-1 text-xs text-slate-400/55">
                 {content.length} characters
               </p>
             </div>
@@ -259,13 +259,13 @@ export default function DocumentsPanel({ sessionId }: Props) {
               type="button"
               onClick={handleUpload}
               disabled={uploading || !filename.trim() || !content.trim()}
-              className="w-full rounded-lg bg-teal-700 px-3 py-2.5 text-sm font-semibold text-teal-50 transition hover:bg-teal-800 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
             >
               {uploading ? "📤 Uploading..." : "📤 Upload Document"}
             </button>
 
             {documents.length === 0 && !uploading && (
-              <div className="mt-3 text-center text-xs text-emerald-900/50 p-3 rounded bg-emerald-50">
+              <div className="mt-3 rounded bg-white/5 p-3 text-center text-xs text-slate-400/60">
                 No documents yet. Upload one to get started!
               </div>
             )}
