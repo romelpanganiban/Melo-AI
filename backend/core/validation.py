@@ -2,13 +2,14 @@
 
 from typing import Any
 from core.errors import ValidationError
+from core.settings import settings
 
 
 def validate_string(
     value: Any,
     field_name: str,
     min_length: int = 1,
-    max_length: int = 4096,
+    max_length: int = None,
     allow_empty: bool = False
 ) -> str:
     """Validate string input
@@ -44,7 +45,7 @@ def validate_string(
             field=field_name
         )
     
-    if len(value) > max_length:
+    if max_length is not None and len(value) > max_length:
         raise ValidationError(
             f"{field_name} cannot exceed {max_length} characters",
             field=field_name
@@ -85,7 +86,7 @@ def validate_uuid(value: Any, field_name: str = "id") -> str:
     return value
 
 
-def validate_message(message: str, max_length: int = 4096) -> str:
+def validate_message(message: str, max_length: int = None) -> str:
     """Validate chat message
     
     Args:
@@ -102,7 +103,7 @@ def validate_message(message: str, max_length: int = 4096) -> str:
         message,
         field_name="message",
         min_length=1,
-        max_length=max_length,
+        max_length=max_length if max_length is not None else settings.MAX_MESSAGE_LENGTH,
         allow_empty=False
     )
 

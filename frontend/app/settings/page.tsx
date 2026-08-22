@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getSettings, updateSettings, APIError } from "@/lib/api";
+import { getModels, getSettings, updateSettings, APIError, type InstalledModel } from "@/lib/api";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [model, setModel] = useState("");
+  const [models, setModels] = useState<InstalledModel[]>([]);
   const [provider, setProvider] = useState("");
   const [temperature, setTemperature] = useState(0.7);
+  const [contextSize, setContextSize] = useState<4096 | 8192>(8192);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,10 +22,13 @@ export default function SettingsPage() {
     async function loadSettings() {
       try {
         setError(null);
-        const settings = await getSettings();
+        const [settings, modelData] = await Promise.all([getSettings(), getModels()]);
+        const availableModels = Array.isArray(modelData.models) ? modelData.models : [];
+        setModels(availableModels);
         setModel(settings.model || "qwen3:8b");
         setProvider(settings.provider || "ollama");
         setTemperature(settings.temperature || 0.7);
+        setContextSize(settings.context_size || 8192);
       } catch (err) {
         const message = err instanceof APIError ? err.message : "Failed to load settings";
         setError(message);
@@ -46,6 +51,7 @@ export default function SettingsPage() {
         model,
         provider,
         temperature,
+        context_size: contextSize,
       });
 
       setSuccess(true);
@@ -101,6 +107,23 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="mb-2 block text-sm font-medium text-emerald-900">
+                Context Size
+              </label>
+              <select
+                value={contextSize}
+                onChange={(e) => setContextSize(Number(e.target.value) as 4096 | 8192)}
+                className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200"
+              >
+                <option value={4096}>4K</option>
+                <option value={8192}>8K</option>
+              </select>
+              <p className="mt-1 text-xs text-emerald-900/60">
+                Larger context supports more text but uses more memory.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">
                 Appearance
               </label>
               <select
@@ -120,13 +143,21 @@ export default function SettingsPage() {
               <label className="mb-2 block text-sm font-medium text-emerald-900">
                 Model Name
               </label>
-              <input
-                type="text"
+              <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                placeholder="e.g., qwen3:8b"
                 className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200"
-              />
+              >
+                {models.length === 0 ? (
+                  <option value="">No installed models found</option>
+                ) : (
+                  models.map((installedModel) => (
+                    <option key={installedModel.name} value={installedModel.name}>
+                      {installedModel.name}
+                    </option>
+                  ))
+                )}
+              </select>
               <p className="mt-1 text-xs text-emerald-900/60">
                 The AI model to use (must be installed in Ollama)
               </p>

@@ -50,6 +50,7 @@ export type AppSettings = {
   model: string;
   provider: string;
   temperature: number;
+  context_size?: 4096 | 8192;
   top_p?: number;
   top_k?: number;
   system_prompt?: string | null;
@@ -364,6 +365,7 @@ export async function updateSettings(settings: {
   model: string;
   provider: string;
   temperature: number;
+  context_size?: 4096 | 8192;
 }) {
   try {
     if (!settings.model || settings.model.trim().length === 0) {
@@ -398,7 +400,7 @@ export async function updateSettings(settings: {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(settings),
+      body: JSON.stringify({ ...settings, context_size: settings.context_size || 8192 }),
     });
     return handleResponse(response);
   } catch (error) {
@@ -416,6 +418,14 @@ export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   sources?: ChatSource[];
+  model?: string;
+  usage?: ChatUsage;
+};
+
+export type ChatUsage = {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
 };
 
 export type ChatSource = {
@@ -432,6 +442,8 @@ type StreamDoneEvent = {
   type: "done";
   session_id: string;
   response: string;
+  model?: string;
+  usage?: ChatUsage;
   sources?: ChatSource[];
 };
 
@@ -446,6 +458,7 @@ type StreamEvent = StreamChunkEvent | StreamDoneEvent | StreamErrorEvent;
 type SendMessageStreamOptions = {
   onChunk?: (chunk: string) => void;
   onSources?: (sources: ChatSource[]) => void;
+  onMetadata?: (metadata: { model?: string; usage?: ChatUsage }) => void;
   signal?: AbortSignal;
 };
 
@@ -528,6 +541,7 @@ export async function sendMessageStream(
         }
 
         if (event.type === 'done') {
+          options.onMetadata?.({ model: event.model, usage: event.usage });
           options.onSources?.(event.sources || []);
           return event.response || finalResponse;
         }

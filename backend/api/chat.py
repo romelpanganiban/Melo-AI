@@ -7,6 +7,7 @@ from services.chat_service import ChatService
 from core.errors import ValidationError, ChatServiceError, SessionNotFoundError
 from core.validation import validate_message, validate_uuid
 from core.logging import logger
+from core.settings import settings
 from database.connection import get_db
 
 router = APIRouter()
@@ -14,7 +15,7 @@ router = APIRouter()
 
 class ChatRequest(BaseModel):
     session_id: str = Field(..., min_length=1, description="Session ID (UUID)")
-    message: str = Field(..., min_length=1, max_length=4096, description="User message")
+    message: str = Field(..., min_length=1, max_length=settings.MAX_MESSAGE_LENGTH, description="User message")
 
 
 class ChatResponse(BaseModel):
@@ -43,7 +44,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
     try:
         # Validate inputs
         session_id = validate_uuid(request.session_id, field_name="session_id")
-        message = validate_message(request.message)
+        message = validate_message(request.message, max_length=settings.MAX_MESSAGE_LENGTH)
         
         logger.info(
             f"Processing chat message",
@@ -82,7 +83,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
     """
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")
-        message = validate_message(request.message)
+        message = validate_message(request.message, max_length=settings.MAX_MESSAGE_LENGTH)
 
         logger.info(
             "Processing streaming chat message",

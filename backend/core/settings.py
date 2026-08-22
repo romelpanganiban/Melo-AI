@@ -29,7 +29,7 @@ class Settings:
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "text")  # 'text' or 'json'
     
     # Validation
-    MAX_MESSAGE_LENGTH: int = int(os.getenv("MAX_MESSAGE_LENGTH", "4096"))
+    MAX_MESSAGE_LENGTH: int = int(os.getenv("MAX_MESSAGE_LENGTH", "8000"))
     MAX_SESSION_TITLE_LENGTH: int = int(os.getenv("MAX_SESSION_TITLE_LENGTH", "255"))
     
     # Feature flags
@@ -42,7 +42,10 @@ class Settings:
     # Ollama Configuration
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+    OLLAMA_CONTEXT_SIZE: int = int(os.getenv("OLLAMA_CONTEXT_SIZE", "8192"))
     OLLAMA_TIMEOUT: int = int(os.getenv("OLLAMA_TIMEOUT", "300"))
+    OLLAMA_NUM_PREDICT: int = int(os.getenv("OLLAMA_NUM_PREDICT", "512"))
+    OLLAMA_KEEP_ALIVE: str = os.getenv("OLLAMA_KEEP_ALIVE", "10m")
     OLLAMA_TEMPERATURE: float = float(os.getenv("OLLAMA_TEMPERATURE", "0.7"))
     OLLAMA_TOP_P: float = float(os.getenv("OLLAMA_TOP_P", "0.9"))
     OLLAMA_TOP_K: int = int(os.getenv("OLLAMA_TOP_K", "40"))

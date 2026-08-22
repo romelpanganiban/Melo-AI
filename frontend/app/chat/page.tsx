@@ -12,9 +12,13 @@ import {
   ChatMessage,
   ChatSource,
   createSession,
+  getModels,
   getSessions,
   getHistory,
+  getSettings,
   sendMessageStream,
+  updateSettings,
+  type InstalledModel,
 } from "@/lib/api";
 
 type ChatMessageWithState = ChatMessage & {
@@ -44,10 +48,41 @@ export default function ChatPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableModels, setAvailableModels] = useState<InstalledModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState("auto");
+  const [contextSize, setContextSize] = useState<4096 | 8192>(8192);
+  const [temperature, setTemperature] = useState(0.7);
   const historyRequestRef = useRef(0);
   const activeStreamRef = useRef<AbortController | null>(null);
   const sessionBootstrapRef = useRef(false);
   const localSessionRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    void Promise.all([getModels(), getSettings()])
+      .then(([modelData, settings]) => {
+        setAvailableModels(Array.isArray(modelData.models) ? modelData.models : []);
+        setSelectedModel(settings.model || "auto");
+        setContextSize(settings.context_size || 8192);
+        setTemperature(settings.temperature ?? 0.7);
+      })
+      .catch(() => {
+        setAvailableModels([]);
+      });
+  }, []);
+
+  async function handleModelChange(model: string) {
+    setSelectedModel(model);
+    try {
+      await updateSettings({
+        model,
+        provider: "ollama",
+        temperature,
+        context_size: contextSize,
+      });
+    } catch {
+      setError("Failed to change model");
+    }
+  }
 
   function createLocalSessionId() {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -104,6 +139,8 @@ export default function ChatPage() {
         id: createMessageId(`history-${index}`),
         role: message.role,
         content: message.content,
+        model: message.model,
+        usage: message.usage,
       }));
 
       if (requestId === historyRequestRef.current) {
@@ -197,6 +234,15 @@ export default function ChatPage() {
             prev.map((message) =>
               message.id === assistantMessageId
                 ? { ...message, sources }
+                : message
+            )
+          );
+        },
+        onMetadata: ({ model, usage }) => {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantMessageId
+                ? { ...message, model, usage }
                 : message
             )
           );
@@ -325,6 +371,9 @@ export default function ChatPage() {
               }
               onSendMessage={handleSendMessage}
               isSending={isSending}
+              selectedModel={selectedModel}
+              availableModels={availableModels}
+              onModelChange={(model) => void handleModelChange(model)}
             />
           </div>
 

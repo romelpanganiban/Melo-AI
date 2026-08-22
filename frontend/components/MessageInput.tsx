@@ -1,19 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { type InstalledModel } from "@/lib/api";
 
 type Props = {
   sessionId: string | null;
   onSendMessage: (message: string) => void;
   isSending: boolean;
+  selectedModel: string;
+  availableModels: InstalledModel[];
+  onModelChange: (model: string) => void;
 };
+
+const MAX_MESSAGE_LENGTH = 8000;
 
 export default function MessageInput({
   sessionId,
   onSendMessage,
   isSending,
+  selectedModel,
+  availableModels,
+  onModelChange,
 }: Props) {
   const [message, setMessage] = useState("");
+  const maxMessageLength = MAX_MESSAGE_LENGTH;
   const [error, setError] = useState<string | null>(null);
 
   function handleSend() {
@@ -28,8 +38,8 @@ export default function MessageInput({
       return;
     }
 
-    if (trimmedMessage.length > 4096) {
-      setError("Message exceeds maximum length (4096 characters)");
+    if (trimmedMessage.length > maxMessageLength) {
+      setError(`Message exceeds maximum length (${maxMessageLength} characters)`);
       return;
     }
 
@@ -62,13 +72,29 @@ export default function MessageInput({
           }}
           onKeyDown={handleKeyDown}
           disabled={isSending || !sessionId}
-          maxLength={4096}
+          maxLength={maxMessageLength}
           rows={2}
           className="max-h-44 min-h-11 flex-1 resize-y border-0 bg-transparent px-2 py-2 text-sm leading-6 text-slate-100 outline-none disabled:text-slate-100/35"
           placeholder={
             sessionId ? "Message Melo..." : "Select a session to start"
           }
         />
+
+        <select
+          value={selectedModel}
+          onChange={(event) => onModelChange(event.target.value)}
+          disabled={isSending}
+          aria-label="Choose chat model"
+          style={{ colorScheme: "dark" }}
+          className="max-w-40 rounded-xl border border-white/15 bg-[#1a2823] px-2 py-2 text-xs text-slate-100 outline-none transition hover:bg-[#24362f] disabled:opacity-50"
+        >
+          <option value="auto" className="bg-[#1a2823] text-slate-100">Auto</option>
+          {availableModels.map((model) => (
+            <option key={model.name} value={model.name} className="bg-[#1a2823] text-slate-100">
+              {model.name}
+            </option>
+          ))}
+        </select>
 
         <button
           type="button"
@@ -89,7 +115,7 @@ export default function MessageInput({
 
       {message.length > 0 && (
         <p className="mt-2 px-2 text-xs text-slate-300/45">
-          {message.length} / 4096
+          {message.length} / {maxMessageLength}
         </p>
       )}
     </div>

@@ -101,6 +101,8 @@ export default function ChatWindow({
               content={message.content}
               sources={message.sources}
               isStreaming={message.isStreaming}
+              model={message.model}
+              usage={message.usage}
             />
           ))}
           <div ref={endOfMessagesRef} aria-hidden="true" />

@@ -8,6 +8,7 @@ from database import get_db_session, SessionRepository, MessageRepository
 from services.ollama_client import OllamaClient
 from services.embedding_service import get_embedding_service
 from services.qdrant_client import get_qdrant_client
+from services.settings_manager import SettingsManager
 from core.logging import logger
 from core.errors import SessionNotFoundError, ChatServiceError
 from core.settings import settings
@@ -19,17 +20,47 @@ class ChatService:
     _availability_checked = False
 
     def __init__(self):
-        # Initialize Ollama client
+        saved_settings = SettingsManager().get_settings()
+        selected_model = saved_settings.get("model", settings.OLLAMA_MODEL)
+        self.auto_model_names: list[str] = []
+
         self.ollama = OllamaClient(
             base_url=settings.OLLAMA_BASE_URL,
-            model=settings.OLLAMA_MODEL,
-            timeout=settings.OLLAMA_TIMEOUT
+            model=settings.OLLAMA_MODEL if selected_model == "auto" else selected_model,
+            timeout=settings.OLLAMA_TIMEOUT,
+            num_predict=settings.OLLAMA_NUM_PREDICT,
+            keep_alive=settings.OLLAMA_KEEP_ALIVE,
+            num_ctx=saved_settings.get("context_size", settings.OLLAMA_CONTEXT_SIZE),
         )
+
+        if selected_model == "auto":
+            try:
+                self.auto_model_names = [item.get("name", "") for item in self.ollama.list_models()]
+            except Exception:
+                self.auto_model_names = []
         
         # Check Ollama availability on startup (silent, just log)
         if not ChatService._availability_checked:
             self._check_ollama_availability()
             ChatService._availability_checked = True
+
+    def _select_auto_model(self, message: str) -> None:
+        """Choose a coding model for code prompts when one is installed."""
+        if not self.auto_model_names:
+            return
+
+        coding_prompt = any(
+            keyword in message.lower()
+            for keyword in ("code", "python", "javascript", "typescript", "bug", "debug", "function", "sql")
+        )
+        if coding_prompt:
+            coding_models = [name for name in self.auto_model_names if "coder" in name.lower()]
+            if coding_models:
+                self.ollama.model = coding_models[0]
+                return
+
+        general_models = [name for name in self.auto_model_names if "qwen3:8b" == name]
+        self.ollama.model = general_models[0] if general_models else self.auto_model_names[0]
 
     def _search_documents(self, query: str, session_id: str = None, top_k: int = 5) -> dict:
         """Search for relevant documents using vector similarity
@@ -46,7 +77,6 @@ class ChatService:
             return {"sources": [], "context": ""}
 
         try:
-            embedding_service = get_embedding_service()
             qdrant_client = get_qdrant_client()
             
             # Check if Qdrant is available
@@ -55,6 +85,7 @@ class ChatService:
                 return {"sources": [], "context": ""}
             
             # Embed the query
+            embedding_service = get_embedding_service()
             query_embedding = embedding_service.embed_query(query)
             
             # Search Qdrant for similar chunks
@@ -174,10 +205,18 @@ class ChatService:
             doc_search = self._search_documents(message, session_id=session_id, top_k=5)
 
             # Generate response with document context
+            self._select_auto_model(message)
             response = self._generate_response(session_id, history, doc_context=doc_search.get("context", ""))
 
             # Store assistant response
-            msg_repo.create(session_id, "assistant", response)
+            usage = self.ollama.last_usage
+            msg_repo.create(
+                session_id,
+                "assistant",
+                response,
+                tokens_used=usage.get("total_tokens", 0),
+                model_name=self.ollama.model,
+            )
 
             logger.info(
                 "Response generated",
@@ -226,6 +265,7 @@ class ChatService:
             doc_search = self._search_documents(message, session_id=session_id, top_k=5)
 
             chunks: list[str] = []
+            self._select_auto_model(message)
             for chunk in self._generate_response_stream(session_id, history, doc_context=doc_search.get("context", "")):
                 if not chunk:
                     continue
@@ -236,12 +276,21 @@ class ChatService:
             if not response:
                 raise ChatServiceError("Ollama returned empty response")
 
-            msg_repo.create(session_id, "assistant", response)
+            usage = self.ollama.last_usage
+            msg_repo.create(
+                session_id,
+                "assistant",
+                response,
+                tokens_used=usage.get("total_tokens", 0),
+                model_name=self.ollama.model,
+            )
             yield json.dumps(
                 {
                     "type": "done",
                     "session_id": session_id,
                     "response": response,
+                    "model": self.ollama.model,
+                    "usage": self.ollama.last_usage,
                     "sources": doc_search.get("sources", [])
                 }
             ) + "\n"
@@ -338,7 +387,16 @@ class ChatService:
             messages = msg_repo.get_by_session(session_id)
             
             return [
-                {"role": msg.role, "content": msg.content}
+                {
+                    "role": msg.role,
+                    "content": msg.content,
+                    "model": msg.model_name,
+                    "usage": {
+                        "prompt_tokens": 0,
+                        "completion_tokens": msg.tokens_used or 0,
+                        "total_tokens": msg.tokens_used or 0,
+                    } if msg.role == "assistant" and msg.tokens_used is not None else None,
+                }
                 for msg in messages
             ]
         finally:

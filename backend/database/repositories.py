@@ -95,7 +95,7 @@ class MessageRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def create(self, session_id: str, role: str, content: str, tokens_used: Optional[int] = None) -> Message:
+    def create(self, session_id: str, role: str, content: str, tokens_used: Optional[int] = None, model_name: Optional[str] = None) -> Message:
         """Create a new message"""
         try:
             # Verify session exists
@@ -109,7 +109,8 @@ class MessageRepository:
                 session_id=session_id,
                 role=role,
                 content=content,
-                tokens_used=tokens_used
+                tokens_used=tokens_used,
+                model_name=model_name
             )
             self.db.add(message)
             self.db.commit()

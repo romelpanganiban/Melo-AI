@@ -14,7 +14,10 @@ class OllamaClient:
         self,
         base_url: str = "http://localhost:11434",
         model: str = "qwen3:8b",
-        timeout: int = 300
+        timeout: int = 300,
+        num_predict: int = 512,
+        keep_alive: str = "10m",
+        num_ctx: int = 8192
     ):
         """Initialize Ollama client
         
@@ -26,6 +29,10 @@ class OllamaClient:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
+        self.num_predict = num_predict
+        self.keep_alive = keep_alive
+        self.num_ctx = num_ctx
+        self.last_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         self.client = httpx.Client(timeout=timeout)
 
     def list_models(self) -> list[dict]:
@@ -129,6 +136,9 @@ class OllamaClient:
                     "temperature": temperature,
                     "top_p": top_p,
                     "top_k": top_k,
+                    "num_predict": self.num_predict,
+                    "keep_alive": self.keep_alive,
+                    "num_ctx": self.num_ctx,
                 }
             )
             
@@ -138,6 +148,11 @@ class OllamaClient:
                 )
             
             result = response.json()
+            self.last_usage = {
+                "prompt_tokens": result.get("prompt_eval_count", 0),
+                "completion_tokens": result.get("eval_count", 0),
+                "total_tokens": result.get("prompt_eval_count", 0) + result.get("eval_count", 0),
+            }
             generated_text = result.get("response", "").strip()
             
             if not generated_text:
@@ -212,6 +227,9 @@ class OllamaClient:
                     "temperature": temperature,
                     "top_p": top_p,
                     "top_k": top_k,
+                    "num_predict": self.num_predict,
+                    "keep_alive": self.keep_alive,
+                    "num_ctx": self.num_ctx,
                 }
             ) as response:
                 if response.status_code != 200:
@@ -234,6 +252,11 @@ class OllamaClient:
                         yield text
 
                     if payload.get("done") is True:
+                        self.last_usage = {
+                            "prompt_tokens": payload.get("prompt_eval_count", 0),
+                            "completion_tokens": payload.get("eval_count", 0),
+                            "total_tokens": payload.get("prompt_eval_count", 0) + payload.get("eval_count", 0),
+                        }
                         break
 
         except httpx.ConnectError as e:

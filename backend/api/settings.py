@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
+from typing import Literal
 
 from services.settings_service import SettingsService
 from core.errors import SettingsError
@@ -14,12 +15,14 @@ class SettingsRequest(BaseModel):
     model: str = Field(default="qwen3:8b", min_length=1, description="Model name")
     provider: str = Field(default="ollama", min_length=1, description="Model provider (e.g., ollama)")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for generation (0.0-2.0)")
+    context_size: Literal[4096, 8192] = Field(default=8192, description="Ollama context window size")
 
 
 class SettingsResponse(BaseModel):
     model: str
     provider: str
     temperature: float
+    context_size: Literal[4096, 8192]
 
 
 @router.get("/settings", response_model=SettingsResponse, status_code=status.HTTP_200_OK)

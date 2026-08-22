@@ -1,6 +1,6 @@
 """Database connection and session management"""
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator, Optional
 import os
@@ -51,6 +51,11 @@ def init_database() -> None:
             extra={"database_url": db_config.get_connection_string()}
         )
         Base.metadata.create_all(bind=engine)
+        if "messages" in inspect(engine).get_table_names():
+            columns = {column["name"] for column in inspect(engine).get_columns("messages")}
+            if "model_name" not in columns:
+                with engine.begin() as connection:
+                    connection.execute(text("ALTER TABLE messages ADD COLUMN model_name VARCHAR(100)"))
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(

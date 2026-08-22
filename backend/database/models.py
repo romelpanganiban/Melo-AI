@@ -34,6 +34,7 @@ class Message(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     tokens_used = Column(Integer, nullable=True)  # For tracking API usage
+    model_name = Column(String(100), nullable=True)
     
     # Relationships
     session = relationship("Session", back_populates="messages")

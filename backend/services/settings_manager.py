@@ -10,9 +10,10 @@ class SettingsManager:
     """Manages application settings with file persistence and fallback defaults"""
     
     DEFAULT_SETTINGS = {
-        "model": "qwen3-8b",
+        "model": "qwen3:8b",
         "provider": "ollama",
-        "temperature": 0.7
+        "temperature": 0.7,
+        "context_size": 8192
     }
 
     def __init__(self, file_path: Optional[Path] = None):
@@ -59,7 +60,7 @@ class SettingsManager:
             with open(self.file, "r") as f:
                 settings = json.load(f)
                 logger.info("Settings loaded successfully")
-                return settings
+                return {**self.DEFAULT_SETTINGS, **settings}
                 
         except json.JSONDecodeError as e:
             logger.error(

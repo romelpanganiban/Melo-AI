@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { ChatSource } from "@/lib/api";
+import { ChatSource, ChatUsage } from "@/lib/api";
 
 type MessageBubbleProps = {
   role: string;
   content: string;
   sources?: ChatSource[];
   isStreaming?: boolean;
+  model?: string;
+  usage?: ChatUsage;
 };
 
 type MessagePart =
@@ -91,6 +93,8 @@ export default function MessageBubble({
   content,
   sources = [],
   isStreaming = false,
+  model,
+  usage,
 }: MessageBubbleProps) {
   const isUser = role === "user";
 
@@ -128,6 +132,13 @@ export default function MessageBubble({
             ))}
           </ul>
         </div>
+      )}
+      {!isUser && !isStreaming && (model || usage) && (
+        <p className="mt-2 text-[11px] text-slate-400/65">
+          {model ? `Model: ${model}` : ""}
+          {model && usage ? " · " : ""}
+          {usage ? `Credits: ${usage.total_tokens} tokens` : ""}
+        </p>
       )}
     </div>
   );
