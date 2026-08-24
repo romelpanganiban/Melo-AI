@@ -31,6 +31,8 @@ class Settings:
     # Validation
     MAX_MESSAGE_LENGTH: int = int(os.getenv("MAX_MESSAGE_LENGTH", "8000"))
     MAX_SESSION_TITLE_LENGTH: int = int(os.getenv("MAX_SESSION_TITLE_LENGTH", "255"))
+    MAX_DOCUMENT_CONTENT_LENGTH: int = int(os.getenv("MAX_DOCUMENT_CONTENT_LENGTH", "2000000"))
+    MAX_DATASET_BYTES: int = int(os.getenv("MAX_DATASET_BYTES", "25000000"))
     
     # Feature flags
     ENABLE_CORS: bool = os.getenv("ENABLE_CORS", "true").lower() == "true"

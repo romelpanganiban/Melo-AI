@@ -1,9 +1,14 @@
 import json
+import os
+import tempfile
+import threading
 from pathlib import Path
 from typing import Optional
 
 from core.errors import FileOperationError
 from core.logging import logger
+
+_settings_lock = threading.Lock()
 
 
 class SettingsManager:
@@ -94,8 +99,15 @@ class SettingsManager:
         try:
             self.file.parent.mkdir(parents=True, exist_ok=True)
             
-            with open(self.file, "w") as f:
-                json.dump(settings, f, indent=4)
+            with _settings_lock:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", encoding="utf-8", dir=self.file.parent, delete=False
+                ) as temporary:
+                    json.dump(settings, temporary, indent=4)
+                    temporary.flush()
+                    os.fsync(temporary.fileno())
+                    temporary_path = temporary.name
+                os.replace(temporary_path, self.file)
             
             logger.info("Settings updated successfully")
             return settings

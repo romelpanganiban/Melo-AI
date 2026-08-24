@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 from core.errors import ChatServiceError, ValidationError
+from core.settings import settings
 
 
 class DocumentParser:
@@ -32,6 +33,8 @@ class DocumentParser:
 
         if not text.strip():
             raise ValidationError("The uploaded file contains no extractable text")
+        if len(text) > settings.MAX_DOCUMENT_CONTENT_LENGTH:
+            raise ValidationError("Extracted document text exceeds the 2 MB limit", field="content")
 
         return file_type, text
 
@@ -40,7 +43,15 @@ class DocumentParser:
             from pypdf import PdfReader
 
             reader = PdfReader(BytesIO(content))
-            return "\n".join(page.extract_text() or "" for page in reader.pages)
+            parts = []
+            total_length = 0
+            for page in reader.pages:
+                page_text = page.extract_text() or ""
+                total_length += len(page_text)
+                if total_length > settings.MAX_DOCUMENT_CONTENT_LENGTH:
+                    raise ValidationError("Extracted PDF text exceeds the 2 MB limit", field="content")
+                parts.append(page_text)
+            return "\n".join(parts)
         except Exception as exc:
             raise ChatServiceError(f"Failed to extract PDF text: {exc}") from exc
 
@@ -49,10 +60,20 @@ class DocumentParser:
             from docx import Document
 
             document = Document(BytesIO(content))
-            paragraphs = [paragraph.text for paragraph in document.paragraphs]
+            paragraphs = []
+            total_length = 0
+            for paragraph in document.paragraphs:
+                total_length += len(paragraph.text)
+                if total_length > settings.MAX_DOCUMENT_CONTENT_LENGTH:
+                    raise ValidationError("Extracted DOCX text exceeds the 2 MB limit", field="content")
+                paragraphs.append(paragraph.text)
             for table in document.tables:
                 for row in table.rows:
-                    paragraphs.append(" | ".join(cell.text for cell in row.cells))
+                    row_text = " | ".join(cell.text for cell in row.cells)
+                    total_length += len(row_text)
+                    if total_length > settings.MAX_DOCUMENT_CONTENT_LENGTH:
+                        raise ValidationError("Extracted DOCX text exceeds the 2 MB limit", field="content")
+                    paragraphs.append(row_text)
             return "\n".join(paragraphs)
         except Exception as exc:
             raise ChatServiceError(f"Failed to extract DOCX text: {exc}") from exc

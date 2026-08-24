@@ -21,7 +21,7 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 class UploadDocumentRequest(BaseModel):
     filename: str = Field(..., min_length=1, max_length=255, description="Document filename")
     file_type: str = Field(..., description="File type: pdf, docx, or txt")
-    content: str = Field(..., min_length=1, description="Document content")
+    content: str = Field(..., min_length=1, max_length=2_000_000, description="Document content")
     session_id: Optional[str] = Field(None, description="Optional session ID to associate document with")
     collection_id: Optional[str] = Field(None, description="Optional knowledge collection ID")
 

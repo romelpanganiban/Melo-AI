@@ -23,10 +23,12 @@ class DatasetService:
     def create_dataset(self, name: str, examples: list[dict]) -> dict:
         safe_name = self._safe_name(name)
         normalized = [self._normalize_example(example, index) for index, example in enumerate(examples)]
+        serialized = [json.dumps(example, ensure_ascii=False) + "\n" for example in normalized]
+        if sum(len(line.encode("utf-8")) for line in serialized) > settings.MAX_DATASET_BYTES:
+            raise ValidationError("dataset exceeds the maximum size", field="examples")
         path = self.directory / f"{safe_name}.jsonl"
         with path.open("w", encoding="utf-8", newline="\n") as dataset_file:
-            for example in normalized:
-                dataset_file.write(json.dumps(example, ensure_ascii=False) + "\n")
+            dataset_file.writelines(serialized)
         return {
             "name": safe_name,
             "path": self._display_path(path),

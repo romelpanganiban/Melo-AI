@@ -24,6 +24,7 @@ Date: 2026-08-24
 - Confirmed file and Git mutations now consume matching one-time approval tokens.
 - Collection searches combine session and collection filters to preserve private document isolation.
 - Approval tokens are not an authentication boundary until API authentication is implemented.
+- Non-auth hardening now bounds extracted documents and JSON uploads, limits dataset output size, uses atomic settings replacement, protects approval consumption with a lock, and disables credentialed wildcard CORS.
 - Agent approval primitives now issue short-lived, action/target-bound tokens; side-effect execution remains disabled until mutation endpoints consume them.
 - Qdrant retrieval now uses the current `query_points` API, with legacy fallback support; embedding dimension lookup uses the current SentenceTransformers method.
 - Qdrant collection diagnostics now support current `CollectionInfo` objects without assuming a `.name` attribute.
