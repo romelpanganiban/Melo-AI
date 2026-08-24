@@ -90,3 +90,15 @@ def test_agent_rejects_missing_read_only_action_input(client):
     response = client.post("/agent/run", json={"actions": [{"action": "read_file"}]})
 
     assert response.status_code == 422
+
+
+def test_agent_approval_is_bound_to_action_and_target(client):
+    response = client.post(
+        "/agent/approvals",
+        json={"action": "write_file", "target": "notes.md"},
+    )
+
+    assert response.status_code == 201
+    approval = response.json()
+    assert approval["action"] == "write_file"
+    assert approval["target"] == "notes.md"

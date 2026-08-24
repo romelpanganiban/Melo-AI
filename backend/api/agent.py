@@ -9,10 +9,12 @@ from core.errors import ChatServiceError, ValidationError
 from core.validation import validate_uuid
 from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
+from services.approval_service import ApprovalService
 
 router = APIRouter()
 code_service = get_code_analysis_service()
 document_service = DocumentService()
+approval_service = ApprovalService()
 
 
 class AgentAction(BaseModel):
@@ -25,6 +27,17 @@ class AgentAction(BaseModel):
 
 class AgentRunRequest(BaseModel):
     actions: list[AgentAction] = Field(..., min_length=1, max_length=5)
+
+
+class ApprovalRequest(BaseModel):
+    action: Literal["write_file", "delete_file", "git_stage", "git_commit"]
+    target: str = Field(..., min_length=1, max_length=1000)
+
+
+@router.post("/agent/approvals", status_code=status.HTTP_201_CREATED)
+def create_approval(request: ApprovalRequest):
+    """Issue a short-lived approval token for a specific side-effecting action."""
+    return approval_service.create(request.action, request.target)
 
 
 @router.post("/agent/run", status_code=status.HTTP_200_OK)

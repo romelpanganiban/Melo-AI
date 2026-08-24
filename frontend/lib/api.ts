@@ -476,6 +476,25 @@ export type AgentRunResponse = {
   side_effects: false;
 };
 
+export type AgentApproval = {
+  approval_id: string;
+  action: "write_file" | "delete_file" | "git_stage" | "git_commit";
+  target: string;
+  expires_at: string;
+};
+
+export async function requestAgentApproval(
+  action: AgentApproval["action"],
+  target: string,
+): Promise<AgentApproval> {
+  const response = await fetch(`${API_URL}/agent/approvals`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, target }),
+  });
+  return handleResponse<AgentApproval>(response);
+}
+
 export async function runReadOnlyAgent(actions: AgentAction[]): Promise<AgentRunResponse> {
   const response = await fetch(`${API_URL}/agent/run`, {
     method: "POST",

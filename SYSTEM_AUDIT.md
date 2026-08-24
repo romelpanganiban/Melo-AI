@@ -20,6 +20,9 @@ Date: 2026-08-24
 - Phase 11 includes a safe Agent-mode proposal flow with ordered steps, tool intent, and approval points; execution remains disabled pending authorization gates.
 - Phase 11 now includes bounded read-only Agent execution for file reads, code analysis, and document search; side-effecting tools remain unavailable.
 - The frontend API client exposes typed `runReadOnlyAgent` support for the safe Agent actions.
+- The frontend API client exposes typed approval requests for future side-effect execution.
+- Approval tokens are not an authentication boundary until API authentication is implemented.
+- Agent approval primitives now issue short-lived, action/target-bound tokens; side-effect execution remains disabled until mutation endpoints consume them.
 - Qdrant retrieval now uses the current `query_points` API, with legacy fallback support; embedding dimension lookup uses the current SentenceTransformers method.
 - Qdrant collection diagnostics now support current `CollectionInfo` objects without assuming a `.name` attribute.
 - Qdrant retrieval uses configurable `QDRANT_SCORE_THRESHOLD` with a `0.25` default to avoid dropping relevant low-score matches.
