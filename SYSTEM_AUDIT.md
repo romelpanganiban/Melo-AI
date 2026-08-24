@@ -16,6 +16,7 @@ Date: 2026-08-24
 - Phase 11 includes standalone session-scoped semantic document search with result previews and icon-based controls.
 - Phase 11 includes grounded Study mode with explanations, key points, flashcards, quizzes, and study icons.
 - Qdrant retrieval now uses the current `query_points` API, with legacy fallback support; embedding dimension lookup uses the current SentenceTransformers method.
+- Qdrant collection diagnostics now support current `CollectionInfo` objects without assuming a `.name` attribute.
 
 ## Validation
 

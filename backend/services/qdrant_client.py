@@ -286,9 +286,9 @@ class QdrantVectorClient:
         try:
             info = self.client.get_collection(self.collection_name)
             return {
-                "name": info.name,
-                "points_count": info.points_count,
-                "config": info.config
+                "name": getattr(info, "name", self.collection_name),
+                "points_count": getattr(info, "points_count", 0),
+                "config": getattr(info, "config", None),
             }
         except Exception as e:
             logger.error(f"Failed to get collection info: {str(e)}")
