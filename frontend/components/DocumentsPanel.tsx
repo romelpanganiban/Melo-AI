@@ -8,6 +8,8 @@ import {
   deleteDocument,
   getDocumentChunks,
   getSessionDocuments,
+  searchDocuments,
+  type DocumentSearchResult,
   uploadDocument,
   uploadDocumentFile,
 } from "@/lib/api";
@@ -29,7 +31,7 @@ export default function DocumentsPanel({ sessionId }: Props) {
   const [fileType, setFileType] = useState<"txt" | "pdf" | "docx">("txt");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Awaited<ReturnType<typeof import("@/lib/api").searchDocuments>>["results"]>([]);
+  const [searchResults, setSearchResults] = useState<DocumentSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
   const loadDocuments = useCallback(async () => {
@@ -177,7 +179,6 @@ export default function DocumentsPanel({ sessionId }: Props) {
     setSearching(true);
     setError(null);
     try {
-      const { searchDocuments } = await import("@/lib/api");
       const response = await searchDocuments(sessionId, searchQuery);
       setSearchResults(response.results);
     } catch (err) {
