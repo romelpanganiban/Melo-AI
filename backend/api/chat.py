@@ -17,7 +17,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     session_id: str = Field(..., min_length=1, description="Session ID (UUID)")
     message: str = Field(..., min_length=1, max_length=settings.MAX_MESSAGE_LENGTH, description="User message")
-    mode: Literal["chat", "ask", "study"] = Field(default="chat", description="Response mode")
+    mode: Literal["chat", "ask", "study", "plan"] = Field(default="chat", description="Response mode")
 
 
 class ChatResponse(BaseModel):

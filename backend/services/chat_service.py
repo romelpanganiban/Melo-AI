@@ -440,6 +440,16 @@ class ChatService:
             )
             return f"{study_prompt}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
 
+        if mode == "plan":
+            context_block = doc_context.strip() or "No relevant document context was found."
+            plan_prompt = (
+                "You are in Plan mode. Convert the user's goal into a practical ordered plan. "
+                "Use document context as evidence when available and do not invent constraints. "
+                "Structure the response with these headings: Goal, Assumptions, Steps, Checkpoints, and Risks. "
+                "Make each step specific and actionable, and cite supporting filenames in square brackets."
+            )
+            return f"{plan_prompt}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
+
         if doc_context.strip():
             return f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
         return f"{context}User: {current_message}\nAssistant:"

@@ -40,3 +40,19 @@ def test_study_prompt_requests_structured_learning_material():
     assert "Flashcards" in prompt
     assert "Quick quiz" in prompt
     assert "[handbook.pdf]" in prompt
+
+
+def test_plan_prompt_requests_actionable_plan_structure():
+    service = object.__new__(ChatService)
+    prompt = service._build_prompt(
+        [{"role": "user", "content": "Help me launch this project"}],
+        "[launch-guide.md]\nRelease requires a staging review.",
+        "plan",
+    )
+
+    assert "Goal" in prompt
+    assert "Assumptions" in prompt
+    assert "Steps" in prompt
+    assert "Checkpoints" in prompt
+    assert "Risks" in prompt
+    assert "[launch-guide.md]" in prompt

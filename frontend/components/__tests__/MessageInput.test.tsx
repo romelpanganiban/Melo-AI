@@ -128,4 +128,17 @@ describe('MessageInput', () => {
 
     expect(screen.getByRole('option', { name: 'Study' })).toBeInTheDocument();
   });
+
+  it('offers plan mode', () => {
+    render(
+      <MessageInput
+        sessionId="session-1"
+        onSendMessage={jest.fn()}
+        isSending={false}
+        mode="plan"
+      />
+    );
+
+    expect(screen.getByRole('option', { name: 'Plan' })).toBeInTheDocument();
+  });
 });

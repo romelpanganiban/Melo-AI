@@ -437,7 +437,7 @@ export type ChatMessage = {
   usage?: ChatUsage;
 };
 
-export type ChatMode = "chat" | "ask" | "study";
+export type ChatMode = "chat" | "ask" | "study" | "plan";
 
 export type ChatUsage = {
   prompt_tokens: number;
