@@ -10,6 +10,12 @@ __pycache__/
 # Environment
 .env
 .env.*
+!.env.example
+!**/.env.example
+
+# Public documentation
+!*.md
+!**/*.md
 
 # VS Code
 .vscode/
@@ -34,6 +40,10 @@ checkpoints/
 backend/data/chat_history.json
 backend/data/sessions.json
 backend/data/settings.json
+backend/data/datasets/
+data/
+*.db
+*.db-journal
 
 # OS Files
 Thumbs.db
