@@ -8,7 +8,7 @@ Date: 2026-08-24
 - `ENABLE_CORS=false` now disables CORS middleware as configured.
 - `MessageInput` remains compatible when model selector props are omitted.
 - Frontend tests now match the current message bubble and chat empty/loading states.
-- TypeScript now explicitly resolves the `@/*` frontend alias from the project root.
+- TypeScript keeps the `@/*` frontend alias without relying on deprecated `baseUrl`.
 
 ## Validation
 
