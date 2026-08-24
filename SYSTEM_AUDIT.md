@@ -18,6 +18,8 @@ Date: 2026-08-24
 - Phase 11 includes grounded Plan mode with ordered steps, checkpoints, assumptions, and risks.
 - Qdrant retrieval now uses the current `query_points` API, with legacy fallback support; embedding dimension lookup uses the current SentenceTransformers method.
 - Qdrant collection diagnostics now support current `CollectionInfo` objects without assuming a `.name` attribute.
+- Qdrant retrieval uses configurable `QDRANT_SCORE_THRESHOLD` with a `0.25` default to avoid dropping relevant low-score matches.
+- Live verification indexed one document, retrieved it at `32.1%` relevance, and removed the temporary test vector afterward.
 
 ## Validation
 

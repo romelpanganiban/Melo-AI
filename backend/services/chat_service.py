@@ -92,7 +92,7 @@ class ChatService:
             search_results = qdrant_client.search(
                 query_embedding=query_embedding,
                 limit=top_k,
-                score_threshold=0.5,
+                score_threshold=settings.QDRANT_SCORE_THRESHOLD,
                 filters={"session_id": session_id} if session_id else None
             )
             

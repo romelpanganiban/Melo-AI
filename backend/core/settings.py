@@ -69,6 +69,7 @@ class Settings:
     QDRANT_VECTOR_SIZE: int = int(os.getenv("QDRANT_VECTOR_SIZE", "384"))  # sentence-transformers default
     QDRANT_TIMEOUT: int = int(os.getenv("QDRANT_TIMEOUT", "30"))
     QDRANT_ENABLED: bool = os.getenv("QDRANT_ENABLED", "true").lower() == "true"
+    QDRANT_SCORE_THRESHOLD: float = float(os.getenv("QDRANT_SCORE_THRESHOLD", "0.25"))
     
     # Embeddings Configuration
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")

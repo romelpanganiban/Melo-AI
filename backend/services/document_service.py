@@ -289,7 +289,7 @@ class DocumentService:
             matches = qdrant_client.search(
                 query_embedding=embedding,
                 limit=top_k,
-                score_threshold=0.5,
+                score_threshold=settings.QDRANT_SCORE_THRESHOLD,
                 filters={"session_id": session_id},
             )
             results = []
