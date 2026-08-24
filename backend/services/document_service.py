@@ -84,6 +84,9 @@ class DocumentService:
             
             if not content or not content.strip():
                 raise ValidationError("content is required")
+
+            if collection_id and not KnowledgeCollectionRepository(db).get_by_id(collection_id):
+                raise ValidationError("collection was not found", field="collection_id")
             
             repo = DocumentRepository(db)
             chunk_repo = ChunkRepository(db)
@@ -291,7 +294,7 @@ class DocumentService:
             embedding = get_embedding_service().embed_query(query.strip())
             filters = {"session_id": session_id} if session_id else None
             if collection_id:
-                filters = {"collection_id": collection_id}
+                filters = {**(filters or {}), "collection_id": collection_id}
             matches = qdrant_client.search(
                 query_embedding=embedding,
                 limit=top_k,

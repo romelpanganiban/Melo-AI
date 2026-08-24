@@ -802,10 +802,11 @@ export async function uploadDocumentFile(
 
 export async function writeWorkspaceFile(path: string, content: string): Promise<CodeFileWriteResult> {
   try {
+    const approval = await requestAgentApproval("write_file", path);
     const response = await fetch(`${API_URL}/files/write`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, content, confirm: true }),
+      body: JSON.stringify({ path, content, confirm: true, approval_id: approval.approval_id }),
     });
     return handleResponse<CodeFileWriteResult>(response);
   } catch (error) {
@@ -818,10 +819,11 @@ export async function writeWorkspaceFile(path: string, content: string): Promise
 
 export async function deleteWorkspaceFile(path: string): Promise<void> {
   try {
+    const approval = await requestAgentApproval("delete_file", path);
     const response = await fetch(`${API_URL}/files`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, confirm: true }),
+      body: JSON.stringify({ path, confirm: true, approval_id: approval.approval_id }),
     });
     await handleResponse(response);
   } catch (error) {
@@ -862,19 +864,21 @@ export async function getGitDiff(path?: string): Promise<GitDiff> {
 }
 
 export async function stageGitFiles(paths: string[]): Promise<{ staged: string[]; count: number }> {
+  const approval = await requestAgentApproval("git_stage", paths.join("\n"));
   const response = await fetch(`${API_URL}/git/stage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ paths, confirm: true }),
+    body: JSON.stringify({ paths, confirm: true, approval_id: approval.approval_id }),
   });
   return handleResponse(response);
 }
 
 export async function commitGitChanges(message: string): Promise<{ message: string; output: string }> {
+  const approval = await requestAgentApproval("git_commit", message.trim());
   const response = await fetch(`${API_URL}/git/commit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, confirm: true }),
+    body: JSON.stringify({ message, confirm: true, approval_id: approval.approval_id }),
   });
   return handleResponse(response);
 }

@@ -51,6 +51,21 @@ def test_create_collection_and_associate_document(client, test_session_id):
     assert document_response.json()["collection_id"] == collection["id"]
 
 
+def test_upload_rejects_unknown_collection(client, test_session_id):
+    response = client.post(
+        "/documents",
+        json={
+            "filename": "unknown-collection.txt",
+            "file_type": "txt",
+            "content": "This should not be stored.",
+            "session_id": test_session_id,
+            "collection_id": "00000000-0000-0000-0000-000000000000",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_upload_document_file(client, test_session_id):
     response = client.post(
         "/documents/upload",

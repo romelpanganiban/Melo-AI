@@ -27,7 +27,18 @@ class ApprovalService:
         return {"approval_id": approval_id, "action": action, "target": target, "expires_at": expires_at.isoformat()}
 
     def consume(self, approval_id: str, action: str, target: str) -> bool:
-        approval = self._approvals.pop(approval_id, None)
+        approval = self._approvals.get(approval_id)
         if not approval or approval["expires_at"] <= datetime.now(timezone.utc):
+            self._approvals.pop(approval_id, None)
             return False
-        return approval["action"] == action and approval["target"] == target
+        if approval["action"] != action or approval["target"] != target:
+            return False
+        self._approvals.pop(approval_id, None)
+        return True
+
+
+_approval_service = ApprovalService()
+
+
+def get_approval_service() -> ApprovalService:
+    return _approval_service

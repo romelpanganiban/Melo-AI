@@ -21,6 +21,8 @@ Date: 2026-08-24
 - Phase 11 now includes bounded read-only Agent execution for file reads, code analysis, and document search; side-effecting tools remain unavailable.
 - The frontend API client exposes typed `runReadOnlyAgent` support for the safe Agent actions.
 - The frontend API client exposes typed approval requests for future side-effect execution.
+- Confirmed file and Git mutations now consume matching one-time approval tokens.
+- Collection searches combine session and collection filters to preserve private document isolation.
 - Approval tokens are not an authentication boundary until API authentication is implemented.
 - Agent approval primitives now issue short-lived, action/target-bound tokens; side-effect execution remains disabled until mutation endpoints consume them.
 - Qdrant retrieval now uses the current `query_points` API, with legacy fallback support; embedding dimension lookup uses the current SentenceTransformers method.

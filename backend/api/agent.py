@@ -9,12 +9,12 @@ from core.errors import ChatServiceError, ValidationError
 from core.validation import validate_uuid
 from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
-from services.approval_service import ApprovalService
+from services.approval_service import get_approval_service
 
 router = APIRouter()
 code_service = get_code_analysis_service()
 document_service = DocumentService()
-approval_service = ApprovalService()
+approval_service = get_approval_service()
 
 
 class AgentAction(BaseModel):

@@ -82,6 +82,8 @@ def upload_document_file(
     try:
         if session_id:
             session_id = validate_uuid(session_id, field_name="session_id")
+        if collection_id:
+            collection_id = validate_uuid(collection_id, field_name="collection_id")
 
         content_bytes = file.file.read(MAX_UPLOAD_SIZE + 1)
         if len(content_bytes) > MAX_UPLOAD_SIZE:
@@ -120,6 +122,8 @@ def upload_document(request: UploadDocumentRequest):
         # Validate session_id if provided
         if request.session_id:
             request.session_id = validate_uuid(request.session_id, field_name="session_id")
+        if request.collection_id:
+            request.collection_id = validate_uuid(request.collection_id, field_name="collection_id")
         
         logger.info(
             f"Uploading document",
@@ -270,7 +274,8 @@ def search_documents(request: DocumentSearchRequest):
     """Search indexed documents in a session without asking the language model."""
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")
-        return service.search_documents(request.query, session_id, request.collection_id, request.top_k)
+        collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
+        return service.search_documents(request.query, session_id, collection_id, request.top_k)
     except ValidationError:
         raise
     except Exception as e:

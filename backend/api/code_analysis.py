@@ -8,11 +8,13 @@ from core.logging import logger
 from services.code_analysis_service import get_code_analysis_service
 from services.code_assistant_service import CodeAssistantService
 from services.git_service import GitService
+from services.approval_service import get_approval_service
 
 router = APIRouter()
 service = get_code_analysis_service()
 assistant_service = CodeAssistantService()
 git_service = GitService()
+approval_service = get_approval_service()
 
 
 class CodeAnalysisRequest(BaseModel):
@@ -22,10 +24,12 @@ class CodeAnalysisRequest(BaseModel):
 class FileWriteRequest(CodeAnalysisRequest):
     content: str = Field(..., max_length=1_000_000)
     confirm: bool = False
+    approval_id: str | None = None
 
 
 class FileDeleteRequest(CodeAnalysisRequest):
     confirm: bool = False
+    approval_id: str | None = None
 
 
 class CodeAssistantRequest(CodeAnalysisRequest):
@@ -35,17 +39,26 @@ class CodeAssistantRequest(CodeAnalysisRequest):
 class GitStageRequest(BaseModel):
     paths: list[str] = Field(..., min_length=1, max_length=100)
     confirm: bool = False
+    approval_id: str | None = None
 
 
 class GitCommitRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=200)
     confirm: bool = False
+    approval_id: str | None = None
+
+
+def require_approval(approval_id: str | None, action: str, target: str) -> None:
+    if not approval_id or not approval_service.consume(approval_id, action, target):
+        raise ValidationError("a matching approval is required", field="approval_id")
 
 
 @router.delete("/files", status_code=status.HTTP_200_OK)
 def delete_workspace_file(request: FileDeleteRequest):
     """Delete a workspace file only when the caller explicitly confirms."""
     try:
+        if request.confirm:
+            require_approval(request.approval_id, "delete_file", request.path)
         return service.delete_file(request.path, request.confirm)
     except ValidationError:
         raise
@@ -58,6 +71,8 @@ def delete_workspace_file(request: FileDeleteRequest):
 def write_workspace_file(request: FileWriteRequest):
     """Write a workspace file only when the caller explicitly confirms."""
     try:
+        if request.confirm:
+            require_approval(request.approval_id, "write_file", request.path)
         return service.write_file(request.path, request.content, request.confirm)
     except ValidationError:
         raise
@@ -140,6 +155,8 @@ def git_diff(path: str | None = None):
 def git_stage(request: GitStageRequest):
     """Stage selected workspace paths after explicit confirmation."""
     try:
+        if request.confirm:
+            require_approval(request.approval_id, "git_stage", "\n".join(request.paths))
         return git_service.stage(request.paths, request.confirm)
     except ValidationError:
         raise
@@ -152,6 +169,8 @@ def git_stage(request: GitStageRequest):
 def git_commit(request: GitCommitRequest):
     """Create a commit after explicit confirmation."""
     try:
+        if request.confirm:
+            require_approval(request.approval_id, "git_commit", request.message.strip())
         return git_service.commit(request.message, request.confirm)
     except ValidationError:
         raise
