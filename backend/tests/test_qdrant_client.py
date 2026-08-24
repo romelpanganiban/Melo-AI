@@ -159,7 +159,7 @@ class TestQdrantVectorClient:
                     }
                 )
             ]
-            mock_instance.search.return_value = mock_search_result
+            mock_instance.query_points.return_value = Mock(points=mock_search_result)
             mock_qdrant.return_value = mock_instance
             
             client = QdrantVectorClient()
@@ -178,7 +178,7 @@ class TestQdrantVectorClient:
         """Test search with no results"""
         with patch('services.qdrant_client.QdrantClient') as mock_qdrant:
             mock_instance = MagicMock()
-            mock_instance.search.return_value = []
+            mock_instance.query_points.return_value = Mock(points=[])
             mock_qdrant.return_value = mock_instance
             
             client = QdrantVectorClient()

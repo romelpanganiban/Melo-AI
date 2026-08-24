@@ -51,7 +51,11 @@ class EmbeddingService:
             )
             
             # Read dimension metadata without performing an inference request.
-            embedding_dim = self.model.get_sentence_embedding_dimension()
+            if hasattr(self.model, "get_embedding_dimension"):
+                dimension_method = self.model.get_embedding_dimension
+            else:
+                dimension_method = self.model.get_sentence_embedding_dimension
+            embedding_dim = dimension_method()
             self.embedding_dim = (
                 embedding_dim
                 if isinstance(embedding_dim, int) and embedding_dim > 0

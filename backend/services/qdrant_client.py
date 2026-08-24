@@ -206,13 +206,23 @@ class QdrantVectorClient:
                 query_filter = models.Filter(must=conditions) if conditions else None
             
             # Search in collection
-            search_results = self.client.search(
-                collection_name=self.collection_name,
-                query_vector=query_embedding,
-                limit=limit,
-                score_threshold=score_threshold,
-                query_filter=query_filter
-            )
+            if hasattr(self.client, "query_points"):
+                query_response = self.client.query_points(
+                    collection_name=self.collection_name,
+                    query=query_embedding,
+                    limit=limit,
+                    score_threshold=score_threshold,
+                    query_filter=query_filter,
+                )
+                search_results = getattr(query_response, "points", query_response)
+            else:
+                search_results = self.client.search(
+                    collection_name=self.collection_name,
+                    query_vector=query_embedding,
+                    limit=limit,
+                    score_threshold=score_threshold,
+                    query_filter=query_filter,
+                )
             
             # Format results
             results = []
