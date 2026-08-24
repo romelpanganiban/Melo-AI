@@ -72,3 +72,17 @@ def test_auto_mode_selects_ask_for_document_requests():
 
 def test_auto_mode_defaults_to_chat():
     assert ChatService._resolve_mode("Tell me a story", "auto") == "chat"
+
+
+def test_agent_prompt_requires_approval_and_forbids_side_effects():
+    service = object.__new__(ChatService)
+    prompt = service._build_prompt(
+        [{"role": "user", "content": "Review my project and suggest changes"}],
+        "[README.md]\nThe project uses local services.",
+        "agent",
+    )
+
+    assert "Proposed steps" in prompt
+    assert "Approval points" in prompt
+    assert "Do not execute tools" in prompt
+    assert "[README.md]" in prompt

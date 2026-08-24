@@ -467,6 +467,16 @@ class ChatService:
             )
             return f"{plan_prompt}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
 
+        if mode == "agent":
+            context_block = doc_context.strip() or "No relevant document context was found."
+            agent_prompt = (
+                "You are in Agent mode. Break the user's goal into a numbered sequence of concrete steps. "
+                "For each step include the intended tool or information source, expected result, and whether user approval is required. "
+                "Do not execute tools, modify files, delete data, or run Git actions. "
+                "Structure the response with these headings: Objective, Proposed steps, Approval points, and Open questions."
+            )
+            return f"{agent_prompt}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
+
         if doc_context.strip():
             return f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
         return f"{context}User: {current_message}\nAssistant:"

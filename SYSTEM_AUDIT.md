@@ -17,6 +17,7 @@ Date: 2026-08-24
 - Phase 11 includes grounded Study mode with explanations, key points, flashcards, quizzes, and study icons.
 - Phase 11 includes grounded Plan mode with ordered steps, checkpoints, assumptions, and risks.
 - Phase 11 includes Auto mode with task-aware Chat, Ask, Study, and Plan selection plus a Sparkles icon.
+- Phase 11 includes a safe Agent-mode proposal flow with ordered steps, tool intent, and approval points; execution remains disabled pending authorization gates.
 - Qdrant retrieval now uses the current `query_points` API, with legacy fallback support; embedding dimension lookup uses the current SentenceTransformers method.
 - Qdrant collection diagnostics now support current `CollectionInfo` objects without assuming a `.name` attribute.
 - Qdrant retrieval uses configurable `QDRANT_SCORE_THRESHOLD` with a `0.25` default to avoid dropping relevant low-score matches.

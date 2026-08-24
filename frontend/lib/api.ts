@@ -460,7 +460,7 @@ export type ChatMessage = {
   usage?: ChatUsage;
 };
 
-export type ChatMode = "chat" | "ask" | "study" | "plan" | "auto";
+export type ChatMode = "chat" | "ask" | "study" | "plan" | "agent" | "auto";
 
 export type ChatUsage = {
   prompt_tokens: number;

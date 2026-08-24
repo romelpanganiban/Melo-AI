@@ -138,6 +138,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 - [x] Plan mode with grounded ordered action plans
 - [x] Auto mode with task-aware response mode selection
 - [x] Private knowledge workspace and document collections
+- [x] Agent mode proposal flow with tool intent and approval points
 - [ ] Agent mode with multi-step tool execution
 - [ ] Approval gates for file, Git, and other side-effecting actions
 - [ ] Auto mode with task-aware model selection

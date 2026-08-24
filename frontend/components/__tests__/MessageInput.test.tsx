@@ -154,4 +154,17 @@ describe('MessageInput', () => {
 
     expect(screen.getByRole('combobox', { name: /choose response mode/i })).toHaveValue('auto');
   });
+
+  it('offers agent mode', () => {
+    render(
+      <MessageInput
+        sessionId="session-1"
+        onSendMessage={jest.fn()}
+        isSending={false}
+        mode="agent"
+      />
+    );
+
+    expect(screen.getByRole('option', { name: 'Agent' })).toBeInTheDocument();
+  });
 });
