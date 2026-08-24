@@ -62,6 +62,21 @@ class ChatService:
         general_models = [name for name in self.auto_model_names if "qwen3:8b" == name]
         self.ollama.model = general_models[0] if general_models else self.auto_model_names[0]
 
+    @staticmethod
+    def _resolve_mode(message: str, mode: str, has_document_context: bool = False) -> str:
+        """Resolve Auto mode to the most useful response policy for the request."""
+        if mode != "auto":
+            return mode
+
+        normalized = message.lower()
+        if any(keyword in normalized for keyword in ("quiz", "flashcard", "teach me", "study", "learn")):
+            return "study"
+        if any(keyword in normalized for keyword in ("plan", "roadmap", "steps", "how do i achieve", "organize")):
+            return "plan"
+        if has_document_context or any(keyword in normalized for keyword in ("according to", "in the document", "from my files", "what does the guide say")):
+            return "ask"
+        return "chat"
+
     def _search_documents(self, query: str, session_id: str = None, top_k: int = 5) -> dict:
         """Search for relevant documents using vector similarity
         
@@ -203,6 +218,7 @@ class ChatService:
             
             # Search for relevant documents
             doc_search = self._search_documents(message, session_id=session_id, top_k=5)
+            resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             # Generate response with document context
             self._select_auto_model(message)
@@ -210,7 +226,7 @@ class ChatService:
                 session_id,
                 history,
                 doc_context=doc_search.get("context", ""),
-                mode=mode,
+                mode=resolved_mode,
             )
 
             # Store assistant response
@@ -268,6 +284,7 @@ class ChatService:
             
             # Search for relevant documents
             doc_search = self._search_documents(message, session_id=session_id, top_k=5)
+            resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             chunks: list[str] = []
             self._select_auto_model(message)
@@ -275,7 +292,7 @@ class ChatService:
                 session_id,
                 history,
                 doc_context=doc_search.get("context", ""),
-                mode=mode,
+                mode=resolved_mode,
             ):
                 if not chunk:
                     continue

@@ -136,6 +136,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 - [x] Standalone session-scoped semantic document search
 - [x] Study mode with summaries, flashcards, quizzes, and explanations
 - [x] Plan mode with grounded ordered action plans
+- [x] Auto mode with task-aware response mode selection
 - [x] Private knowledge workspace and document collections
 - [ ] Agent mode with multi-step tool execution
 - [ ] Approval gates for file, Git, and other side-effecting actions

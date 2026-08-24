@@ -141,4 +141,17 @@ describe('MessageInput', () => {
 
     expect(screen.getByRole('option', { name: 'Plan' })).toBeInTheDocument();
   });
+
+  it('offers auto mode', () => {
+    render(
+      <MessageInput
+        sessionId="session-1"
+        onSendMessage={jest.fn()}
+        isSending={false}
+        mode="auto"
+      />
+    );
+
+    expect(screen.getByRole('combobox', { name: /choose response mode/i })).toHaveValue('auto');
+  });
 });

@@ -56,3 +56,19 @@ def test_plan_prompt_requests_actionable_plan_structure():
     assert "Checkpoints" in prompt
     assert "Risks" in prompt
     assert "[launch-guide.md]" in prompt
+
+
+def test_auto_mode_selects_study_for_learning_requests():
+    assert ChatService._resolve_mode("Make flashcards about this", "auto") == "study"
+
+
+def test_auto_mode_selects_plan_for_planning_requests():
+    assert ChatService._resolve_mode("Give me a roadmap with steps", "auto") == "plan"
+
+
+def test_auto_mode_selects_ask_for_document_requests():
+    assert ChatService._resolve_mode("According to the document, what changed?", "auto") == "ask"
+
+
+def test_auto_mode_defaults_to_chat():
+    assert ChatService._resolve_mode("Tell me a story", "auto") == "chat"

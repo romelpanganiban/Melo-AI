@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { type ChatMode, type InstalledModel } from "@/lib/api";
-import { BookOpen, ClipboardList, MessageCircle, Search } from "lucide-react";
+import { BookOpen, ClipboardList, MessageCircle, Search, Sparkles } from "lucide-react";
 
 type Props = {
   sessionId: string | null;
@@ -86,7 +86,7 @@ export default function MessageInput({
         />
 
         <label className="flex items-center gap-1 rounded-xl border border-white/15 bg-[#1a2823] px-2 text-xs text-slate-100">
-          {mode === "ask" ? <Search size={14} aria-hidden="true" /> : mode === "study" ? <BookOpen size={14} aria-hidden="true" /> : mode === "plan" ? <ClipboardList size={14} aria-hidden="true" /> : <MessageCircle size={14} aria-hidden="true" />}
+          {mode === "ask" ? <Search size={14} aria-hidden="true" /> : mode === "study" ? <BookOpen size={14} aria-hidden="true" /> : mode === "plan" ? <ClipboardList size={14} aria-hidden="true" /> : mode === "auto" ? <Sparkles size={14} aria-hidden="true" /> : <MessageCircle size={14} aria-hidden="true" />}
           <span className="sr-only">Choose response mode</span>
           <select
             value={mode}
@@ -100,6 +100,7 @@ export default function MessageInput({
             <option value="ask" className="bg-[#1a2823] text-slate-100">Ask</option>
             <option value="study" className="bg-[#1a2823] text-slate-100">Study</option>
             <option value="plan" className="bg-[#1a2823] text-slate-100">Plan</option>
+            <option value="auto" className="bg-[#1a2823] text-slate-100">Auto</option>
           </select>
         </label>
 
