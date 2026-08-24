@@ -96,4 +96,23 @@ describe('MessageInput', () => {
 
     expect(mockOnSend).not.toHaveBeenCalled();
   });
+
+  it('changes chat mode', () => {
+    const onModeChange = jest.fn();
+    render(
+      <MessageInput
+        sessionId="session-1"
+        onSendMessage={jest.fn()}
+        isSending={false}
+        mode="chat"
+        onModeChange={onModeChange}
+      />
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: /choose response mode/i }), {
+      target: { value: 'ask' },
+    });
+
+    expect(onModeChange).toHaveBeenCalledWith('ask');
+  });
 });

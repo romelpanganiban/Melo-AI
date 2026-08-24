@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { type InstalledModel } from "@/lib/api";
+import { type ChatMode, type InstalledModel } from "@/lib/api";
 
 type Props = {
   sessionId: string | null;
@@ -10,6 +10,8 @@ type Props = {
   selectedModel?: string;
   availableModels?: InstalledModel[];
   onModelChange?: (model: string) => void;
+  mode?: ChatMode;
+  onModeChange?: (mode: ChatMode) => void;
 };
 
 const MAX_MESSAGE_LENGTH = 8000;
@@ -21,6 +23,8 @@ export default function MessageInput({
   selectedModel = "auto",
   availableModels = [],
   onModelChange = () => undefined,
+  mode = "chat",
+  onModeChange = () => undefined,
 }: Props) {
   const [message, setMessage] = useState("");
   const maxMessageLength = MAX_MESSAGE_LENGTH;
@@ -79,6 +83,18 @@ export default function MessageInput({
             sessionId ? "Message Melo..." : "Select a session to start"
           }
         />
+
+        <select
+          value={mode}
+          onChange={(event) => onModeChange(event.target.value as ChatMode)}
+          disabled={isSending}
+          aria-label="Choose response mode"
+          style={{ colorScheme: "dark" }}
+          className="max-w-28 rounded-xl border border-white/15 bg-[#1a2823] px-2 py-2 text-xs text-slate-100 outline-none transition hover:bg-[#24362f] disabled:opacity-50"
+        >
+          <option value="chat" className="bg-[#1a2823] text-slate-100">Chat</option>
+          <option value="ask" className="bg-[#1a2823] text-slate-100">Ask</option>
+        </select>
 
         <select
           value={selectedModel}

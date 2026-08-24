@@ -71,3 +71,16 @@ def test_history_invalid_session(client):
 
     # Should return 422 (validation error) for invalid UUID format
     assert response.status_code in [422, 400]
+
+
+def test_chat_rejects_unknown_mode(client, test_session_id):
+    response = client.post(
+        "/chat",
+        json={
+            "session_id": test_session_id,
+            "message": "Hello",
+            "mode": "unknown",
+        },
+    )
+
+    assert response.status_code == 422

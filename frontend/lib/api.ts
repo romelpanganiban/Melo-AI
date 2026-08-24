@@ -292,7 +292,8 @@ export async function getHistory(sessionId: string) {
  */
 export async function sendMessage(
   sessionId: string,
-  message: string
+  message: string,
+  mode: ChatMode = "chat"
 ) {
   try {
     if (!sessionId) {
@@ -321,6 +322,7 @@ export async function sendMessage(
       body: JSON.stringify({
         session_id: sessionId,
         message: message.trim(),
+        mode,
       }),
     });
     return handleResponse(response);
@@ -422,6 +424,8 @@ export type ChatMessage = {
   usage?: ChatUsage;
 };
 
+export type ChatMode = "chat" | "ask";
+
 export type ChatUsage = {
   prompt_tokens: number;
   completion_tokens: number;
@@ -456,6 +460,7 @@ type StreamErrorEvent = {
 type StreamEvent = StreamChunkEvent | StreamDoneEvent | StreamErrorEvent;
 
 type SendMessageStreamOptions = {
+  mode?: ChatMode;
   onChunk?: (chunk: string) => void;
   onSources?: (sources: ChatSource[]) => void;
   onMetadata?: (metadata: { model?: string; usage?: ChatUsage }) => void;
@@ -493,6 +498,7 @@ export async function sendMessageStream(
     body: JSON.stringify({
       session_id: sessionId,
       message: message.trim(),
+      mode: options.mode || "chat",
     }),
     signal: options.signal,
   });

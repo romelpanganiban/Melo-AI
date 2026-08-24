@@ -157,7 +157,7 @@ class ChatService:
         if title:
             session_repo.update_title(session.id, title)
 
-    def process_message(self, session_id: str, message: str, db: Session = None) -> dict:
+    def process_message(self, session_id: str, message: str, db: Session = None, mode: str = "chat") -> dict:
         """Process a user message
         
         Args:
@@ -206,7 +206,12 @@ class ChatService:
 
             # Generate response with document context
             self._select_auto_model(message)
-            response = self._generate_response(session_id, history, doc_context=doc_search.get("context", ""))
+            response = self._generate_response(
+                session_id,
+                history,
+                doc_context=doc_search.get("context", ""),
+                mode=mode,
+            )
 
             # Store assistant response
             usage = self.ollama.last_usage
@@ -242,7 +247,7 @@ class ChatService:
             if should_close:
                 db.close()
 
-    def process_message_stream(self, session_id: str, message: str, db: Session = None) -> Generator[str, None, None]:
+    def process_message_stream(self, session_id: str, message: str, db: Session = None, mode: str = "chat") -> Generator[str, None, None]:
         """Process a user message and stream assistant response chunks as NDJSON lines."""
         if db is None:
             db = get_db_session()
@@ -266,7 +271,12 @@ class ChatService:
 
             chunks: list[str] = []
             self._select_auto_model(message)
-            for chunk in self._generate_response_stream(session_id, history, doc_context=doc_search.get("context", "")):
+            for chunk in self._generate_response_stream(
+                session_id,
+                history,
+                doc_context=doc_search.get("context", ""),
+                mode=mode,
+            ):
                 if not chunk:
                     continue
                 chunks.append(chunk)
@@ -403,7 +413,28 @@ class ChatService:
             if should_close:
                 db.close()
 
-    def _generate_response(self, session_id: str, history: list[dict], doc_context: str = "") -> str:
+    def _build_prompt(self, history: list[dict], doc_context: str, mode: str) -> str:
+        context_messages = history[-10:] if len(history) > 1 else []
+        context = "".join(
+            f"{('User' if msg.get('role') == 'user' else 'Assistant')}: {msg.get('content', '')}\n"
+            for msg in context_messages[:-1]
+        )
+        current_message = history[-1].get("content", "") if history else ""
+
+        if mode == "ask":
+            grounding = (
+                "You are in Ask mode. Answer using only the provided document context. "
+                "If the context does not contain enough evidence, say so clearly and do not guess. "
+                "Cite supporting filenames in square brackets, for example [guide.pdf]."
+            )
+            context_block = doc_context.strip() or "No relevant document context was found."
+            return f"{grounding}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
+
+        if doc_context.strip():
+            return f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
+        return f"{context}User: {current_message}\nAssistant:"
+
+    def _generate_response(self, session_id: str, history: list[dict], doc_context: str = "", mode: str = "chat") -> str:
         """Generate response using Ollama LLM
         
         Args:
@@ -418,30 +449,14 @@ class ChatService:
             ChatServiceError: If generation fails
         """
         try:
-            # Build context from recent history (last 10 messages)
-            context_messages = history[-10:] if len(history) > 1 else []
-            
-            # Format conversation context
-            context = ""
-            for msg in context_messages[:-1]:  # Exclude the current user message
-                role = "User" if msg.get("role") == "user" else "Assistant"
-                context += f"{role}: {msg.get('content', '')}\n"
-            
-            # Get the current user message (last message in history)
-            current_message = history[-1].get("content", "") if history else ""
-            
-            # Build prompt with document context if available
-            if doc_context.strip():
-                prompt = f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
-            else:
-                prompt = f"{context}User: {current_message}\nAssistant:"
+            prompt = self._build_prompt(history, doc_context, mode)
             
             logger.info(
                 "Generating response with Ollama",
                 extra={
                     "session_id": session_id,
                     "model": settings.OLLAMA_MODEL,
-                    "context_length": len(context),
+                    "context_length": len(prompt),
                     "has_doc_context": len(doc_context.strip()) > 0
                 }
             )
@@ -466,7 +481,7 @@ class ChatService:
             )
             raise ChatServiceError(f"Failed to generate response: {str(e)}")
 
-    def _generate_response_stream(self, session_id: str, history: list[dict], doc_context: str = "") -> Generator[str, None, None]:
+    def _generate_response_stream(self, session_id: str, history: list[dict], doc_context: str = "", mode: str = "chat") -> Generator[str, None, None]:
         """Generate streaming response chunks from Ollama.
         
         Args:
@@ -478,20 +493,7 @@ class ChatService:
             Response chunks as they are generated
         """
         try:
-            context_messages = history[-10:] if len(history) > 1 else []
-
-            context = ""
-            for msg in context_messages[:-1]:
-                role = "User" if msg.get("role") == "user" else "Assistant"
-                context += f"{role}: {msg.get('content', '')}\n"
-
-            current_message = history[-1].get("content", "") if history else ""
-            
-            # Build prompt with document context if available
-            if doc_context.strip():
-                prompt = f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
-            else:
-                prompt = f"{context}User: {current_message}\nAssistant:"
+            prompt = self._build_prompt(history, doc_context, mode)
 
             for chunk in self.ollama.generate_response_stream(
                 prompt=prompt,

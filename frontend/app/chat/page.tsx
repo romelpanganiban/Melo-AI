@@ -19,6 +19,7 @@ import {
   sendMessageStream,
   updateSettings,
   type InstalledModel,
+  type ChatMode,
 } from "@/lib/api";
 
 type ChatMessageWithState = ChatMessage & {
@@ -52,6 +53,7 @@ export default function ChatPage() {
   const [selectedModel, setSelectedModel] = useState("auto");
   const [contextSize, setContextSize] = useState<4096 | 8192>(8192);
   const [temperature, setTemperature] = useState(0.7);
+  const [chatMode, setChatMode] = useState<ChatMode>("chat");
   const historyRequestRef = useRef(0);
   const activeStreamRef = useRef<AbortController | null>(null);
   const sessionBootstrapRef = useRef(false);
@@ -237,6 +239,7 @@ export default function ChatPage() {
 
     try {
       const finalResponse = await sendMessageStream(selectedSession, userMessage, {
+        mode: chatMode,
         signal: controller.signal,
         onChunk: (chunk) => {
           setMessages((prev) =>
@@ -398,6 +401,8 @@ export default function ChatPage() {
               selectedModel={selectedModel}
               availableModels={availableModels}
               onModelChange={(model) => void handleModelChange(model)}
+              mode={chatMode}
+              onModeChange={setChatMode}
             />
           </div>
 

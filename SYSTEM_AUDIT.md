@@ -11,6 +11,8 @@ Date: 2026-08-24
 - TypeScript keeps the `@/*` frontend alias without relying on deprecated `baseUrl`.
 - Frontend test files are included in the TypeScript project so VS Code resolves Jest globals and aliases.
 - Frontend test fixtures include the current Sidebar deletion callback contract.
+- Phase 11 now includes request-scoped Chat and grounded Ask mode across sync/streaming backend paths and the chat composer.
+- Both frontend chat helpers include the selected mode in their request payload.
 
 ## Validation
 

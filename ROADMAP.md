@@ -113,7 +113,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ---
 
-## Phase 10 - Coding Assistant
+## Phase 10 - Coding Assistant ✅
 
 - [x] Frontend workspace for read-only file inspection and code analysis
 - [x] AI code review and generation proposals
@@ -132,6 +132,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 ## Phase 11 - Private Knowledge & Intelligence Modes
 
+- [x] Request-scoped Ask mode with grounded answers and filename citations
 - [ ] Private knowledge workspace and document collections
 - [ ] Standalone semantic knowledge search
 - [ ] Ask mode with cited answers from private knowledge

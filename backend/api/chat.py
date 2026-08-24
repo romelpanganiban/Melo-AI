@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from typing import Literal
 from sqlalchemy.orm import Session
 
 from services.chat_service import ChatService
@@ -16,6 +17,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     session_id: str = Field(..., min_length=1, description="Session ID (UUID)")
     message: str = Field(..., min_length=1, max_length=settings.MAX_MESSAGE_LENGTH, description="User message")
+    mode: Literal["chat", "ask"] = Field(default="chat", description="Response mode")
 
 
 class ChatResponse(BaseModel):
@@ -56,7 +58,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
         
         # Process message with injected database session
         service = ChatService()
-        result = service.process_message(session_id, message, db)
+        result = service.process_message(session_id, message, db, mode=request.mode)
         
         return result
         
@@ -94,7 +96,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
         )
 
         service = ChatService()
-        stream = service.process_message_stream(session_id, message, db)
+        stream = service.process_message_stream(session_id, message, db, mode=request.mode)
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     except ValidationError:
