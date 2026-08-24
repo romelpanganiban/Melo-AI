@@ -39,8 +39,8 @@ describe('MessageBubble', () => {
     );
 
     // User messages should have different styling than assistant
-    const userBubble = userContainer.querySelector('[class*="bg-teal-700"]');
-    const assistantBubble = assistantContainer.querySelector('[class*="bg-emerald-50"]');
+    const userBubble = userContainer.querySelector('[class*="bg-teal-600"]');
+    const assistantBubble = assistantContainer.querySelector('.assistant-bubble');
     
     expect(userBubble || assistantBubble).toBeInTheDocument();
   });

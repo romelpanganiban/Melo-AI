@@ -31,13 +31,13 @@ describe('ChatWindow', () => {
   it('shows the empty state when there are no messages', () => {
     render(<ChatWindow {...defaultProps} messages={[]} />);
 
-    expect(screen.getByText(/no messages yet/i)).toBeTruthy();
+    expect(screen.getByText(/what is on your mind/i)).toBeTruthy();
   });
 
   it('shows the loading state', () => {
     render(<ChatWindow {...defaultProps} isLoading messages={mockMessages} />);
 
-    expect(screen.getByText(/loading messages/i)).toBeTruthy();
+    expect(screen.getByText(/opening conversation/i)).toBeTruthy();
   });
 
   it('shows an error and retry action', () => {

@@ -103,6 +103,14 @@ Early development. The current implementation includes database-backed chat, doc
 - Unit Tests
 - API Tests
 
+### Current Validation
+
+- Backend: 157 tests passing
+- Frontend: 29 tests passing, lint passing, production build passing
+- Known warnings: deprecated Starlette status constants, deprecated TestClient/httpx compatibility, and optional CUDA/Qdrant availability warnings
+
+See [SYSTEM_AUDIT.md](SYSTEM_AUDIT.md) for the system-wide findings and prioritized improvements.
+
 ---
 
 ## Latest Update

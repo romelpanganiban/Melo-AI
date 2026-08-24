@@ -7,9 +7,9 @@ type Props = {
   sessionId: string | null;
   onSendMessage: (message: string) => void;
   isSending: boolean;
-  selectedModel: string;
-  availableModels: InstalledModel[];
-  onModelChange: (model: string) => void;
+  selectedModel?: string;
+  availableModels?: InstalledModel[];
+  onModelChange?: (model: string) => void;
 };
 
 const MAX_MESSAGE_LENGTH = 8000;
@@ -18,9 +18,9 @@ export default function MessageInput({
   sessionId,
   onSendMessage,
   isSending,
-  selectedModel,
-  availableModels,
-  onModelChange,
+  selectedModel = "auto",
+  availableModels = [],
+  onModelChange = () => undefined,
 }: Props) {
   const [message, setMessage] = useState("");
   const maxMessageLength = MAX_MESSAGE_LENGTH;

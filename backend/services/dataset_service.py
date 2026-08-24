@@ -29,7 +29,7 @@ class DatasetService:
                 dataset_file.write(json.dumps(example, ensure_ascii=False) + "\n")
         return {
             "name": safe_name,
-            "path": path.relative_to(settings.BASE_DIR).as_posix(),
+            "path": self._display_path(path),
             "example_count": len(normalized),
         }
 
@@ -37,11 +37,19 @@ class DatasetService:
         return [
             {
                 "name": path.stem,
-                "path": path.relative_to(settings.BASE_DIR).as_posix(),
+                "path": self._display_path(path),
                 "size_bytes": path.stat().st_size,
             }
             for path in sorted(self.directory.glob("*.jsonl"))
         ]
+
+    @staticmethod
+    def _display_path(path: Path) -> str:
+        """Use a workspace-relative path when possible, otherwise an absolute path."""
+        try:
+            return path.relative_to(settings.BASE_DIR).as_posix()
+        except ValueError:
+            return path.resolve().as_posix()
 
     def _normalize_example(self, example: dict, index: int) -> dict:
         if len(example.get("messages", [])) < 2:
