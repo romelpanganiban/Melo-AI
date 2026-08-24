@@ -134,6 +134,7 @@ class DocumentService:
                                     "filename": filename,
                                     "file_type": file_type,
                                     "session_id": session_id,
+                                    "chunk_index": chunk_index,
                                     "tokens": len(chunk_text.split())
                                 }
                             )
@@ -271,6 +272,39 @@ class DocumentService:
             raise ChatServiceError(f"Failed to get session documents: {str(e)}")
         finally:
             db.close()
+
+    def search_documents(self, query: str, session_id: str, top_k: int = 5) -> dict:
+        """Search the session's indexed knowledge without generating a chat response."""
+        if not query or not query.strip():
+            raise ValidationError("query is required", field="query")
+        if not settings.QDRANT_ENABLED:
+            return {"query": query.strip(), "results": [], "available": False}
+
+        try:
+            qdrant_client = get_qdrant_client()
+            if not qdrant_client.is_available():
+                return {"query": query.strip(), "results": [], "available": False}
+
+            embedding = get_embedding_service().embed_query(query.strip())
+            matches = qdrant_client.search(
+                query_embedding=embedding,
+                limit=top_k,
+                score_threshold=0.5,
+                filters={"session_id": session_id},
+            )
+            results = []
+            for match in matches:
+                payload = match.get("payload") or match.get("metadata", {})
+                results.append({
+                    "filename": payload.get("filename", "Unknown"),
+                    "content": match.get("content") or payload.get("content", ""),
+                    "relevance": round(match.get("score", match.get("similarity_score", 0)) * 100, 1),
+                    "chunk_index": payload.get("chunk_index"),
+                })
+            return {"query": query.strip(), "results": results, "available": True}
+        except Exception as e:
+            logger.error("Document search failed", extra={"query_len": len(query)})
+            raise ChatServiceError("Failed to search documents") from e
 
     def delete_document(self, document_id: str) -> None:
         """Delete a document

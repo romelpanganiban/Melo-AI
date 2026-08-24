@@ -11,6 +11,7 @@ import {
   uploadDocument,
   uploadDocumentFile,
 } from "@/lib/api";
+import { FileText, Search, Upload } from "lucide-react";
 
 type Props = {
   sessionId: string | null;
@@ -27,6 +28,9 @@ export default function DocumentsPanel({ sessionId }: Props) {
   const [content, setContent] = useState("");
   const [fileType, setFileType] = useState<"txt" | "pdf" | "docx">("txt");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Awaited<ReturnType<typeof import("@/lib/api").searchDocuments>>["results"]>([]);
+  const [searching, setSearching] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     if (!sessionId) {
@@ -168,9 +172,25 @@ export default function DocumentsPanel({ sessionId }: Props) {
     }
   }
 
+  async function handleSearch() {
+    if (!sessionId || !searchQuery.trim()) return;
+    setSearching(true);
+    setError(null);
+    try {
+      const { searchDocuments } = await import("@/lib/api");
+      const response = await searchDocuments(sessionId, searchQuery);
+      setSearchResults(response.results);
+    } catch (err) {
+      setError(err instanceof APIError ? err.message : "Failed to search documents");
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
   return (
     <aside className="documents-panel mx-3 mb-3 flex min-w-0 max-w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111916]/95 p-4 shadow-[0_14px_36px_rgba(0,0,0,0.22)] md:mx-4 md:h-full md:w-[360px] md:min-w-[320px] md:max-w-[380px]">
-      <h2 className="brand-title text-lg font-semibold text-slate-100">Documents</h2>
+      <h2 className="brand-title flex items-center gap-2 text-lg font-semibold text-slate-100"><FileText size={18} aria-hidden="true" /> Documents</h2>
       <p className="mt-1 text-xs text-slate-400/70">
         Upload documents to enhance AI responses with your knowledge base.
       </p>
@@ -235,7 +255,7 @@ export default function DocumentsPanel({ sessionId }: Props) {
                 disabled={uploading || !selectedFile}
                 className="mt-2 w-full rounded-lg bg-teal-500/15 px-3 py-2 text-xs font-semibold text-teal-200 transition hover:bg-teal-500/25 disabled:cursor-not-allowed disabled:bg-white/5 disabled:text-white/30"
               >
-                {uploading ? "Uploading file..." : "Upload selected file"}
+                <span className="inline-flex items-center gap-2"><Upload size={14} aria-hidden="true" /> {uploading ? "Uploading file..." : "Upload selected file"}</span>
               </button>
             </div>
 
@@ -263,6 +283,15 @@ export default function DocumentsPanel({ sessionId }: Props) {
             >
               {uploading ? "📤 Uploading..." : "📤 Upload Document"}
             </button>
+
+            <div className="border-t border-white/10 pt-3">
+              <label htmlFor="document-search" className="mb-1 flex items-center gap-2 text-xs font-semibold text-slate-300"><Search size={14} aria-hidden="true" /> Search knowledge</label>
+              <div className="flex gap-2">
+                <input id="document-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void handleSearch(); }} placeholder="Search your documents" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 p-2 text-sm text-slate-100 outline-none focus:border-teal-400" />
+                <button type="button" onClick={() => void handleSearch()} disabled={searching || !searchQuery.trim()} aria-label="Search documents" className="rounded-lg bg-teal-500/20 px-3 text-teal-200 disabled:opacity-40"><Search size={16} aria-hidden="true" /></button>
+              </div>
+              {searchResults.length > 0 && <ul className="mt-3 space-y-2">{searchResults.map((result, index) => <li key={`${result.filename}-${result.chunk_index ?? index}`} className="rounded-lg border border-white/10 bg-white/5 p-2 text-xs text-slate-300"><p className="font-semibold text-teal-200">{result.filename} <span className="font-normal text-slate-400">{result.relevance}%</span></p><p className="mt-1 line-clamp-3">{result.content}</p></li>)}</ul>}
+            </div>
 
             {documents.length === 0 && !uploading && (
               <div className="mt-3 rounded bg-white/5 p-3 text-center text-xs text-slate-400/60">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { type ChatMode, type InstalledModel } from "@/lib/api";
+import { MessageCircle, Search } from "lucide-react";
 
 type Props = {
   sessionId: string | null;
@@ -84,17 +85,21 @@ export default function MessageInput({
           }
         />
 
-        <select
-          value={mode}
-          onChange={(event) => onModeChange(event.target.value as ChatMode)}
-          disabled={isSending}
-          aria-label="Choose response mode"
-          style={{ colorScheme: "dark" }}
-          className="max-w-28 rounded-xl border border-white/15 bg-[#1a2823] px-2 py-2 text-xs text-slate-100 outline-none transition hover:bg-[#24362f] disabled:opacity-50"
-        >
-          <option value="chat" className="bg-[#1a2823] text-slate-100">Chat</option>
-          <option value="ask" className="bg-[#1a2823] text-slate-100">Ask</option>
-        </select>
+        <label className="flex items-center gap-1 rounded-xl border border-white/15 bg-[#1a2823] px-2 text-xs text-slate-100">
+          {mode === "ask" ? <Search size={14} aria-hidden="true" /> : <MessageCircle size={14} aria-hidden="true" />}
+          <span className="sr-only">Choose response mode</span>
+          <select
+            value={mode}
+            onChange={(event) => onModeChange(event.target.value as ChatMode)}
+            disabled={isSending}
+            aria-label="Choose response mode"
+            style={{ colorScheme: "dark" }}
+            className="max-w-20 bg-transparent py-2 text-xs text-slate-100 outline-none disabled:opacity-50"
+          >
+            <option value="chat" className="bg-[#1a2823] text-slate-100">Chat</option>
+            <option value="ask" className="bg-[#1a2823] text-slate-100">Ask</option>
+          </select>
+        </label>
 
         <select
           value={selectedModel}

@@ -46,6 +46,12 @@ class DocumentChunkResponse(BaseModel):
     created_at: str | None = None
 
 
+class DocumentSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=2000)
+    session_id: str
+    top_k: int = Field(default=5, ge=1, le=10)
+
+
 @router.post("/documents/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 def upload_document_file(
     file: UploadFile = File(...),
@@ -234,6 +240,19 @@ def get_document_chunks(document_id: str):
             extra={"doc_id": document_id}
         )
         raise ChatServiceError(f"Failed to retrieve document chunks: {str(e)}")
+
+
+@router.post("/documents/search", status_code=status.HTTP_200_OK)
+def search_documents(request: DocumentSearchRequest):
+    """Search indexed documents in a session without asking the language model."""
+    try:
+        session_id = validate_uuid(request.session_id, field_name="session_id")
+        return service.search_documents(request.query, session_id, request.top_k)
+    except ValidationError:
+        raise
+    except Exception as e:
+        logger.error("Document search endpoint failed", extra={"session_id": request.session_id})
+        raise ChatServiceError("Failed to search documents") from e
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

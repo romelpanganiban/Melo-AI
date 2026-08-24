@@ -13,6 +13,7 @@ Date: 2026-08-24
 - Frontend test fixtures include the current Sidebar deletion callback contract.
 - Phase 11 now includes request-scoped Chat and grounded Ask mode across sync/streaming backend paths and the chat composer.
 - Both frontend chat helpers include the selected mode in their request payload.
+- Phase 11 includes standalone session-scoped semantic document search with result previews and icon-based controls.
 
 ## Validation
 

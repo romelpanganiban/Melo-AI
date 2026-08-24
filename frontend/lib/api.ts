@@ -202,6 +202,19 @@ export type DocumentChunksResponse = {
   count: number;
 };
 
+export type DocumentSearchResult = {
+  filename: string;
+  content: string;
+  relevance: number;
+  chunk_index?: number | null;
+};
+
+export type DocumentSearchResponse = {
+  query: string;
+  results: DocumentSearchResult[];
+  available: boolean;
+};
+
 export type UploadDocumentPayload = {
   filename: string;
   file_type: "pdf" | "docx" | "txt";
@@ -840,4 +853,17 @@ export async function deleteSession(sessionId: string): Promise<void> {
       { originalError: String(error) }
     );
   }
+}
+
+export async function searchDocuments(
+  sessionId: string,
+  query: string,
+  topK = 5,
+): Promise<DocumentSearchResponse> {
+  const response = await fetch(`${API_URL}/documents/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, query: query.trim(), top_k: topK }),
+  });
+  return handleResponse<DocumentSearchResponse>(response);
 }

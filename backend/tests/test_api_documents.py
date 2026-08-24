@@ -86,6 +86,15 @@ def test_get_session_documents(client, test_session_id):
     assert data["documents"]
 
 
+def test_search_documents_rejects_invalid_session(client):
+    response = client.post(
+        "/documents/search",
+        json={"session_id": "not-a-uuid", "query": "deployment"},
+    )
+
+    assert response.status_code == 422
+
+
 def test_delete_document(client, test_session_id):
     create_response = client.post(
         "/documents",
