@@ -19,6 +19,7 @@ const defaultProps = {
   setSelectedSession: jest.fn(),
   isOpen: true,
   onClose: jest.fn(),
+  onSessionDeleted: jest.fn(),
 };
 
 describe('Sidebar', () => {

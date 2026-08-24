@@ -9,6 +9,8 @@ Date: 2026-08-24
 - `MessageInput` remains compatible when model selector props are omitted.
 - Frontend tests now match the current message bubble and chat empty/loading states.
 - TypeScript keeps the `@/*` frontend alias without relying on deprecated `baseUrl`.
+- Frontend test files are included in the TypeScript project so VS Code resolves Jest globals and aliases.
+- Frontend test fixtures include the current Sidebar deletion callback contract.
 
 ## Validation
 
