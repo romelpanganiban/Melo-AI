@@ -14,6 +14,7 @@ Date: 2026-08-24
 - Phase 11 now includes request-scoped Chat and grounded Ask mode across sync/streaming backend paths and the chat composer.
 - Both frontend chat helpers include the selected mode in their request payload.
 - Phase 11 includes standalone session-scoped semantic document search with result previews and icon-based controls.
+- Phase 11 includes grounded Study mode with explanations, key points, flashcards, quizzes, and study icons.
 
 ## Validation
 

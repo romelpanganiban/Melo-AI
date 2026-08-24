@@ -25,3 +25,18 @@ def test_chat_prompt_remains_general_without_ask_mode():
 
     assert "You are in Ask mode" not in prompt
     assert prompt.endswith("Assistant:")
+
+
+def test_study_prompt_requests_structured_learning_material():
+    service = object.__new__(ChatService)
+    prompt = service._build_prompt(
+        [{"role": "user", "content": "Help me study this"}],
+        "[handbook.pdf]\nA deployment has three approval stages.",
+        "study",
+    )
+
+    assert "Explanation" in prompt
+    assert "Key points" in prompt
+    assert "Flashcards" in prompt
+    assert "Quick quiz" in prompt
+    assert "[handbook.pdf]" in prompt

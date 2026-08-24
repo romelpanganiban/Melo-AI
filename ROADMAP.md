@@ -134,6 +134,7 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 
 - [x] Request-scoped Ask mode with grounded answers and filename citations
 - [x] Standalone session-scoped semantic document search
+- [x] Study mode with summaries, flashcards, quizzes, and explanations
 - [ ] Private knowledge workspace and document collections
 - [ ] Standalone semantic knowledge search
 - [ ] Ask mode with cited answers from private knowledge

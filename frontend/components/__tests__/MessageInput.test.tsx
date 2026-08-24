@@ -115,4 +115,17 @@ describe('MessageInput', () => {
 
     expect(onModeChange).toHaveBeenCalledWith('ask');
   });
+
+  it('offers study mode', () => {
+    render(
+      <MessageInput
+        sessionId="session-1"
+        onSendMessage={jest.fn()}
+        isSending={false}
+        mode="study"
+      />
+    );
+
+    expect(screen.getByRole('option', { name: 'Study' })).toBeInTheDocument();
+  });
 });

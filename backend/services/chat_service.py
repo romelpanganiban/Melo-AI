@@ -430,6 +430,16 @@ class ChatService:
             context_block = doc_context.strip() or "No relevant document context was found."
             return f"{grounding}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
 
+        if mode == "study":
+            context_block = doc_context.strip() or "No relevant document context was found."
+            study_prompt = (
+                "You are in Study mode. Teach the topic clearly using the document context. "
+                "Do not invent facts beyond the context. Structure your response with these headings: "
+                "Explanation, Key points, Flashcards, and Quick quiz. Include answers after the quiz. "
+                "Cite supporting filenames in square brackets when using the documents."
+            )
+            return f"{study_prompt}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
+
         if doc_context.strip():
             return f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
         return f"{context}User: {current_message}\nAssistant:"
