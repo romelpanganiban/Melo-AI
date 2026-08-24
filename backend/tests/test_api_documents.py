@@ -23,6 +23,34 @@ def test_upload_document(client, test_session_id):
     assert "id" in data
 
 
+def test_create_collection_and_associate_document(client, test_session_id):
+    collection_response = client.post(
+        "/collections",
+        json={"name": "Project Notes", "description": "Private project knowledge"},
+    )
+
+    assert collection_response.status_code == 201
+    collection = collection_response.json()
+
+    list_response = client.get("/collections")
+    assert list_response.status_code == 200
+    assert any(item["id"] == collection["id"] for item in list_response.json()["collections"])
+
+    document_response = client.post(
+        "/documents",
+        json={
+            "filename": "project.txt",
+            "file_type": "txt",
+            "content": "Project collection content.",
+            "session_id": test_session_id,
+            "collection_id": collection["id"],
+        },
+    )
+
+    assert document_response.status_code == 201
+    assert document_response.json()["collection_id"] == collection["id"]
+
+
 def test_upload_document_file(client, test_session_id):
     response = client.post(
         "/documents/upload",

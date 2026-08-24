@@ -23,6 +23,7 @@ class UploadDocumentRequest(BaseModel):
     file_type: str = Field(..., description="File type: pdf, docx, or txt")
     content: str = Field(..., min_length=1, description="Document content")
     session_id: Optional[str] = Field(None, description="Optional session ID to associate document with")
+    collection_id: Optional[str] = Field(None, description="Optional knowledge collection ID")
 
 
 class DocumentResponse(BaseModel):
@@ -30,6 +31,7 @@ class DocumentResponse(BaseModel):
     filename: str
     file_type: str
     chunk_count: int | None = None
+    collection_id: Optional[str] = None
     created_at: str = None
 
 
@@ -49,13 +51,32 @@ class DocumentChunkResponse(BaseModel):
 class DocumentSearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
     session_id: str
+    collection_id: Optional[str] = None
     top_k: int = Field(default=5, ge=1, le=10)
+
+
+class CollectionRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+
+
+@router.get("/collections", status_code=status.HTTP_200_OK)
+def get_collections():
+    """List named private knowledge collections."""
+    return {"collections": service.get_collections()}
+
+
+@router.post("/collections", status_code=status.HTTP_201_CREATED)
+def create_collection(request: CollectionRequest):
+    """Create a named private knowledge collection."""
+    return service.create_collection(request.name, request.description)
 
 
 @router.post("/documents/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 def upload_document_file(
     file: UploadFile = File(...),
     session_id: Optional[str] = Form(None),
+    collection_id: Optional[str] = Form(None),
 ):
     """Extract and store a TXT, PDF, or DOCX upload."""
     try:
@@ -72,6 +93,7 @@ def upload_document_file(
             file_type=file_type,
             content=content,
             session_id=session_id,
+            collection_id=collection_id,
         )
     except ValidationError:
         raise
@@ -112,7 +134,8 @@ def upload_document(request: UploadDocumentRequest):
             filename=request.filename,
             file_type=request.file_type,
             content=request.content,
-            session_id=request.session_id
+            session_id=request.session_id,
+            collection_id=request.collection_id,
         )
         
         return document
@@ -247,7 +270,7 @@ def search_documents(request: DocumentSearchRequest):
     """Search indexed documents in a session without asking the language model."""
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")
-        return service.search_documents(request.query, session_id, request.top_k)
+        return service.search_documents(request.query, session_id, request.collection_id, request.top_k)
     except ValidationError:
         raise
     except Exception as e:

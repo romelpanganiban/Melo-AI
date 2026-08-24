@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from database import DocumentRepository, ChunkRepository, get_db_session
+from database import DocumentRepository, ChunkRepository, KnowledgeCollectionRepository, get_db_session
 from services.embedding_service import get_embedding_service
 from services.qdrant_client import get_qdrant_client
 from core.logging import logger
@@ -57,7 +57,7 @@ class DocumentService:
 
         return chunks
 
-    def upload_document(self, filename: str, file_type: str, content: str, session_id: str = None) -> dict:
+    def upload_document(self, filename: str, file_type: str, content: str, session_id: str = None, collection_id: str = None) -> dict:
         """Upload a document
         
         Args:
@@ -91,7 +91,8 @@ class DocumentService:
                 filename=filename,
                 file_type=file_type,
                 content=content,
-                session_id=session_id
+                session_id=session_id,
+                collection_id=collection_id,
             )
 
             chunks = self.chunk_text(content)
@@ -172,6 +173,7 @@ class DocumentService:
                 "filename": document.filename,
                 "file_type": document.file_type,
                 "chunk_count": document.chunk_count,
+                "collection_id": document.collection_id,
                 "created_at": document.created_at.isoformat() if document.created_at else None
             }
             
@@ -262,6 +264,7 @@ class DocumentService:
                     "filename": doc.filename,
                     "file_type": doc.file_type,
                     "chunk_count": doc.chunk_count,
+                    "collection_id": doc.collection_id,
                     "created_at": doc.created_at.isoformat() if doc.created_at else None
                 }
                 for doc in documents
@@ -273,7 +276,7 @@ class DocumentService:
         finally:
             db.close()
 
-    def search_documents(self, query: str, session_id: str, top_k: int = 5) -> dict:
+    def search_documents(self, query: str, session_id: str, collection_id: str = None, top_k: int = 5) -> dict:
         """Search the session's indexed knowledge without generating a chat response."""
         if not query or not query.strip():
             raise ValidationError("query is required", field="query")
@@ -286,11 +289,14 @@ class DocumentService:
                 return {"query": query.strip(), "results": [], "available": False}
 
             embedding = get_embedding_service().embed_query(query.strip())
+            filters = {"session_id": session_id} if session_id else None
+            if collection_id:
+                filters = {"collection_id": collection_id}
             matches = qdrant_client.search(
                 query_embedding=embedding,
                 limit=top_k,
                 score_threshold=settings.QDRANT_SCORE_THRESHOLD,
-                filters={"session_id": session_id},
+                filters=filters,
             )
             results = []
             for match in matches:
@@ -305,6 +311,24 @@ class DocumentService:
         except Exception as e:
             logger.error("Document search failed", extra={"query_len": len(query)})
             raise ChatServiceError("Failed to search documents") from e
+
+    def get_collections(self) -> list[dict]:
+        db = get_db_session()
+        try:
+            collections = KnowledgeCollectionRepository(db).get_all()
+            return [{"id": item.id, "name": item.name, "description": item.description, "created_at": item.created_at.isoformat()} for item in collections]
+        finally:
+            db.close()
+
+    def create_collection(self, name: str, description: str = None) -> dict:
+        db = get_db_session()
+        try:
+            if not name or not name.strip():
+                raise ValidationError("name is required", field="name")
+            collection = KnowledgeCollectionRepository(db).create(name.strip(), description.strip() if description else None)
+            return {"id": collection.id, "name": collection.name, "description": collection.description, "created_at": collection.created_at.isoformat()}
+        finally:
+            db.close()
 
     def delete_document(self, document_id: str) -> None:
         """Delete a document

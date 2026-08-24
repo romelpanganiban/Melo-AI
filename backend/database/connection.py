@@ -56,6 +56,11 @@ def init_database() -> None:
             if "model_name" not in columns:
                 with engine.begin() as connection:
                     connection.execute(text("ALTER TABLE messages ADD COLUMN model_name VARCHAR(100)"))
+        if "documents" in inspect(engine).get_table_names():
+            columns = {column["name"] for column in inspect(engine).get_columns("documents")}
+            if "collection_id" not in columns:
+                with engine.begin() as connection:
+                    connection.execute(text("ALTER TABLE documents ADD COLUMN collection_id VARCHAR(36)"))
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(

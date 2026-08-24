@@ -20,6 +20,8 @@ Date: 2026-08-24
 - Qdrant collection diagnostics now support current `CollectionInfo` objects without assuming a `.name` attribute.
 - Qdrant retrieval uses configurable `QDRANT_SCORE_THRESHOLD` with a `0.25` default to avoid dropping relevant low-score matches.
 - Live verification indexed one document, retrieved it at `32.1%` relevance, and removed the temporary test vector afterward.
+- Named knowledge collections now persist in SQLite and can be selected for document uploads and searches.
+- Restart the backend after deployment to apply the collection schema migration and expose the new `/collections` routes.
 
 ## Validation
 

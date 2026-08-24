@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 
-from database.models import Session as SessionModel, Message, Settings, Document, DocumentChunk
+from database.models import Session as SessionModel, Message, Settings, KnowledgeCollection, Document, DocumentChunk
 from core.logging import logger
 from core.errors import SessionNotFoundError, ChatServiceError
 
@@ -215,7 +215,7 @@ class DocumentRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def create(self, filename: str, file_type: str, content: str, session_id: Optional[str] = None) -> Document:
+    def create(self, filename: str, file_type: str, content: str, session_id: Optional[str] = None, collection_id: Optional[str] = None) -> Document:
         """Create a new document"""
         try:
             document = Document(
@@ -223,7 +223,8 @@ class DocumentRepository:
                 filename=filename,
                 file_type=file_type,
                 content=content,
-                session_id=session_id
+                session_id=session_id,
+                collection_id=collection_id,
             )
             self.db.add(document)
             self.db.commit()
@@ -252,6 +253,30 @@ class DocumentRepository:
         except Exception as e:
             logger.error(f"Error getting documents: {str(e)}")
             raise ChatServiceError(f"Failed to get documents: {str(e)}")
+
+
+class KnowledgeCollectionRepository:
+    """Repository for named knowledge collections."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(self, name: str, description: Optional[str] = None) -> KnowledgeCollection:
+        try:
+            collection = KnowledgeCollection(id=str(uuid.uuid4()), name=name, description=description)
+            self.db.add(collection)
+            self.db.commit()
+            self.db.refresh(collection)
+            return collection
+        except Exception as e:
+            self.db.rollback()
+            raise ChatServiceError(f"Failed to create knowledge collection: {str(e)}")
+
+    def get_by_id(self, collection_id: str) -> Optional[KnowledgeCollection]:
+        return self.db.query(KnowledgeCollection).filter(KnowledgeCollection.id == collection_id).first()
+
+    def get_all(self) -> List[KnowledgeCollection]:
+        return self.db.query(KnowledgeCollection).order_by(KnowledgeCollection.name).all()
 
 
 class ChunkRepository:

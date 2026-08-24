@@ -66,12 +66,25 @@ class Settings(Base):
         return f"<Settings(model={self.model_name}, provider={self.provider})>"
 
 
+class KnowledgeCollection(Base):
+    """Named private knowledge collection."""
+    __tablename__ = "knowledge_collections"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(100), nullable=False, unique=True, index=True)
+    description = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    documents = relationship("Document", back_populates="collection")
+
+
 class Document(Base):
     """Document model for knowledge base"""
     __tablename__ = "documents"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=True, index=True)
+    collection_id = Column(String(36), ForeignKey("knowledge_collections.id", ondelete="SET NULL"), nullable=True, index=True)
     filename = Column(String(255), nullable=False)
     file_type = Column(String(20), nullable=False)  # "pdf", "docx", "txt"
     content = Column(Text, nullable=False)
@@ -81,6 +94,7 @@ class Document(Base):
     
     # Relationships
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
+    collection = relationship("KnowledgeCollection", back_populates="documents")
     
     def __repr__(self) -> str:
         return f"<Document(id={self.id}, filename={self.filename})>"

@@ -178,7 +178,15 @@ export type DocumentSummary = {
   filename: string;
   file_type: "pdf" | "docx" | "txt";
   chunk_count?: number;
+  collection_id?: string | null;
   created_at?: string | null;
+};
+
+export type KnowledgeCollection = {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at?: string;
 };
 
 export type SessionDocumentsResponse = {
@@ -220,7 +228,22 @@ export type UploadDocumentPayload = {
   file_type: "pdf" | "docx" | "txt";
   content: string;
   session_id?: string;
+  collection_id?: string;
 };
+
+export async function getCollections(): Promise<{ collections: KnowledgeCollection[] }> {
+  const response = await fetch(`${API_URL}/collections`);
+  return handleResponse(response);
+}
+
+export async function createCollection(name: string): Promise<KnowledgeCollection> {
+  const response = await fetch(`${API_URL}/collections`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse<KnowledgeCollection>(response);
+}
 
 /**
  * Get all sessions
@@ -706,7 +729,8 @@ export async function deleteDocument(documentId: string): Promise<void> {
 
 export async function uploadDocumentFile(
   file: File,
-  sessionId: string
+  sessionId: string,
+  collectionId?: string,
 ): Promise<DocumentSummary> {
   if (!sessionId) {
     throw new APIError(400, 'VALIDATION_ERROR', 'Session ID is required');
@@ -715,6 +739,7 @@ export async function uploadDocumentFile(
   const formData = new FormData();
   formData.append('file', file);
   formData.append('session_id', sessionId);
+  if (collectionId) formData.append('collection_id', collectionId);
 
   try {
     const response = await fetch(`${API_URL}/documents/upload`, {
@@ -859,11 +884,12 @@ export async function searchDocuments(
   sessionId: string,
   query: string,
   topK = 5,
+  collectionId?: string,
 ): Promise<DocumentSearchResponse> {
   const response = await fetch(`${API_URL}/documents/search`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ session_id: sessionId, query: query.trim(), top_k: topK }),
+    body: JSON.stringify({ session_id: sessionId, query: query.trim(), top_k: topK, collection_id: collectionId }),
   });
   return handleResponse<DocumentSearchResponse>(response);
 }

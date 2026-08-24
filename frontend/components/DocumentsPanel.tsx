@@ -6,6 +6,8 @@ import {
   DocumentChunk,
   DocumentSummary,
   deleteDocument,
+  createCollection,
+  getCollections,
   getDocumentChunks,
   getSessionDocuments,
   searchDocuments,
@@ -33,6 +35,9 @@ export default function DocumentsPanel({ sessionId }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<DocumentSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [collections, setCollections] = useState<{ id: string; name: string }[]>([]);
+  const [collectionId, setCollectionId] = useState("");
+  const [newCollectionName, setNewCollectionName] = useState("");
 
   const loadDocuments = useCallback(async () => {
     if (!sessionId) {
@@ -70,6 +75,25 @@ export default function DocumentsPanel({ sessionId }: Props) {
     };
   }, [loadDocuments]);
 
+  useEffect(() => {
+    void getCollections().then((response) => {
+      setCollections(response.collections || []);
+      if (response.collections?.[0]) setCollectionId((current) => current || response.collections[0].id);
+    }).catch(() => setCollections([]));
+  }, []);
+
+  async function handleCreateCollection() {
+    if (!newCollectionName.trim()) return;
+    try {
+      const collection = await createCollection(newCollectionName.trim());
+      setCollections((current) => [...current, collection]);
+      setCollectionId(collection.id);
+      setNewCollectionName("");
+    } catch (err) {
+      setError(err instanceof APIError ? err.message : "Failed to create collection");
+    }
+  }
+
   async function handleUpload() {
     if (!sessionId) {
       setError("Select a session first");
@@ -95,6 +119,7 @@ export default function DocumentsPanel({ sessionId }: Props) {
         file_type: fileType,
         content: content.trim(),
         session_id: sessionId,
+        collection_id: collectionId || undefined,
       });
 
       setFilename("");
@@ -122,7 +147,7 @@ export default function DocumentsPanel({ sessionId }: Props) {
     setError(null);
 
     try {
-      await uploadDocumentFile(selectedFile, sessionId);
+      await uploadDocumentFile(selectedFile, sessionId, collectionId || undefined);
       setSelectedFile(null);
       await loadDocuments();
     } catch (err) {
@@ -179,7 +204,7 @@ export default function DocumentsPanel({ sessionId }: Props) {
     setSearching(true);
     setError(null);
     try {
-      const response = await searchDocuments(sessionId, searchQuery);
+      const response = await searchDocuments(sessionId, searchQuery, 5, collectionId || undefined);
       setSearchResults(response.results);
     } catch (err) {
       setError(err instanceof APIError ? err.message : "Failed to search documents");
@@ -209,6 +234,17 @@ export default function DocumentsPanel({ sessionId }: Props) {
       ) : (
         <>
           <div className="mt-4 space-y-3">
+            <div>
+              <label htmlFor="knowledge-collection" className="mb-1 block text-xs font-semibold text-slate-300">Knowledge collection</label>
+              <select id="knowledge-collection" value={collectionId} onChange={(event) => setCollectionId(event.target.value)} className="w-full rounded-lg border border-white/15 bg-white/5 p-2 text-sm text-slate-100">
+                <option value="">All session documents</option>
+                {collections.map((collection) => <option key={collection.id} value={collection.id}>{collection.name}</option>)}
+              </select>
+              <div className="mt-2 flex gap-2">
+                <input value={newCollectionName} onChange={(event) => setNewCollectionName(event.target.value)} placeholder="New collection name" className="min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 p-2 text-xs text-slate-100" />
+                <button type="button" onClick={() => void handleCreateCollection()} disabled={!newCollectionName.trim()} className="rounded-lg bg-white/10 px-3 text-xs text-slate-200 disabled:opacity-40">Create</button>
+              </div>
+            </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
                 📄 Filename
