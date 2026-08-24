@@ -84,3 +84,9 @@ def test_chat_rejects_unknown_mode(client, test_session_id):
     )
 
     assert response.status_code == 422
+
+
+def test_agent_rejects_missing_read_only_action_input(client):
+    response = client.post("/agent/run", json={"actions": [{"action": "read_file"}]})
+
+    assert response.status_code == 422

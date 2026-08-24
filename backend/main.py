@@ -10,6 +10,7 @@ from api.settings import router as settings_router
 from api.document import router as document_router
 from api.code_analysis import router as code_analysis_router
 from api.training import router as training_router
+from api.agent import router as agent_router
 from core.errors import MeloAIException
 from core.settings import settings
 from core.logging import logger
@@ -79,6 +80,7 @@ app.include_router(settings_router)
 app.include_router(document_router)
 app.include_router(code_analysis_router)
 app.include_router(training_router)
+app.include_router(agent_router)
 
 @app.get("/")
 def home():

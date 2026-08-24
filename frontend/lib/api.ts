@@ -462,6 +462,29 @@ export type ChatMessage = {
 
 export type ChatMode = "chat" | "ask" | "study" | "plan" | "agent" | "auto";
 
+export type AgentAction = {
+  action: "read_file" | "analyze_code" | "search_documents";
+  path?: string;
+  query?: string;
+  session_id?: string;
+  collection_id?: string;
+};
+
+export type AgentRunResponse = {
+  results: { action: AgentAction["action"]; result: unknown }[];
+  executed: number;
+  side_effects: false;
+};
+
+export async function runReadOnlyAgent(actions: AgentAction[]): Promise<AgentRunResponse> {
+  const response = await fetch(`${API_URL}/agent/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ actions }),
+  });
+  return handleResponse<AgentRunResponse>(response);
+}
+
 export type ChatUsage = {
   prompt_tokens: number;
   completion_tokens: number;
