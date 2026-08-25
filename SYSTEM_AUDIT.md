@@ -36,11 +36,13 @@ Date: 2026-08-26
 - Backend authentication now provides registration, login, signed bearer tokens, and `/auth/me`.
 - Session, chat/history, document, collection, and Qdrant retrieval access is owner-scoped for authenticated API requests.
 - Existing SQLite databases receive compatible `owner_id` columns during startup initialization.
+- Alembic now contains an initial PostgreSQL schema revision; new databases can use `alembic upgrade head`.
+- Settings, study, training, agent, coding, Git, and approval endpoints now require authentication; approvals are user-bound.
 
 ## Validation
 
 - Backend: `171 passed`
-- Frontend: `29 passed`
+- Frontend: `34 passed`
 - Frontend lint: passed
 - Frontend production build: passed
 - Backend compile check: passed
@@ -49,7 +51,7 @@ Date: 2026-08-26
 
 ### High
 
-1. Complete authentication and authorization across the frontend, settings, training, approvals, file, and Git endpoints before exposing the API beyond localhost. File write/delete and Git stage/commit endpoints can mutate the workspace; a client-supplied confirmation flag is not an authorization boundary.
+1. Complete frontend authentication UX and workspace authorization before exposing the API beyond localhost. File write/delete and Git stage/commit endpoints can mutate the workspace; authentication and approval tokens are necessary but further policy and sandboxing are still required.
 2. Define an explicit consistency policy for document records, SQL chunks, and Qdrant vectors. Current embedding failures can leave a document reported as uploaded but unavailable to RAG, and vector deletion failures can leave stale retrieval results.
 
 ### Medium
@@ -61,9 +63,10 @@ Date: 2026-08-26
 
 ### Low
 
-7. Remove the standalone `backend/test_qdrant.py` smoke functions from normal pytest collection or convert their returned values into assertions; they currently generate pytest warnings and can attempt remote service calls during the default suite.
-8. Replace deprecated Starlette status constants and update the TestClient/httpx dependency pairing.
-9. Add failure-path tests for unavailable Qdrant, partial document indexing, parser resource limits, CORS disabled behavior, and interrupted settings writes.
+7. Replace startup `create_all()`/ad hoc schema changes with an Alembic-first deployment path after existing databases are stamped or migrated.
+8. Remove the standalone `backend/test_qdrant.py` smoke functions from normal pytest collection or convert their returned values into assertions; they currently generate pytest warnings and can attempt remote service calls during the default suite.
+9. Replace deprecated Starlette status constants and update the TestClient/httpx dependency pairing.
+10. Add failure-path tests for unavailable Qdrant, partial document indexing, parser resource limits, CORS disabled behavior, and interrupted settings writes.
 
 ## Working Tree Note
 

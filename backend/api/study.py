@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from core.errors import ValidationError
+from core.auth import get_current_user
 from core.validation import validate_uuid
 from database.connection import get_db
 from database.models import StudyProgress
@@ -34,7 +35,7 @@ def _serialize(progress: StudyProgress) -> dict:
 
 
 @router.get("/study/progress/{session_id}", status_code=status.HTTP_200_OK)
-def get_study_progress(session_id: str, collection_id: Optional[str] = None, db: Session = Depends(get_db)):
+def get_study_progress(session_id: str, collection_id: Optional[str] = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     session_id = validate_uuid(session_id, field_name="session_id")
     query = db.query(StudyProgress).filter(StudyProgress.session_id == session_id)
     if collection_id:
@@ -44,7 +45,7 @@ def get_study_progress(session_id: str, collection_id: Optional[str] = None, db:
 
 
 @router.put("/study/progress/{session_id}", status_code=status.HTTP_200_OK)
-def save_study_progress(session_id: str, request: StudyProgressRequest, db: Session = Depends(get_db)):
+def save_study_progress(session_id: str, request: StudyProgressRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
     session_id = validate_uuid(session_id, field_name="session_id")
     collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
     progress = db.query(StudyProgress).filter(

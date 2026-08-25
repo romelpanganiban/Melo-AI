@@ -1,10 +1,11 @@
 """Dataset preparation endpoints for fine-tuning."""
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
 from core.errors import ChatServiceError, ValidationError
 from services.dataset_service import DatasetService
+from core.auth import get_current_user
 
 router = APIRouter()
 service = DatasetService()
@@ -16,12 +17,12 @@ class DatasetRequest(BaseModel):
 
 
 @router.get("/training/datasets", status_code=status.HTTP_200_OK)
-def list_datasets():
+def list_datasets(user=Depends(get_current_user)):
     return {"datasets": service.list_datasets()}
 
 
 @router.post("/training/datasets", status_code=status.HTTP_201_CREATED)
-def create_dataset(request: DatasetRequest):
+def create_dataset(request: DatasetRequest, user=Depends(get_current_user)):
     try:
         return service.create_dataset(request.name, request.examples)
     except ValidationError:

@@ -108,6 +108,17 @@ modes, coding tools, and bounded read-only agent actions.
 - Modular Project Structure
 - Database-backed sessions and messages
 
+#### Database Migrations
+
+PostgreSQL schema changes are tracked with Alembic. From the `backend`
+directory, apply them with:
+
+```bash
+alembic upgrade head
+```
+
+The local `backend/.env` supplies `DATABASE_URL` and is ignored by Git.
+
 #### Testing
 
 - Pytest Setup
@@ -116,8 +127,8 @@ modes, coding tools, and bounded read-only agent actions.
 
 ### Current Validation
 
-- Backend: 157 tests passing
-- Frontend: 29 tests passing, lint passing, production build passing
+- Backend: 171 tests passing
+- Frontend: 34 tests passing, lint passing, production build passing
 - Known warnings: deprecated Starlette status constants, deprecated TestClient/httpx compatibility, and optional CUDA/Qdrant availability warnings
 
 See [SYSTEM_AUDIT.md](SYSTEM_AUDIT.md) for the system-wide findings and prioritized improvements.

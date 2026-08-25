@@ -1,6 +1,6 @@
 """Coding assistant analysis endpoints."""
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
 from core.errors import ChatServiceError, ValidationError
@@ -9,6 +9,7 @@ from services.code_analysis_service import get_code_analysis_service
 from services.code_assistant_service import CodeAssistantService
 from services.git_service import GitService
 from services.approval_service import get_approval_service
+from core.auth import get_current_user
 
 router = APIRouter()
 service = get_code_analysis_service()
@@ -48,17 +49,17 @@ class GitCommitRequest(BaseModel):
     approval_id: str | None = None
 
 
-def require_approval(approval_id: str | None, action: str, target: str) -> None:
-    if not approval_id or not approval_service.consume(approval_id, action, target):
+def require_approval(approval_id: str | None, action: str, target: str, owner_id: str) -> None:
+    if not approval_id or not approval_service.consume(approval_id, action, target, owner_id=owner_id):
         raise ValidationError("a matching approval is required", field="approval_id")
 
 
 @router.delete("/files", status_code=status.HTTP_200_OK)
-def delete_workspace_file(request: FileDeleteRequest):
+def delete_workspace_file(request: FileDeleteRequest, user=Depends(get_current_user)):
     """Delete a workspace file only when the caller explicitly confirms."""
     try:
         if request.confirm:
-            require_approval(request.approval_id, "delete_file", request.path)
+            require_approval(request.approval_id, "delete_file", request.path, user.id)
         return service.delete_file(request.path, request.confirm)
     except ValidationError:
         raise
@@ -68,11 +69,11 @@ def delete_workspace_file(request: FileDeleteRequest):
 
 
 @router.post("/files/write", status_code=status.HTTP_200_OK)
-def write_workspace_file(request: FileWriteRequest):
+def write_workspace_file(request: FileWriteRequest, user=Depends(get_current_user)):
     """Write a workspace file only when the caller explicitly confirms."""
     try:
         if request.confirm:
-            require_approval(request.approval_id, "write_file", request.path)
+            require_approval(request.approval_id, "write_file", request.path, user.id)
         return service.write_file(request.path, request.content, request.confirm)
     except ValidationError:
         raise
@@ -82,7 +83,7 @@ def write_workspace_file(request: FileWriteRequest):
 
 
 @router.post("/files/read", status_code=status.HTTP_200_OK)
-def read_workspace_file(request: CodeAnalysisRequest):
+def read_workspace_file(request: CodeAnalysisRequest, user=Depends(get_current_user)):
     """Read a UTF-8 text file inside the workspace without modifying it."""
     try:
         return service.read_file(request.path)
@@ -94,7 +95,7 @@ def read_workspace_file(request: CodeAnalysisRequest):
 
 
 @router.post("/analysis/code", status_code=status.HTTP_200_OK)
-def analyze_code(request: CodeAnalysisRequest):
+def analyze_code(request: CodeAnalysisRequest, user=Depends(get_current_user)):
     """Analyze a workspace source file without changing it."""
     try:
         return service.analyze_file(request.path)
@@ -106,7 +107,7 @@ def analyze_code(request: CodeAnalysisRequest):
 
 
 @router.post("/coding/review", status_code=status.HTTP_200_OK)
-def review_code(request: CodeAssistantRequest):
+def review_code(request: CodeAssistantRequest, user=Depends(get_current_user)):
     """Review a workspace file with the configured local model."""
     try:
         return assistant_service.review_file(request.path, request.instruction)
@@ -118,7 +119,7 @@ def review_code(request: CodeAssistantRequest):
 
 
 @router.post("/coding/generate", status_code=status.HTTP_200_OK)
-def generate_code(request: CodeAssistantRequest):
+def generate_code(request: CodeAssistantRequest, user=Depends(get_current_user)):
     """Generate a proposed replacement for a workspace file."""
     try:
         return assistant_service.generate_code(request.path, request.instruction or "")
@@ -130,7 +131,7 @@ def generate_code(request: CodeAssistantRequest):
 
 
 @router.get("/git/status", status_code=status.HTTP_200_OK)
-def git_status():
+def git_status(user=Depends(get_current_user)):
     """Return the current branch and changed workspace files."""
     try:
         return git_service.status()
@@ -140,7 +141,7 @@ def git_status():
 
 
 @router.get("/git/diff", status_code=status.HTTP_200_OK)
-def git_diff(path: str | None = None):
+def git_diff(path: str | None = None, user=Depends(get_current_user)):
     """Return the working-tree diff, optionally limited to one workspace path."""
     try:
         return git_service.diff(path)
@@ -152,11 +153,11 @@ def git_diff(path: str | None = None):
 
 
 @router.post("/git/stage", status_code=status.HTTP_200_OK)
-def git_stage(request: GitStageRequest):
+def git_stage(request: GitStageRequest, user=Depends(get_current_user)):
     """Stage selected workspace paths after explicit confirmation."""
     try:
         if request.confirm:
-            require_approval(request.approval_id, "git_stage", "\n".join(request.paths))
+            require_approval(request.approval_id, "git_stage", "\n".join(request.paths), user.id)
         return git_service.stage(request.paths, request.confirm)
     except ValidationError:
         raise
@@ -166,11 +167,11 @@ def git_stage(request: GitStageRequest):
 
 
 @router.post("/git/commit", status_code=status.HTTP_200_OK)
-def git_commit(request: GitCommitRequest):
+def git_commit(request: GitCommitRequest, user=Depends(get_current_user)):
     """Create a commit after explicit confirmation."""
     try:
         if request.confirm:
-            require_approval(request.approval_id, "git_commit", request.message.strip())
+            require_approval(request.approval_id, "git_commit", request.message.strip(), user.id)
         return git_service.commit(request.message, request.confirm)
     except ValidationError:
         raise

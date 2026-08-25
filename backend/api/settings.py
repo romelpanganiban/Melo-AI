@@ -1,10 +1,11 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 from typing import Literal
 
 from services.settings_service import SettingsService
 from core.errors import SettingsError
 from core.logging import logger
+from core.auth import get_current_user
 
 router = APIRouter()
 
@@ -32,7 +33,7 @@ class SettingsResponse(BaseModel):
 
 
 @router.get("/settings", response_model=SettingsResponse, status_code=status.HTTP_200_OK)
-def get_settings():
+def get_settings(user=Depends(get_current_user)):
     """Get current application settings
     
     Returns:
@@ -52,7 +53,7 @@ def get_settings():
 
 
 @router.put("/settings", response_model=SettingsResponse, status_code=status.HTTP_200_OK)
-def update_settings(request: SettingsRequest):
+def update_settings(request: SettingsRequest, user=Depends(get_current_user)):
     """Update application settings
     
     Args:

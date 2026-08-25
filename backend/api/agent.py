@@ -2,7 +2,7 @@
 
 from typing import Literal, Optional
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
 from core.errors import ChatServiceError, ValidationError
@@ -10,6 +10,7 @@ from core.validation import validate_uuid
 from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
 from services.approval_service import get_approval_service
+from core.auth import get_current_user
 
 router = APIRouter()
 code_service = get_code_analysis_service()
@@ -35,13 +36,13 @@ class ApprovalRequest(BaseModel):
 
 
 @router.post("/agent/approvals", status_code=status.HTTP_201_CREATED)
-def create_approval(request: ApprovalRequest):
+def create_approval(request: ApprovalRequest, user=Depends(get_current_user)):
     """Issue a short-lived approval token for a specific side-effecting action."""
-    return approval_service.create(request.action, request.target)
+    return approval_service.create(request.action, request.target, owner_id=user.id)
 
 
 @router.post("/agent/run", status_code=status.HTTP_200_OK)
-def run_read_only_agent(request: AgentRunRequest):
+def run_read_only_agent(request: AgentRunRequest, user=Depends(get_current_user)):
     """Execute bounded read-only actions; side-effecting actions are unsupported."""
     results = []
     try:
@@ -64,6 +65,7 @@ def run_read_only_agent(request: AgentRunRequest):
                         action.query,
                         session_id,
                         action.collection_id,
+                        owner_id=user.id,
                     ),
                 })
         return {"results": results, "executed": len(results), "side_effects": False}

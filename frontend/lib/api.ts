@@ -19,6 +19,33 @@ export class APIError extends Error {
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
+const AUTH_TOKEN_KEY = 'melo_access_token';
+
+export function getAccessToken(): string | null {
+  return typeof window === 'undefined' ? null : window.localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAccessToken(token: string): void {
+  window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function clearAccessToken(): void {
+  window.localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+export function hasAccessToken(): boolean {
+  return Boolean(getAccessToken());
+}
+
+async function fetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  const token = getAccessToken();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return globalThis.fetch(input, { ...init, headers });
+}
+
 /**
  * Handle API response and errors
  */
@@ -969,4 +996,32 @@ export async function searchDocuments(
     body: JSON.stringify({ session_id: sessionId, query: query.trim(), top_k: topK, collection_id: collectionId }),
   });
   return handleResponse<DocumentSearchResponse>(response);
+}
+
+export type AuthResponse = {
+  access_token: string;
+  token_type: string;
+  user_id: string;
+};
+
+export async function register(email: string, password: string): Promise<AuthResponse> {
+  const response = await globalThis.fetch(`${API_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const result = await handleResponse<AuthResponse>(response);
+  setAccessToken(result.access_token);
+  return result;
+}
+
+export async function login(email: string, password: string): Promise<AuthResponse> {
+  const response = await globalThis.fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const result = await handleResponse<AuthResponse>(response);
+  setAccessToken(result.access_token);
+  return result;
 }

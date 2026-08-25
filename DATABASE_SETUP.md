@@ -129,6 +129,27 @@ python -m uvicorn main:app --reload
 
 Database tables will be created automatically on first startup.
 
+### 6. Apply Alembic Migrations
+
+For a new PostgreSQL database, apply the versioned schema before starting the
+backend:
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+For an existing Melo database already initialized by the earlier startup
+bootstrap, verify the schema first and then mark it at the current revision:
+
+```bash
+cd backend
+alembic stamp head
+```
+
+Use `alembic upgrade head` for future schema changes. Do not use `stamp` on an
+unverified database.
+
 ---
 
 ## Database Schema
