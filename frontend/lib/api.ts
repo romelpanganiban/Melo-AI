@@ -54,7 +54,35 @@ export type AppSettings = {
   top_p?: number;
   top_k?: number;
   system_prompt?: string | null;
+  learning_level?: "beginner" | "intermediate" | "advanced";
+  explanation_style?: "clear" | "concise" | "detailed";
+  quiz_difficulty?: "easy" | "medium" | "hard";
 };
+
+export type StudyProgress = {
+  id: number;
+  session_id: string;
+  collection_id?: string | null;
+  topic: string;
+  completed_cards: number;
+  quiz_score?: number | null;
+  updated_at: string;
+};
+
+export async function getStudyProgress(sessionId: string, collectionId?: string): Promise<{ progress: StudyProgress[] }> {
+  const query = collectionId ? `?collection_id=${encodeURIComponent(collectionId)}` : "";
+  const response = await fetch(`${API_URL}/study/progress/${sessionId}${query}`);
+  return handleResponse(response);
+}
+
+export async function saveStudyProgress(sessionId: string, progress: Omit<StudyProgress, "id" | "session_id" | "updated_at">): Promise<StudyProgress> {
+  const response = await fetch(`${API_URL}/study/progress/${sessionId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(progress),
+  });
+  return handleResponse<StudyProgress>(response);
+}
 
 export type InstalledModel = {
   name: string;
@@ -404,6 +432,9 @@ export async function updateSettings(settings: {
   provider: string;
   temperature: number;
   context_size?: 4096 | 8192;
+  learning_level?: "beginner" | "intermediate" | "advanced";
+  explanation_style?: "clear" | "concise" | "detailed";
+  quiz_difficulty?: "easy" | "medium" | "hard";
 }) {
   try {
     if (!settings.model || settings.model.trim().length === 0) {

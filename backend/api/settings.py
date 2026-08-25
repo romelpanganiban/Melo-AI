@@ -16,6 +16,9 @@ class SettingsRequest(BaseModel):
     provider: str = Field(default="ollama", min_length=1, description="Model provider (e.g., ollama)")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for generation (0.0-2.0)")
     context_size: Literal[4096, 8192] = Field(default=8192, description="Ollama context window size")
+    learning_level: Literal["beginner", "intermediate", "advanced"] = "intermediate"
+    explanation_style: Literal["clear", "concise", "detailed"] = "clear"
+    quiz_difficulty: Literal["easy", "medium", "hard"] = "medium"
 
 
 class SettingsResponse(BaseModel):
@@ -23,6 +26,9 @@ class SettingsResponse(BaseModel):
     provider: str
     temperature: float
     context_size: Literal[4096, 8192]
+    learning_level: Literal["beginner", "intermediate", "advanced"]
+    explanation_style: Literal["clear", "concise", "detailed"]
+    quiz_difficulty: Literal["easy", "medium", "hard"]
 
 
 @router.get("/settings", response_model=SettingsResponse, status_code=status.HTTP_200_OK)

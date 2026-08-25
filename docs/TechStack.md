@@ -68,13 +68,14 @@ Purpose:
 
 ## Storage
 
-### SQLite (Development)
+### SQLite (Local fallback)
 Purpose:
-- Local storage
+- Lightweight local development and test storage
 
-### PostgreSQL (Future)
+### PostgreSQL
 Purpose:
-- Production database
+- Primary database target for authenticated local-to-cloud deployments
+- Current local setup uses `postgresql+psycopg` with the `melo_ai` database
 
 ---
 

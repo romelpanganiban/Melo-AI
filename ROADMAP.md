@@ -144,10 +144,45 @@ ChatGPT/Claude-style Session Memory and Hardened Backend
 - [ ] Agent mode with multi-step tool execution
 - [ ] Approval gates for file, Git, and other side-effecting actions
 - [ ] Auto mode with task-aware model selection
-- [ ] Persistent learning preferences and study progress
+- [x] Persistent learning preferences and study progress
 
 Deliverable:
 Local knowledge assistant with Ask, Study, Plan, Agent, and Auto modes
+
+Implementation boundary:
+- Completed locally: grounded modes, collections, study persistence, citations,
+	agent proposals, bounded read-only actions, and approval-token primitives.
+- Not yet production-safe: authentication, authorization, tenant isolation, and
+	side-effecting agent execution.
+
+## Platform Direction
+
+Melo-AI should be developed as a model-agnostic AI platform rather than a thin
+chat wrapper. Melo's durable value is the orchestration around the model:
+
+- Knowledge engine: classification, structure-aware chunking, retrieval,
+	reranking, context compression, and citations.
+- Context and memory engine: conversation, user, workspace, and task context
+	with explicit retention and permission rules.
+- Agent and tool engine: planning, bounded execution, approvals, observation,
+	verification, and audit history.
+- Permission engine: authenticated users, workspace ownership, roles, and
+	document/tool access checks before retrieval or execution.
+- Model provider layer: one interface for Ollama and future hosted providers,
+	with task-aware routing and usage/cost tracking.
+- Workflow engine: repeatable scheduled or event-triggered document and tool
+	workflows.
+
+Recommended delivery order:
+1. Authentication, authorization, and tenant isolation.
+2. Retrieval quality and citation correctness.
+3. Reliable multi-step agents with sandboxing and approvals.
+4. Durable memory and context policies.
+5. Provider abstraction, model routing, evaluation, and workflows.
+
+The local machine is sufficient for developing and validating this architecture.
+Production inference and multi-user capacity should move to appropriately sized
+hosted infrastructure when the product is deployed.
 
 ---
 
@@ -190,16 +225,20 @@ Commercial SaaS Version
 - [x] Sessions
 - [x] RAG
 - [x] Coding Assistant
-- [ ] Ask, Study, Plan, Agent, and Auto modes
+- [x] Ask, Study, Plan, and Auto modes
+- [x] Agent proposal and bounded read-only actions
 
 ---
 
 ## Version 1.1 - Cloud Readiness
 
-- [ ] Authentication and user accounts
+- [x] Backend authentication and user accounts
+- [ ] Frontend login and token handling
 - [ ] Organizations and workspace ownership
-- [ ] Tenant-isolated sessions, documents, settings, and vector search
-- [ ] PostgreSQL as the single source of truth
+- [x] Tenant-isolated sessions, documents, collections, and vector retrieval
+- [ ] Tenant-isolated settings, training, approvals, and coding tools
+- [x] PostgreSQL database initialization and configuration support
+- [ ] PostgreSQL as the single production source of truth
 - [ ] Alembic database migrations
 - [ ] Rate limits, quotas, and token usage ledger
 - [ ] Secure production configuration and secret management

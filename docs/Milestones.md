@@ -197,21 +197,26 @@ Claude-Code-like Features
 
 ## Milestone 11 - Private Knowledge & Intelligence Modes
 
-Status: Planned
+Status: In Progress
 
-- [ ] Private knowledge workspace and document collections
-- [ ] Standalone semantic knowledge search
-- [ ] Ask mode with cited private-knowledge answers
-- [ ] Study mode for summaries, flashcards, quizzes, and explanations
-- [ ] Plan mode for goals and ordered action plans
-- [ ] Agent mode with a registered tool system
-- [ ] Approval workflow for side-effecting actions
+- [x] Private knowledge workspace and document collections
+- [x] Standalone semantic knowledge search
+- [x] Ask mode with cited private-knowledge answers
+- [x] Study mode for summaries, flashcards, quizzes, and explanations
+- [x] Plan mode for goals and ordered action plans
+- [x] Agent proposal flow with tool intent and approval points
+- [x] Bounded read-only Agent actions
+- [x] Auto mode with task-aware mode selection
+- [x] Persistent learning preferences and study progress
+- [x] End-to-end tests for modes, search, and approvals
+- [ ] Authentication-backed authorization for private knowledge and tools
+- [ ] Multi-step tool execution with replanning and verification
+- [ ] Approval gates for all side-effecting actions
 - [ ] Auto mode with task-aware model selection
-- [ ] Persistent learning preferences and study progress
-- [ ] End-to-end tests for modes, search, and approvals
 
 Deliverable:
-Local knowledge assistant with transparent, controllable intelligence modes
+Local knowledge assistant with transparent, controllable intelligence modes;
+secure multi-user behavior remains part of Milestone 15.
 
 ---
 
@@ -258,13 +263,16 @@ Status: Planned
 
 ## Milestone 15 - Cloud Readiness
 
-Status: Planned
+Status: In Progress
 
-- [ ] Authentication and user accounts
+- [x] Backend authentication and user accounts
+- [ ] Frontend login and token handling
 - [ ] Organizations, workspaces, and role-based access
-- [ ] Ownership fields and authorization checks for all resources
-- [ ] Cross-tenant isolation tests, including RAG and IDOR coverage
-- [ ] PostgreSQL as the single configuration and data source
+- [x] Ownership fields and authorization checks for sessions, chat/history, documents, collections, and RAG retrieval
+- [x] Cross-user isolation tests for sessions and documents
+- [ ] Authorization checks for settings, training, approvals, file, and Git tools
+- [x] PostgreSQL database initialization and configuration support
+- [ ] PostgreSQL as the single production source of truth
 - [ ] Alembic migrations and deployment-safe schema changes
 - [ ] Rate limits, quotas, and token usage/cost ledger
 - [ ] Safe sandbox for file and Git tools

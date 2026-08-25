@@ -41,6 +41,18 @@ class SessionNotFoundError(MeloAIException):
         )
 
 
+class DocumentNotFoundError(MeloAIException):
+    """Raised when a document is missing or inaccessible."""
+
+    def __init__(self, document_id: str):
+        super().__init__(
+            message=f"Document '{document_id}' not found",
+            status_code=status.HTTP_404_NOT_FOUND,
+            error_code="DOCUMENT_NOT_FOUND",
+            details={"document_id": document_id},
+        )
+
+
 class SettingsError(MeloAIException):
     """Raised when settings operation fails"""
     

@@ -19,6 +19,7 @@ def test_get_settings(client):
     assert "model_name" in data or "model" in data
     assert "provider" in data
     assert "temperature" in data
+    assert data["learning_level"] in {"beginner", "intermediate", "advanced"}
 
 
 def test_update_settings(client):
@@ -27,6 +28,9 @@ def test_update_settings(client):
         "model": "qwen3:32b",
         "provider": "ollama",
         "temperature": 0.5
+        ,"learning_level": "advanced",
+        "explanation_style": "detailed",
+        "quiz_difficulty": "hard"
     }
 
     response = client.put(
@@ -42,6 +46,7 @@ def test_update_settings(client):
     assert data.get("model_name") == new_settings["model"] or \
            data.get("model") == new_settings["model"]
     assert data["temperature"] == new_settings["temperature"]
+    assert data["learning_level"] == "advanced"
 
 
 def test_update_settings_invalid_temperature(client):

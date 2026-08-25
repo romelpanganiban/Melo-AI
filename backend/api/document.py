@@ -2,14 +2,15 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from pydantic import BaseModel, Field
 
 from services.document_service import DocumentService
 from services.document_parser import get_document_parser
-from core.errors import ValidationError, ChatServiceError
+from core.errors import ChatServiceError, DocumentNotFoundError, ValidationError
 from core.validation import validate_uuid
 from core.logging import logger
+from core.auth import get_current_user
 
 router = APIRouter()
 
@@ -61,15 +62,15 @@ class CollectionRequest(BaseModel):
 
 
 @router.get("/collections", status_code=status.HTTP_200_OK)
-def get_collections():
+def get_collections(user=Depends(get_current_user)):
     """List named private knowledge collections."""
-    return {"collections": service.get_collections()}
+    return {"collections": service.get_collections(owner_id=user.id)}
 
 
 @router.post("/collections", status_code=status.HTTP_201_CREATED)
-def create_collection(request: CollectionRequest):
+def create_collection(request: CollectionRequest, user=Depends(get_current_user)):
     """Create a named private knowledge collection."""
-    return service.create_collection(request.name, request.description)
+    return service.create_collection(request.name, request.description, owner_id=user.id)
 
 
 @router.post("/documents/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -77,6 +78,7 @@ def upload_document_file(
     file: UploadFile = File(...),
     session_id: Optional[str] = Form(None),
     collection_id: Optional[str] = Form(None),
+    user=Depends(get_current_user),
 ):
     """Extract and store a TXT, PDF, or DOCX upload."""
     try:
@@ -96,8 +98,11 @@ def upload_document_file(
             content=content,
             session_id=session_id,
             collection_id=collection_id,
+            owner_id=user.id,
         )
     except ValidationError:
+        raise
+    except DocumentNotFoundError:
         raise
     except Exception as e:
         logger.error(f"Document file upload error: {str(e)}")
@@ -105,7 +110,7 @@ def upload_document_file(
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-def upload_document(request: UploadDocumentRequest):
+def upload_document(request: UploadDocumentRequest, user=Depends(get_current_user)):
     """Upload a new document
     
     Args:
@@ -140,11 +145,14 @@ def upload_document(request: UploadDocumentRequest):
             content=request.content,
             session_id=request.session_id,
             collection_id=request.collection_id,
+            owner_id=user.id,
         )
         
         return document
         
     except ValidationError:
+        raise
+    except DocumentNotFoundError:
         raise
     except Exception as e:
         error_msg = str(e)
@@ -161,7 +169,7 @@ def upload_document(request: UploadDocumentRequest):
 
 
 @router.get("/documents/{document_id}", response_model=DocumentDetailResponse, status_code=status.HTTP_200_OK)
-def get_document(document_id: str):
+def get_document(document_id: str, user=Depends(get_current_user)):
     """Get document details including content
     
     Args:
@@ -183,10 +191,12 @@ def get_document(document_id: str):
             extra={"doc_id": document_id}
         )
         
-        document = service.get_document(document_id)
+        document = service.get_document(document_id, owner_id=user.id)
         return document
         
     except ValidationError:
+        raise
+    except DocumentNotFoundError:
         raise
     except Exception as e:
         logger.error(
@@ -197,7 +207,7 @@ def get_document(document_id: str):
 
 
 @router.get("/sessions/{session_id}/documents", status_code=status.HTTP_200_OK)
-def get_session_documents(session_id: str):
+def get_session_documents(session_id: str, user=Depends(get_current_user)):
     """Get all documents for a session
     
     Args:
@@ -219,7 +229,7 @@ def get_session_documents(session_id: str):
             extra={"session_id": session_id}
         )
         
-        documents = service.get_session_documents(session_id)
+        documents = service.get_session_documents(session_id, owner_id=user.id)
         
         return {
             "session_id": session_id,
@@ -238,7 +248,7 @@ def get_session_documents(session_id: str):
 
 
 @router.get("/documents/{document_id}/chunks", status_code=status.HTTP_200_OK)
-def get_document_chunks(document_id: str):
+def get_document_chunks(document_id: str, user=Depends(get_current_user)):
     """Get stored chunks for a document.
 
     This works offline with the current text-based chunking pipeline.
@@ -251,7 +261,7 @@ def get_document_chunks(document_id: str):
             extra={"doc_id": document_id}
         )
 
-        chunks = service.get_document_chunks(document_id)
+        chunks = service.get_document_chunks(document_id, owner_id=user.id)
 
         return {
             "document_id": document_id,
@@ -260,6 +270,8 @@ def get_document_chunks(document_id: str):
         }
 
     except ValidationError:
+        raise
+    except DocumentNotFoundError:
         raise
     except Exception as e:
         logger.error(
@@ -270,12 +282,12 @@ def get_document_chunks(document_id: str):
 
 
 @router.post("/documents/search", status_code=status.HTTP_200_OK)
-def search_documents(request: DocumentSearchRequest):
+def search_documents(request: DocumentSearchRequest, user=Depends(get_current_user)):
     """Search indexed documents in a session without asking the language model."""
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")
         collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
-        return service.search_documents(request.query, session_id, collection_id, request.top_k)
+        return service.search_documents(request.query, session_id, collection_id, request.top_k, owner_id=user.id)
     except ValidationError:
         raise
     except Exception as e:
@@ -284,7 +296,7 @@ def search_documents(request: DocumentSearchRequest):
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(document_id: str):
+def delete_document(document_id: str, user=Depends(get_current_user)):
     """Delete a document
     
     Args:
@@ -303,9 +315,11 @@ def delete_document(document_id: str):
             extra={"doc_id": document_id}
         )
         
-        service.delete_document(document_id)
+        service.delete_document(document_id, owner_id=user.id)
         
     except ValidationError:
+        raise
+    except DocumentNotFoundError:
         raise
     except Exception as e:
         logger.error(

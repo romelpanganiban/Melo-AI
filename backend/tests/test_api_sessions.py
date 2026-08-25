@@ -73,3 +73,21 @@ def test_get_sessions_empty(client):
 
     assert "sessions" in data
     assert isinstance(data["sessions"], list)
+
+
+def test_user_cannot_access_another_users_session(client, test_session_id):
+    response = client.post(
+        "/auth/register",
+        json={
+            "email": "second-owner@example.com",
+            "password": "another correct password",
+        },
+    )
+    assert response.status_code == 201
+    token = response.json()["access_token"]
+
+    response = client.get(
+        "/history/" + test_session_id,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 404

@@ -8,11 +8,22 @@ import uuid
 Base = declarative_base()
 
 
+class User(Base):
+    """Authenticated Melo-AI user."""
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
 class Session(Base):
     """Chat session model"""
     __tablename__ = "sessions"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     title = Column(String(255), nullable=False, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
@@ -71,6 +82,7 @@ class KnowledgeCollection(Base):
     __tablename__ = "knowledge_collections"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     name = Column(String(100), nullable=False, unique=True, index=True)
     description = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
@@ -78,11 +90,25 @@ class KnowledgeCollection(Base):
     documents = relationship("Document", back_populates="collection")
 
 
+class StudyProgress(Base):
+    """Persisted study progress for a local session and optional collection."""
+    __tablename__ = "study_progress"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String(36), nullable=False, index=True)
+    collection_id = Column(String(36), nullable=True, index=True)
+    topic = Column(String(255), nullable=False)
+    completed_cards = Column(Integer, default=0, nullable=False)
+    quiz_score = Column(Float, nullable=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+
 class Document(Base):
     """Document model for knowledge base"""
     __tablename__ = "documents"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     session_id = Column(String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=True, index=True)
     collection_id = Column(String(36), ForeignKey("knowledge_collections.id", ondelete="SET NULL"), nullable=True, index=True)
     filename = Column(String(255), nullable=False)

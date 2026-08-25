@@ -56,6 +56,21 @@ def init_database() -> None:
             if "model_name" not in columns:
                 with engine.begin() as connection:
                     connection.execute(text("ALTER TABLE messages ADD COLUMN model_name VARCHAR(100)"))
+        if "sessions" in inspect(engine).get_table_names():
+            columns = {column["name"] for column in inspect(engine).get_columns("sessions")}
+            if "owner_id" not in columns:
+                with engine.begin() as connection:
+                    connection.execute(text("ALTER TABLE sessions ADD COLUMN owner_id VARCHAR(36)"))
+        if "documents" in inspect(engine).get_table_names():
+            columns = {column["name"] for column in inspect(engine).get_columns("documents")}
+            if "owner_id" not in columns:
+                with engine.begin() as connection:
+                    connection.execute(text("ALTER TABLE documents ADD COLUMN owner_id VARCHAR(36)"))
+        if "knowledge_collections" in inspect(engine).get_table_names():
+            columns = {column["name"] for column in inspect(engine).get_columns("knowledge_collections")}
+            if "owner_id" not in columns:
+                with engine.begin() as connection:
+                    connection.execute(text("ALTER TABLE knowledge_collections ADD COLUMN owner_id VARCHAR(36)"))
         if "documents" in inspect(engine).get_table_names():
             columns = {column["name"] for column in inspect(engine).get_columns("documents")}
             if "collection_id" not in columns:

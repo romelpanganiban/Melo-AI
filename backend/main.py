@@ -1,7 +1,12 @@
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette import status
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from api.health import router as health_router
 from api.chat import router as chat_router
@@ -11,6 +16,8 @@ from api.document import router as document_router
 from api.code_analysis import router as code_analysis_router
 from api.training import router as training_router
 from api.agent import router as agent_router
+from api.study import router as study_router
+from api.auth import router as auth_router
 from core.errors import MeloAIException
 from core.settings import settings
 from core.logging import logger
@@ -81,6 +88,8 @@ app.include_router(document_router)
 app.include_router(code_analysis_router)
 app.include_router(training_router)
 app.include_router(agent_router)
+app.include_router(study_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def home():

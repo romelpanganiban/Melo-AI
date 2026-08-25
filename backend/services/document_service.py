@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import re
 
-from database import DocumentRepository, ChunkRepository, KnowledgeCollectionRepository, get_db_session
+from database import DocumentRepository, ChunkRepository, KnowledgeCollectionRepository, SessionRepository, get_db_session
 from services.embedding_service import get_embedding_service
 from services.qdrant_client import get_qdrant_client
 from core.logging import logger
-from core.errors import SessionNotFoundError, ChatServiceError, ValidationError
+from core.errors import ChatServiceError, DocumentNotFoundError, SessionNotFoundError, ValidationError
 from core.settings import settings
 
 
@@ -57,7 +57,7 @@ class DocumentService:
 
         return chunks
 
-    def upload_document(self, filename: str, file_type: str, content: str, session_id: str = None, collection_id: str = None) -> dict:
+    def upload_document(self, filename: str, file_type: str, content: str, session_id: str = None, collection_id: str = None, owner_id: str = None) -> dict:
         """Upload a document
         
         Args:
@@ -85,7 +85,10 @@ class DocumentService:
             if not content or not content.strip():
                 raise ValidationError("content is required")
 
-            if collection_id and not KnowledgeCollectionRepository(db).get_by_id(collection_id):
+            if session_id and not SessionRepository(db).get_by_id(session_id, owner_id=owner_id):
+                raise ValidationError("session was not found", field="session_id")
+
+            if collection_id and not KnowledgeCollectionRepository(db).get_by_id(collection_id, owner_id=owner_id):
                 raise ValidationError("collection was not found", field="collection_id")
             
             repo = DocumentRepository(db)
@@ -96,6 +99,7 @@ class DocumentService:
                 content=content,
                 session_id=session_id,
                 collection_id=collection_id,
+                owner_id=owner_id,
             )
 
             chunks = self.chunk_text(content)
@@ -138,6 +142,7 @@ class DocumentService:
                                     "filename": filename,
                                     "file_type": file_type,
                                     "session_id": session_id,
+                                    "owner_id": owner_id,
                                     "chunk_index": chunk_index,
                                     "tokens": len(chunk_text.split())
                                 }
@@ -197,7 +202,7 @@ class DocumentService:
         finally:
             db.close()
 
-    def get_document(self, document_id: str) -> dict:
+    def get_document(self, document_id: str, owner_id: str = None) -> dict:
         """Get a document by ID
         
         Args:
@@ -212,10 +217,10 @@ class DocumentService:
         db = get_db_session()
         try:
             repo = DocumentRepository(db)
-            document = repo.get_by_id(document_id)
+            document = repo.get_by_id(document_id, owner_id=owner_id)
             
             if not document:
-                raise ChatServiceError(f"Document not found: {document_id}")
+                raise DocumentNotFoundError(document_id)
             
             logger.info(
                 f"Document retrieved",
@@ -231,7 +236,7 @@ class DocumentService:
                 "created_at": document.created_at.isoformat() if document.created_at else None
             }
             
-        except ChatServiceError:
+        except (ChatServiceError, DocumentNotFoundError):
             raise
         except Exception as e:
             logger.error(f"Error getting document: {str(e)}")
@@ -239,7 +244,7 @@ class DocumentService:
         finally:
             db.close()
 
-    def get_session_documents(self, session_id: str) -> list[dict]:
+    def get_session_documents(self, session_id: str, owner_id: str = None) -> list[dict]:
         """Get all documents for a session
         
         Args:
@@ -254,7 +259,7 @@ class DocumentService:
         db = get_db_session()
         try:
             repo = DocumentRepository(db)
-            documents = repo.get_by_session(session_id)
+            documents = repo.get_by_session(session_id, owner_id=owner_id)
             
             logger.info(
                 f"Session documents retrieved",
@@ -279,20 +284,25 @@ class DocumentService:
         finally:
             db.close()
 
-    def search_documents(self, query: str, session_id: str, collection_id: str = None, top_k: int = 5) -> dict:
+    def search_documents(self, query: str, session_id: str, collection_id: str = None, top_k: int = 5, owner_id: str = None) -> dict:
         """Search the session's indexed knowledge without generating a chat response."""
         if not query or not query.strip():
             raise ValidationError("query is required", field="query")
         if not settings.QDRANT_ENABLED:
             return {"query": query.strip(), "results": [], "available": False}
 
+        db = get_db_session()
         try:
+            if session_id and not SessionRepository(db).get_by_id(session_id, owner_id=owner_id):
+                raise ValidationError("session was not found", field="session_id")
             qdrant_client = get_qdrant_client()
             if not qdrant_client.is_available():
                 return {"query": query.strip(), "results": [], "available": False}
 
             embedding = get_embedding_service().embed_query(query.strip())
             filters = {"session_id": session_id} if session_id else None
+            if owner_id:
+                filters = {**(filters or {}), "owner_id": owner_id}
             if collection_id:
                 filters = {**(filters or {}), "collection_id": collection_id}
             matches = qdrant_client.search(
@@ -314,26 +324,28 @@ class DocumentService:
         except Exception as e:
             logger.error("Document search failed", extra={"query_len": len(query)})
             raise ChatServiceError("Failed to search documents") from e
+        finally:
+            db.close()
 
-    def get_collections(self) -> list[dict]:
+    def get_collections(self, owner_id: str = None) -> list[dict]:
         db = get_db_session()
         try:
-            collections = KnowledgeCollectionRepository(db).get_all()
+            collections = KnowledgeCollectionRepository(db).get_all(owner_id=owner_id)
             return [{"id": item.id, "name": item.name, "description": item.description, "created_at": item.created_at.isoformat()} for item in collections]
         finally:
             db.close()
 
-    def create_collection(self, name: str, description: str = None) -> dict:
+    def create_collection(self, name: str, description: str = None, owner_id: str = None) -> dict:
         db = get_db_session()
         try:
             if not name or not name.strip():
                 raise ValidationError("name is required", field="name")
-            collection = KnowledgeCollectionRepository(db).create(name.strip(), description.strip() if description else None)
+            collection = KnowledgeCollectionRepository(db).create(name.strip(), description.strip() if description else None, owner_id=owner_id)
             return {"id": collection.id, "name": collection.name, "description": collection.description, "created_at": collection.created_at.isoformat()}
         finally:
             db.close()
 
-    def delete_document(self, document_id: str) -> None:
+    def delete_document(self, document_id: str, owner_id: str = None) -> None:
         """Delete a document
         
         Args:
@@ -346,10 +358,10 @@ class DocumentService:
         try:
             repo = DocumentRepository(db)
             chunk_repo = ChunkRepository(db)
-            document = repo.get_by_id(document_id)
+            document = repo.get_by_id(document_id, owner_id=owner_id)
             
             if not document:
-                raise ChatServiceError(f"Document not found: {document_id}")
+                raise DocumentNotFoundError(document_id)
 
             if settings.QDRANT_ENABLED:
                 try:
@@ -380,10 +392,13 @@ class DocumentService:
         finally:
             db.close()
 
-    def get_document_chunks(self, document_id: str) -> list[dict]:
+    def get_document_chunks(self, document_id: str, owner_id: str = None) -> list[dict]:
         """Get stored chunks for a document."""
         db = get_db_session()
         try:
+            document = DocumentRepository(db).get_by_id(document_id, owner_id=owner_id)
+            if not document:
+                raise DocumentNotFoundError(document_id)
             repo = ChunkRepository(db)
             chunks = repo.get_by_document(document_id)
 

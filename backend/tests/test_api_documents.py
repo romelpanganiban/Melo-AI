@@ -155,3 +155,32 @@ def test_delete_document(client, test_session_id):
 
     get_response = client.get(f"/documents/{document_id}")
     assert get_response.status_code != 200
+
+
+def test_user_cannot_read_another_users_document(client, test_session_id):
+    create_response = client.post(
+        "/documents",
+        json={
+            "filename": "private.txt",
+            "file_type": "txt",
+            "content": "Private document content.",
+            "session_id": test_session_id,
+        },
+    )
+    assert create_response.status_code == 201
+    document_id = create_response.json()["id"]
+
+    login_response = client.post(
+        "/auth/register",
+        json={
+            "email": "document-reader@example.com",
+            "password": "another correct password",
+        },
+    )
+    assert login_response.status_code == 201
+
+    response = client.get(
+        f"/documents/{document_id}",
+        headers={"Authorization": f"Bearer {login_response.json()['access_token']}"},
+    )
+    assert response.status_code == 404

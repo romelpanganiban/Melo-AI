@@ -12,6 +12,9 @@ export default function SettingsPage() {
   const [provider, setProvider] = useState("");
   const [temperature, setTemperature] = useState(0.7);
   const [contextSize, setContextSize] = useState<4096 | 8192>(8192);
+  const [learningLevel, setLearningLevel] = useState<"beginner" | "intermediate" | "advanced">("intermediate");
+  const [explanationStyle, setExplanationStyle] = useState<"clear" | "concise" | "detailed">("clear");
+  const [quizDifficulty, setQuizDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +32,9 @@ export default function SettingsPage() {
         setProvider(settings.provider || "ollama");
         setTemperature(settings.temperature || 0.7);
         setContextSize(settings.context_size || 8192);
+        setLearningLevel(settings.learning_level || "intermediate");
+        setExplanationStyle(settings.explanation_style || "clear");
+        setQuizDifficulty(settings.quiz_difficulty || "medium");
       } catch (err) {
         const message = err instanceof APIError ? err.message : "Failed to load settings";
         setError(message);
@@ -52,6 +58,9 @@ export default function SettingsPage() {
         provider,
         temperature,
         context_size: contextSize,
+        learning_level: learningLevel,
+        explanation_style: explanationStyle,
+        quiz_difficulty: quizDifficulty,
       });
 
       setSuccess(true);
@@ -105,6 +114,33 @@ export default function SettingsPage() {
 
         <section className="rounded-2xl border border-emerald-900/10 bg-white/80 p-5 shadow-sm">
           <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">Learning level</label>
+              <select value={learningLevel} onChange={(e) => setLearningLevel(e.target.value as typeof learningLevel)} className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">Explanation style</label>
+              <select value={explanationStyle} onChange={(e) => setExplanationStyle(e.target.value as typeof explanationStyle)} className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200">
+                <option value="clear">Clear</option>
+                <option value="concise">Concise</option>
+                <option value="detailed">Detailed</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-emerald-900">Quiz difficulty</label>
+              <select value={quizDifficulty} onChange={(e) => setQuizDifficulty(e.target.value as typeof quizDifficulty)} className="w-full rounded-lg border border-emerald-900/20 p-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-200">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+
             <div>
               <label className="mb-2 block text-sm font-medium text-emerald-900">
                 Context Size

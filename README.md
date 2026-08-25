@@ -28,7 +28,9 @@ The goal is to build an AI assistant that can:
 
 ## Current Status
 
-Early development. The current implementation includes database-backed chat, document ingestion, and RAG.
+Early development. The current implementation includes database-backed chat,
+document ingestion, RAG, private knowledge collections, grounded intelligence
+modes, coding tools, and bounded read-only agent actions.
 
 ### Completed
 
@@ -75,6 +77,15 @@ Early development. The current implementation includes database-backed chat, doc
 - Source Attribution
 - Source display in assistant messages
 - Batch Embedding Generation
+
+#### Intelligence Modes
+
+- Ask mode with grounded filename citations
+- Study mode with summaries, flashcards, quizzes, and explanations
+- Plan mode with grounded ordered plans
+- Auto mode with task-aware mode selection
+- Agent proposals and bounded read-only actions
+- Persistent learning preferences and study progress
 
 #### Vector Database
 
@@ -185,6 +196,17 @@ See [SYSTEM_AUDIT.md](SYSTEM_AUDIT.md) for the system-wide findings and prioriti
 - Kokoro TTS
 
 ---
+
+## Platform Direction
+
+Melo-AI is intended to become a model-agnostic AI platform. Melo owns the
+knowledge, context, memory, permissions, tools, approvals, workflows, and user
+experience; Ollama and future hosted models are replaceable providers.
+
+The next major investment is authentication and authorization before exposing
+the system beyond localhost. This is followed by retrieval quality, reliable
+multi-step agents, durable user/workspace/task memory, provider routing, and
+evaluation.
 
 ## Future Vision
 

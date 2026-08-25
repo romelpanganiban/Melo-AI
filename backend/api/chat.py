@@ -10,6 +10,7 @@ from core.validation import validate_message, validate_uuid
 from core.logging import logger
 from core.settings import settings
 from database.connection import get_db
+from core.auth import get_current_user
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat(request: ChatRequest, db: Session = Depends(get_db)):
+def chat(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Process a chat message for a session
     
     Args:
@@ -58,7 +59,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
         
         # Process message with injected database session
         service = ChatService()
-        result = service.process_message(session_id, message, db, mode=request.mode)
+        result = service.process_message(session_id, message, db, mode=request.mode, owner_id=user.id)
         
         return result
         
@@ -75,7 +76,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/chat/stream", status_code=status.HTTP_200_OK)
-def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
+def chat_stream(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Process a chat message and stream assistant response chunks.
 
     Response format is newline-delimited JSON (NDJSON) with events:
@@ -96,7 +97,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
         )
 
         service = ChatService()
-        stream = service.process_message_stream(session_id, message, db, mode=request.mode)
+        stream = service.process_message_stream(session_id, message, db, mode=request.mode, owner_id=user.id)
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     except ValidationError:
@@ -112,7 +113,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/history/{session_id}", status_code=status.HTTP_200_OK)
-def history(session_id: str, db: Session = Depends(get_db)):
+def history(session_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Get chat history for a session
     
     Args:
@@ -136,7 +137,7 @@ def history(session_id: str, db: Session = Depends(get_db)):
         )
         
         service = ChatService()
-        history = service.get_history(session_id, db)
+        history = service.get_history(session_id, db, owner_id=user.id)
         
         return {
             "session_id": session_id,

@@ -1,0 +1,75 @@
+"""Password hashing and signed access tokens for local authentication."""
+
+import base64
+import hashlib
+import hmac
+import json
+import os
+import secrets
+import time
+import uuid
+
+from sqlalchemy.orm import Session
+
+from database.models import User
+
+
+TOKEN_TTL_SECONDS = 60 * 60 * 24
+_SALT_BYTES = 16
+
+
+def _token_secret() -> bytes:
+    return os.getenv("MELO_AUTH_SECRET", "local-development-secret-change-me").encode()
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(_SALT_BYTES)
+    digest = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
+    return f"scrypt${base64.urlsafe_b64encode(salt).decode()}${base64.urlsafe_b64encode(digest).decode()}"
+
+
+def verify_password(password: str, encoded: str) -> bool:
+    try:
+        scheme, salt_value, digest_value = encoded.split("$", 2)
+        if scheme != "scrypt":
+            return False
+        salt = base64.urlsafe_b64decode(salt_value.encode())
+        expected = base64.urlsafe_b64decode(digest_value.encode())
+        actual = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
+        return hmac.compare_digest(actual, expected)
+    except (ValueError, TypeError):
+        return False
+
+
+def create_access_token(user_id: str) -> str:
+    payload = {"sub": user_id, "exp": int(time.time()) + TOKEN_TTL_SECONDS}
+    encoded = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
+    signature = hmac.new(_token_secret(), encoded.encode(), hashlib.sha256).digest()
+    return f"{encoded}.{base64.urlsafe_b64encode(signature).decode().rstrip('=')}"
+
+
+def verify_access_token(token: str) -> str | None:
+    try:
+        encoded, signature = token.split(".", 1)
+        expected = hmac.new(_token_secret(), encoded.encode(), hashlib.sha256).digest()
+        supplied = base64.urlsafe_b64decode((signature + "===").encode())
+        if not hmac.compare_digest(expected, supplied):
+            return None
+        payload = json.loads(base64.urlsafe_b64decode((encoded + "===").encode()))
+        if payload.get("exp", 0) < time.time():
+            return None
+        return str(uuid.UUID(payload["sub"]))
+    except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return None
+
+
+def get_user_by_email(db: Session, email: str) -> User | None:
+    return db.query(User).filter(User.email == email.lower()).first()
+
+
+def register_user(db: Session, email: str, password: str) -> User:
+    user = User(email=email.lower(), password_hash=hash_password(password))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user

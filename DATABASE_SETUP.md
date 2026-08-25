@@ -102,6 +102,7 @@ Edit `backend/.env`:
 ```bash
 # PostgreSQL connection string
 DATABASE_URL=postgresql://melo_user:secure_password_here@localhost:5432/melo_ai
+MELO_AUTH_SECRET=replace-with-a-long-random-secret
 ```
 
 Format: `postgresql://[user]:[password]@[host]:[port]/[database]`
@@ -113,7 +114,12 @@ cd backend
 pip install -r requirements.txt
 ```
 
-psycopg2 (PostgreSQL driver) is in requirements.txt
+The `psycopg` PostgreSQL driver is included in `requirements.txt`. The current
+Windows/Python connection format is:
+
+```env
+DATABASE_URL=postgresql+psycopg://postgres:your_password@127.0.0.1:5432/melo_ai
+```
 
 ### 5. Start Backend
 

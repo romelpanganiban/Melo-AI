@@ -18,7 +18,10 @@ class SettingsManager:
         "model": "qwen3:8b",
         "provider": "ollama",
         "temperature": 0.7,
-        "context_size": 8192
+        "context_size": 8192,
+        "learning_level": "intermediate",
+        "explanation_style": "clear",
+        "quiz_difficulty": "medium",
     }
 
     def __init__(self, file_path: Optional[Path] = None):

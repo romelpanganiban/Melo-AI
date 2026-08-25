@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures for Melo-AI tests."""
 
 import os
+import uuid
 from pathlib import Path
 
 import pytest
@@ -11,9 +12,10 @@ from sqlalchemy.orm import sessionmaker
 os.environ["DATABASE_URL"] = "sqlite:///./test_melo_ai.db"
 
 import database.connection as db_connection
-from database.models import Base
+from database.models import Base, User
 from database.connection import get_db
 from main import app
+from services.auth_service import create_access_token
 
 
 _test_engine = None
@@ -60,9 +62,17 @@ def client(test_db):
     def override_get_db():
         yield test_db
 
+    test_user = User(email=f"test-{uuid.uuid4()}@example.com", password_hash="test-hash")
+    test_db.add(test_user)
+    test_db.commit()
+    test_db.refresh(test_user)
+
     app.dependency_overrides[get_db] = override_get_db
     try:
-        yield TestClient(app)
+        yield TestClient(
+            app,
+            headers={"Authorization": f"Bearer {create_access_token(test_user.id)}"},
+        )
     finally:
         app.dependency_overrides.clear()
 
@@ -73,5 +83,6 @@ def test_session_id(test_db):
     from database.repositories import SessionRepository
 
     repo = SessionRepository(test_db)
-    session = repo.create(title="Test Session")
+    owner = test_db.query(User).order_by(User.created_at.desc()).first()
+    session = repo.create(title="Test Session", owner_id=owner.id if owner else None)
     return session.id

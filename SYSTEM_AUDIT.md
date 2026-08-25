@@ -1,6 +1,6 @@
 # System Audit
 
-Date: 2026-08-24
+Date: 2026-08-26
 
 ## Verified Changes
 
@@ -31,11 +31,15 @@ Date: 2026-08-24
 - Qdrant retrieval uses configurable `QDRANT_SCORE_THRESHOLD` with a `0.25` default to avoid dropping relevant low-score matches.
 - Live verification indexed one document, retrieved it at `32.1%` relevance, and removed the temporary test vector afterward.
 - Named knowledge collections now persist in SQLite and can be selected for document uploads and searches.
+- Learning preferences and session/collection study progress now persist locally and personalize Study mode prompts.
 - Restart the backend after deployment to apply the collection schema migration and expose the new `/collections` routes.
+- Backend authentication now provides registration, login, signed bearer tokens, and `/auth/me`.
+- Session, chat/history, document, collection, and Qdrant retrieval access is owner-scoped for authenticated API requests.
+- Existing SQLite databases receive compatible `owner_id` columns during startup initialization.
 
 ## Validation
 
-- Backend: `157 passed`
+- Backend: `171 passed`
 - Frontend: `29 passed`
 - Frontend lint: passed
 - Frontend production build: passed
@@ -45,7 +49,7 @@ Date: 2026-08-24
 
 ### High
 
-1. Add authentication and authorization before exposing the API beyond localhost. File write/delete and Git stage/commit endpoints can mutate the workspace; a client-supplied confirmation flag is not an authorization boundary.
+1. Complete authentication and authorization across the frontend, settings, training, approvals, file, and Git endpoints before exposing the API beyond localhost. File write/delete and Git stage/commit endpoints can mutate the workspace; a client-supplied confirmation flag is not an authorization boundary.
 2. Define an explicit consistency policy for document records, SQL chunks, and Qdrant vectors. Current embedding failures can leave a document reported as uploaded but unavailable to RAG, and vector deletion failures can leave stale retrieval results.
 
 ### Medium

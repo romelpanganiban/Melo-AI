@@ -1,7 +1,7 @@
 """Database module for Melo-AI"""
 
 from database.connection import init_database, get_db, get_db_session, DatabaseSession, engine, SessionLocal
-from database.models import Base, Session as SessionModel, Message, Settings, KnowledgeCollection, Document, DocumentChunk
+from database.models import Base, User, Session as SessionModel, Message, Settings, KnowledgeCollection, StudyProgress, Document, DocumentChunk
 from database.repositories import (
     SessionRepository,
     MessageRepository,
@@ -19,10 +19,12 @@ __all__ = [
     "engine",
     "SessionLocal",
     "Base",
+    "User",
     "SessionModel",
     "Message",
     "Settings",
     "KnowledgeCollection",
+    "StudyProgress",
     "Document",
     "DocumentChunk",
     "SessionRepository",

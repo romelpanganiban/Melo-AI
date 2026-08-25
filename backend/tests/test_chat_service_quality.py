@@ -40,6 +40,7 @@ def test_study_prompt_requests_structured_learning_material():
     assert "Flashcards" in prompt
     assert "Quick quiz" in prompt
     assert "[handbook.pdf]" in prompt
+    assert "intermediate learner" in prompt
 
 
 def test_plan_prompt_requests_actionable_plan_structure():
