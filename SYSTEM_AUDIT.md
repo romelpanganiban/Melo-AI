@@ -37,6 +37,7 @@ Date: 2026-08-26
 - Session, chat/history, document, collection, and Qdrant retrieval access is owner-scoped for authenticated API requests.
 - Existing SQLite databases receive compatible `owner_id` columns during startup initialization.
 - Alembic now contains an initial PostgreSQL schema revision; new databases can use `alembic upgrade head`.
+- The configured `melo_ai` database was initialized previously, so it was safely marked with `alembic stamp head` rather than recreating its existing tables.
 - Settings, study, training, agent, coding, Git, and approval endpoints now require authentication; approvals are user-bound.
 
 ## Validation

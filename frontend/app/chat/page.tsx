@@ -54,6 +54,7 @@ export default function ChatPage() {
   const [contextSize, setContextSize] = useState<4096 | 8192>(8192);
   const [temperature, setTemperature] = useState(0.7);
   const [chatMode, setChatMode] = useState<ChatMode>("chat");
+  const [selectedCollection, setSelectedCollection] = useState<string | undefined>();
   const historyRequestRef = useRef(0);
   const activeStreamRef = useRef<AbortController | null>(null);
   const sessionBootstrapRef = useRef(false);
@@ -240,6 +241,7 @@ export default function ChatPage() {
     try {
       const finalResponse = await sendMessageStream(selectedSession, userMessage, {
         mode: chatMode,
+        collectionId: selectedCollection,
         signal: controller.signal,
         onChunk: (chunk) => {
           setMessages((prev) =>
@@ -406,7 +408,7 @@ export default function ChatPage() {
             />
           </div>
 
-          <DocumentsPanel sessionId={selectedSession} />
+          <DocumentsPanel sessionId={selectedSession} onCollectionChange={setSelectedCollection} />
         </div>
       </div>
     </div>

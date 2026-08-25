@@ -126,8 +126,9 @@ export default function MessageBubble({
           <p className="font-semibold">Sources</p>
           <ul className="mt-1 space-y-1">
             {sources.map((source) => (
-              <li key={`${source.filename}-${source.relevance}`}>
+              <li key={`${source.document_id || source.filename}-${source.relevance}`}>
                 {source.filename} ({source.relevance.toFixed(1)}% match)
+                {source.chunks?.length ? ` · chunks ${source.chunks.join(", ")}` : ""}
               </li>
             ))}
           </ul>

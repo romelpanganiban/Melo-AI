@@ -19,6 +19,7 @@ class ChatRequest(BaseModel):
     session_id: str = Field(..., min_length=1, description="Session ID (UUID)")
     message: str = Field(..., min_length=1, max_length=settings.MAX_MESSAGE_LENGTH, description="User message")
     mode: Literal["chat", "ask", "study", "plan", "agent", "auto"] = Field(default="chat", description="Response mode")
+    collection_id: str | None = Field(None, description="Optional private knowledge collection ID")
 
 
 class ChatResponse(BaseModel):
@@ -48,6 +49,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_c
         # Validate inputs
         session_id = validate_uuid(request.session_id, field_name="session_id")
         message = validate_message(request.message, max_length=settings.MAX_MESSAGE_LENGTH)
+        collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
         
         logger.info(
             f"Processing chat message",
@@ -59,7 +61,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_c
         
         # Process message with injected database session
         service = ChatService()
-        result = service.process_message(session_id, message, db, mode=request.mode, owner_id=user.id)
+        result = service.process_message(session_id, message, db, mode=request.mode, owner_id=user.id, collection_id=collection_id)
         
         return result
         
@@ -87,6 +89,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), user=Depend
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")
         message = validate_message(request.message, max_length=settings.MAX_MESSAGE_LENGTH)
+        collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
 
         logger.info(
             "Processing streaming chat message",
@@ -97,7 +100,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), user=Depend
         )
 
         service = ChatService()
-        stream = service.process_message_stream(session_id, message, db, mode=request.mode, owner_id=user.id)
+        stream = service.process_message_stream(session_id, message, db, mode=request.mode, owner_id=user.id, collection_id=collection_id)
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     except ValidationError:

@@ -127,7 +127,9 @@ DATABASE_URL=postgresql+psycopg://postgres:your_password@127.0.0.1:5432/melo_ai
 python -m uvicorn main:app --reload
 ```
 
-Database tables will be created automatically on first startup.
+For a new PostgreSQL database, run the Alembic migration in the next section
+before starting the backend. The startup initializer remains for compatibility
+with older local databases.
 
 ### 6. Apply Alembic Migrations
 

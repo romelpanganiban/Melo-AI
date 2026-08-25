@@ -19,9 +19,10 @@ import { FileText, Search, Upload } from "lucide-react";
 
 type Props = {
   sessionId: string | null;
+  onCollectionChange?: (collectionId?: string) => void;
 };
 
-export default function DocumentsPanel({ sessionId }: Props) {
+export default function DocumentsPanel({ sessionId, onCollectionChange }: Props) {
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [chunkMap, setChunkMap] = useState<Record<string, DocumentChunk[]>>({});
   const [loading, setLoading] = useState(false);
@@ -81,6 +82,10 @@ export default function DocumentsPanel({ sessionId }: Props) {
       if (response.collections?.[0]) setCollectionId((current) => current || response.collections[0].id);
     }).catch(() => setCollections([]));
   }, []);
+
+  useEffect(() => {
+    onCollectionChange?.(collectionId || undefined);
+  }, [collectionId, onCollectionChange]);
 
   async function handleCreateCollection() {
     if (!newCollectionName.trim()) return;

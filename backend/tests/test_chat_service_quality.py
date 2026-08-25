@@ -27,6 +27,21 @@ def test_chat_prompt_remains_general_without_ask_mode():
     assert prompt.endswith("Assistant:")
 
 
+def test_search_results_deduplicate_chunks_and_preserve_source_metadata():
+    sources, context = ChatService._format_search_results([
+        {"document_id": "doc-1", "chunk_index": 0, "content": "First", "similarity_score": 0.7, "metadata": {"filename": "guide.pdf"}},
+        {"document_id": "doc-1", "chunk_index": 0, "content": "First duplicate", "similarity_score": 0.9, "metadata": {"filename": "guide.pdf"}},
+        {"document_id": "doc-1", "chunk_index": 1, "content": "Second", "similarity_score": 0.8, "metadata": {"filename": "guide.pdf"}},
+    ])
+
+    assert len(sources) == 1
+    assert sources[0]["document_id"] == "doc-1"
+    assert sources[0]["relevance"] == 90.0
+    assert sources[0]["chunks"] == [0, 1]
+    assert context.count("First") == 1
+    assert "Second" in context
+
+
 def test_study_prompt_requests_structured_learning_material():
     service = object.__new__(ChatService)
     prompt = service._build_prompt(

@@ -80,7 +80,7 @@ class ChatService:
             return "ask"
         return "chat"
 
-    def _search_documents(self, query: str, session_id: str = None, top_k: int = 5, owner_id: str = None) -> dict:
+    def _search_documents(self, query: str, session_id: str = None, top_k: int = 5, owner_id: str = None, collection_id: str = None) -> dict:
         """Search for relevant documents using vector similarity
         
         Args:
@@ -107,39 +107,19 @@ class ChatService:
             query_embedding = embedding_service.embed_query(query)
             
             # Search Qdrant for similar chunks
+            filters = {**({"session_id": session_id} if session_id else {}), **({"owner_id": owner_id} if owner_id else {}), **({"collection_id": collection_id} if collection_id else {})} or None
             search_results = qdrant_client.search(
                 query_embedding=query_embedding,
                 limit=top_k,
                 score_threshold=settings.QDRANT_SCORE_THRESHOLD,
-                filters={**({"session_id": session_id} if session_id else {}), **({"owner_id": owner_id} if owner_id else {})} or None
+                filters=filters
             )
             
             if not search_results:
                 logger.info("No documents found for query", extra={"query_len": len(query)})
                 return {"sources": [], "context": ""}
             
-            # Build context from search results
-            sources = []
-            context_parts = []
-            
-            for result in search_results:
-                payload = result.get("payload") or result.get("metadata", {})
-                filename = payload.get("filename", "Unknown")
-                content = result.get("content") or payload.get("content", "")
-                score = result.get("score", result.get("similarity_score", 0))
-                
-                # Track unique sources
-                source_key = f"{filename}"
-                if source_key not in [s.get("filename") for s in sources]:
-                    sources.append({
-                        "filename": filename,
-                        "relevance": round(score * 100, 1)
-                    })
-                
-                # Add to context
-                context_parts.append(f"[{filename}]\n{content}")
-            
-            context = "\n\n".join(context_parts)
+            sources, context = self._format_search_results(search_results)
             
             logger.info(
                 "Document search completed",
@@ -163,6 +143,42 @@ class ChatService:
             # Return empty results on error instead of failing
             return {"sources": [], "context": ""}
 
+    @staticmethod
+    def _format_search_results(search_results: list[dict]) -> tuple[list[dict], str]:
+        """Deduplicate chunks and create stable source metadata for prompts/UI."""
+        chunk_map: dict[tuple[str, int | None], dict] = {}
+        source_map: dict[str, dict] = {}
+        context_parts: list[str] = []
+
+        for result in search_results:
+            payload = result.get("payload") or result.get("metadata", {})
+            document_id = payload.get("document_id") or result.get("document_id") or "unknown"
+            chunk_index = payload.get("chunk_index", result.get("chunk_index"))
+            chunk_key = (str(document_id), chunk_index)
+            filename = payload.get("filename", "Unknown")
+            content = result.get("content") or payload.get("content", "")
+            score = float(result.get("score", result.get("similarity_score", 0)) or 0)
+            existing_chunk = chunk_map.get(chunk_key)
+            if existing_chunk is None or score > existing_chunk["score"]:
+                chunk_map[chunk_key] = {"filename": filename, "content": content, "score": score, "chunk_index": chunk_index, "document_id": str(document_id)}
+
+        for chunk in chunk_map.values():
+            document_id = chunk["document_id"]
+            filename = chunk["filename"]
+            content = chunk["content"]
+            score = chunk["score"]
+            chunk_index = chunk["chunk_index"]
+            source = source_map.setdefault(
+                document_id,
+                {"document_id": document_id, "filename": filename, "relevance": round(score * 100, 1), "chunks": []},
+            )
+            source["relevance"] = max(source["relevance"], round(score * 100, 1))
+            if chunk_index is not None:
+                source["chunks"].append(chunk_index)
+            context_parts.append(f"[{filename} | chunk {chunk_index if chunk_index is not None else '?'}]\n{content}")
+
+        return list(source_map.values()), "\n\n".join(context_parts)
+
     def _set_initial_session_title(self, session, message: str, session_repo: SessionRepository) -> None:
         """Use the first user message as the title for untouched sessions."""
         if session.title != "New Chat":
@@ -175,7 +191,7 @@ class ChatService:
         if title:
             session_repo.update_title(session.id, title)
 
-    def process_message(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None) -> dict:
+    def process_message(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None) -> dict:
         """Process a user message
         
         Args:
@@ -220,7 +236,7 @@ class ChatService:
             history = self._get_history_dicts(session_id, db)
             
             # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id)
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id)
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             # Generate response with document context
@@ -266,7 +282,7 @@ class ChatService:
             if should_close:
                 db.close()
 
-    def process_message_stream(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None) -> Generator[str, None, None]:
+    def process_message_stream(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None) -> Generator[str, None, None]:
         """Process a user message and stream assistant response chunks as NDJSON lines."""
         if db is None:
             db = get_db_session()
@@ -286,7 +302,7 @@ class ChatService:
             history = self._get_history_dicts(session_id, db)
             
             # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id)
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id)
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             chunks: list[str] = []
