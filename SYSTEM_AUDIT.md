@@ -37,6 +37,7 @@ Date: 2026-08-26
 - Session, chat/history, document, collection, and Qdrant retrieval access is owner-scoped for authenticated API requests.
 - Existing SQLite databases receive compatible `owner_id` columns during startup initialization.
 - Alembic now contains an initial PostgreSQL schema revision; new databases can use `alembic upgrade head`.
+- PostgreSQL startup now requires the Alembic version table at the current head and no longer mutates schema with `create_all()` or ad-hoc `ALTER TABLE` statements.
 - The configured `melo_ai` database was initialized previously, so it was safely marked with `alembic stamp head` rather than recreating its existing tables.
 - Settings, study, training, agent, coding, Git, and approval endpoints now require authentication; approvals are user-bound.
 - Weak or placeholder `MELO_AUTH_SECRET` values now fail closed instead of falling back to a predictable signing key.
@@ -72,7 +73,7 @@ Date: 2026-08-26
 
 ### Low
 
-7. Replace startup `create_all()`/ad hoc schema changes with an Alembic-first deployment path after existing databases are stamped or migrated.
+7. Remove the SQLite compatibility `create_all()` path when SQLite support is no longer required.
 8. Remove the standalone `backend/test_qdrant.py` smoke functions from normal pytest collection or convert their returned values into assertions; they currently generate pytest warnings and can attempt remote service calls during the default suite.
 9. Replace deprecated Starlette status constants and update the TestClient/httpx dependency pairing.
 10. Add failure-path tests for unavailable Qdrant, partial document indexing, parser resource limits, CORS disabled behavior, and interrupted settings writes.

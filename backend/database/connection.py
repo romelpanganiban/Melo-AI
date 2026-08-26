@@ -49,38 +49,26 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def init_database() -> None:
-    """Initialize database - create all tables"""
+    """Validate database readiness without mutating a PostgreSQL schema."""
     try:
         logger.info(
             "Initializing database",
             extra={"database_url": db_config.get_safe_connection_string()}
         )
-        Base.metadata.create_all(bind=engine)
-        if "messages" in inspect(engine).get_table_names():
-            columns = {column["name"] for column in inspect(engine).get_columns("messages")}
-            if "model_name" not in columns:
-                with engine.begin() as connection:
-                    connection.execute(text("ALTER TABLE messages ADD COLUMN model_name VARCHAR(100)"))
-        if "sessions" in inspect(engine).get_table_names():
-            columns = {column["name"] for column in inspect(engine).get_columns("sessions")}
-            if "owner_id" not in columns:
-                with engine.begin() as connection:
-                    connection.execute(text("ALTER TABLE sessions ADD COLUMN owner_id VARCHAR(36)"))
-        if "documents" in inspect(engine).get_table_names():
-            columns = {column["name"] for column in inspect(engine).get_columns("documents")}
-            if "owner_id" not in columns:
-                with engine.begin() as connection:
-                    connection.execute(text("ALTER TABLE documents ADD COLUMN owner_id VARCHAR(36)"))
-        if "knowledge_collections" in inspect(engine).get_table_names():
-            columns = {column["name"] for column in inspect(engine).get_columns("knowledge_collections")}
-            if "owner_id" not in columns:
-                with engine.begin() as connection:
-                    connection.execute(text("ALTER TABLE knowledge_collections ADD COLUMN owner_id VARCHAR(36)"))
-        if "documents" in inspect(engine).get_table_names():
-            columns = {column["name"] for column in inspect(engine).get_columns("documents")}
-            if "collection_id" not in columns:
-                with engine.begin() as connection:
-                    connection.execute(text("ALTER TABLE documents ADD COLUMN collection_id VARCHAR(36)"))
+        if "sqlite" not in db_config.database_url:
+            inspector = inspect(engine)
+            if "alembic_version" not in inspector.get_table_names():
+                raise ChatServiceError(
+                    "PostgreSQL schema is not migrated. Run 'alembic upgrade head' before starting Melo-AI."
+                )
+            with engine.connect() as connection:
+                revision = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
+            if revision != "0003_resource_workspaces":
+                raise ChatServiceError(
+                    f"PostgreSQL schema revision {revision!r} is not supported. Run 'alembic upgrade head'."
+                )
+        else:
+            Base.metadata.create_all(bind=engine)
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(
