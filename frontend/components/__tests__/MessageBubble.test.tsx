@@ -69,4 +69,24 @@ describe('MessageBubble', () => {
     expect(screen.queryByText('### Notes')).not.toBeInTheDocument();
     expect(screen.queryByText('***')).not.toBeInTheDocument();
   });
+
+  it('renders safe links as clickable anchors', () => {
+    render(
+      <MessageBubble
+        role="assistant"
+        content="Visit https://example.com or [Melo](https://melo.example.com)."
+      />
+    );
+
+    expect(screen.getByRole('link', { name: 'https://example.com' })).toHaveAttribute('href', 'https://example.com');
+    expect(screen.getByRole('link', { name: 'Melo' })).toHaveAttribute('href', 'https://melo.example.com');
+    expect(screen.getAllByRole('link')[0]).toHaveAttribute('target', '_blank');
+  });
+
+  it('offers a download action for completed assistant responses', () => {
+    render(<MessageBubble role="assistant" content="Formatted document content" />);
+
+    expect(screen.getByRole('button', { name: /download markdown/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download pdf/i })).toBeInTheDocument();
+  });
 });

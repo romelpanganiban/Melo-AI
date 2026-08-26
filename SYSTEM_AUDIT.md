@@ -45,7 +45,8 @@ Date: 2026-08-26
 - Frontend clears stored authentication and workspace tokens after a `401` response.
 - `/auth/logout` now revokes the current bearer token for the running backend process, and the frontend exposes a shared Sign out control.
 - Shared filesystem/Git and Agent file tools are disabled by default; trusted local development must explicitly set `ENABLE_WORKSPACE_TOOLS=true`.
-- Configurable request limits now protect authentication, chat, document upload, and document search; workspace owners are exempt from normal request limits.
+- Configurable request limits now protect authenticated feature APIs and authentication; only the configured platform admin is exempt from normal request limits.
+- Monthly token usage is tracked per user/workspace with configurable limits; the configured platform admin is exempt.
 - Rate-limit state is intentionally in memory for local deployment; distributed quotas remain required for multi-instance production deployments.
 - Chat retrieval accepts an optional collection scope and deduplicates retrieved chunks while returning document/chunk source metadata.
 - Workspace and membership models now exist, default workspaces are created/backfilled, and `/workspaces` lists authenticated memberships.
@@ -54,7 +55,7 @@ Date: 2026-08-26
 
 ## Validation
 
-- Backend: `182 passed`
+- Backend: `192 passed`
 - Frontend: `34 passed`
 - Frontend lint: passed
 - Frontend production build: passed

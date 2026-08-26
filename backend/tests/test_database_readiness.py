@@ -33,7 +33,7 @@ def test_readiness_rejects_outdated_revision(monkeypatch):
 
 
 def test_readiness_accepts_current_revision(monkeypatch):
-    engine, inspector = _engine_with_revision("0003_resource_workspaces")
+    engine, inspector = _engine_with_revision("0005_backfill_resource_owners")
     monkeypatch.setattr("database.connection.inspect", lambda _: inspector)
 
     validate_migration_state(engine)

@@ -303,7 +303,7 @@ class DocumentService:
 
             embedding = get_embedding_service().embed_query(query.strip())
             filters = {"session_id": session_id} if session_id else None
-            if owner_id:
+            if owner_id and not workspace_id:
                 filters = {**(filters or {}), "owner_id": owner_id}
             if workspace_id:
                 filters = {**(filters or {}), "workspace_id": workspace_id}

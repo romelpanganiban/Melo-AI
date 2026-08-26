@@ -127,7 +127,7 @@ The local `backend/.env` supplies `DATABASE_URL` and is ignored by Git.
 
 ### Current Validation
 
-- Backend: 171 tests passing
+- Backend: 192 tests passing
 - Frontend: 34 tests passing, lint passing, production build passing
 - Known warnings: deprecated Starlette status constants, deprecated TestClient/httpx compatibility, and optional CUDA/Qdrant availability warnings
 
@@ -218,6 +218,13 @@ The next major investment is authentication and authorization before exposing
 the system beyond localhost. This is followed by retrieval quality, reliable
 multi-step agents, durable user/workspace/task memory, provider routing, and
 evaluation.
+
+### Usage Limits
+
+Normal users have a configurable monthly token budget. Set
+`MONTHLY_TOKEN_LIMIT` in `backend/.env`; the default is `100000` tokens.
+Usage is available from `GET /usage`. The configured `ADMIN_EMAIL` is exempt
+from the monthly token budget.
 
 ## Future Vision
 

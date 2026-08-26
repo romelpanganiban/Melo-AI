@@ -17,11 +17,14 @@ import {
   getSessions,
   getHistory,
   getSettings,
+  getUsage,
+  uploadDocumentFile,
   sendMessageStream,
   updateSettings,
   logout,
   type InstalledModel,
   type ChatMode,
+  type UsageSummary,
 } from "@/lib/api";
 
 type ChatMessageWithState = ChatMessage & {
@@ -57,6 +60,10 @@ export default function ChatPage() {
   const [contextSize, setContextSize] = useState<4096 | 8192>(8192);
   const [temperature, setTemperature] = useState(0.7);
   const [chatMode, setChatMode] = useState<ChatMode>("chat");
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [documentUploadStatus, setDocumentUploadStatus] = useState<string | null>(null);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | undefined>();
+  const [activeDocumentSessionId, setActiveDocumentSessionId] = useState<string | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string | undefined>();
   const historyRequestRef = useRef(0);
   const activeStreamRef = useRef<AbortController | null>(null);
@@ -64,12 +71,13 @@ export default function ChatPage() {
   const localSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
-    void Promise.all([getModels(), getSettings()])
-      .then(([modelData, settings]) => {
+    void Promise.all([getModels(), getSettings(), getUsage()])
+      .then(([modelData, settings, usageData]) => {
         setAvailableModels(Array.isArray(modelData.models) ? modelData.models : []);
         setSelectedModel(settings.model || "auto");
         setContextSize(settings.context_size || 8192);
         setTemperature(settings.temperature ?? 0.7);
+        setUsage(usageData.usage);
       })
       .catch(() => {
         setAvailableModels([]);
@@ -87,6 +95,27 @@ export default function ChatPage() {
       });
     } catch {
       setError("Failed to change model");
+    }
+  }
+
+  async function handleChatFileDrop(file: File) {
+    if (!selectedSession) return;
+    const extension = file.name.toLowerCase().split(".").pop();
+    if (!extension || !["txt", "pdf", "docx"].includes(extension)) {
+      setDocumentUploadStatus("Only PDF, DOCX, and TXT files are supported");
+      return;
+    }
+
+    setDocumentUploadStatus(`Reading ${file.name}...`);
+    try {
+      const uploadedDocument = await uploadDocumentFile(file, selectedSession, selectedCollection);
+      setActiveDocumentId(uploadedDocument.id);
+      setActiveDocumentSessionId(selectedSession);
+      setDocumentUploadStatus(`${file.name} is ready for chat`);
+      setSessionRefresh((current) => current + 1);
+      window.setTimeout(() => setDocumentUploadStatus(null), 3000);
+    } catch (err) {
+      setDocumentUploadStatus(err instanceof APIError ? err.message : "Failed to read document");
     }
   }
 
@@ -178,6 +207,20 @@ export default function ChatPage() {
         return;
       }
 
+      if (err instanceof APIError && err.statusCode === 404) {
+        try {
+          const response = await getSessions();
+          const sessions = Array.isArray(response.sessions) ? response.sessions : [];
+          const replacement = sessions[0] ?? await createSession();
+          setSelectedSession(replacement.id);
+          setSessionRefresh((current) => current + 1);
+          setMessages([]);
+          setError(null);
+          return;
+        } catch {
+        }
+      }
+
       const message =
         err instanceof APIError
           ? err.message
@@ -211,13 +254,30 @@ export default function ChatPage() {
     };
   }, []);
 
-  async function handleSendMessage(userMessage: string) {
+  async function handleSendMessage(userMessage: string, attachedFile?: File) {
     if (!selectedSession || isSending) {
       return;
     }
 
     setError(null);
     setIsSending(true);
+
+    let attachedDocumentId = activeDocumentSessionId === selectedSession ? activeDocumentId : undefined;
+    if (attachedFile) {
+      try {
+        setDocumentUploadStatus(`Reading ${attachedFile.name}...`);
+        const uploadedDocument = await uploadDocumentFile(attachedFile, selectedSession, selectedCollection);
+        attachedDocumentId = uploadedDocument.id;
+        setActiveDocumentId(attachedDocumentId);
+        setActiveDocumentSessionId(selectedSession);
+        setDocumentUploadStatus(`${attachedFile.name} is ready for chat`);
+        setSessionRefresh((current) => current + 1);
+      } catch (err) {
+        setDocumentUploadStatus(err instanceof APIError ? err.message : "Failed to read document");
+        setIsSending(false);
+        return;
+      }
+    }
 
     const userMessageId = createMessageId("user");
     const assistantMessageId = createMessageId("assistant");
@@ -245,6 +305,7 @@ export default function ChatPage() {
       const finalResponse = await sendMessageStream(selectedSession, userMessage, {
         mode: chatMode,
         collectionId: selectedCollection,
+        documentId: attachedDocumentId,
         signal: controller.signal,
         onChunk: (chunk) => {
           setMessages((prev) =>
@@ -289,7 +350,9 @@ export default function ChatPage() {
             : message
         )
       );
+      void getUsage().then((usageData) => setUsage(usageData.usage)).catch(() => undefined);
       setSessionRefresh((prev) => prev + 1);
+      setDocumentUploadStatus(null);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         return;
@@ -359,6 +422,11 @@ export default function ChatPage() {
           </div>
 
           <nav className="hidden items-center gap-2 text-sm md:flex">
+            {usage && (
+              <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-slate-300" aria-label="Monthly token usage">
+                {usage.unlimited ? "Unlimited credits" : `${usage.remaining_tokens?.toLocaleString() ?? 0} credits left`}
+              </span>
+            )}
             <Link
               href="/models"
               className="rounded-lg px-3 py-1.5 font-medium text-slate-300 transition hover:bg-white/10"
@@ -398,7 +466,14 @@ export default function ChatPage() {
               onRetry={() => {
                 setRefresh((prev) => prev + 1);
               }}
+              onFileDrop={(file) => void handleChatFileDrop(file)}
             />
+
+            {documentUploadStatus && (
+              <p className="mx-4 mb-2 text-xs text-slate-300/70" role="status">
+                {documentUploadStatus}
+              </p>
+            )}
 
             <MessageInput
               sessionId={
@@ -414,7 +489,7 @@ export default function ChatPage() {
             />
           </div>
 
-          <DocumentsPanel sessionId={selectedSession} onCollectionChange={setSelectedCollection} />
+          <DocumentsPanel sessionId={selectedSession} refreshKey={sessionRefresh} onCollectionChange={setSelectedCollection} />
         </div>
       </div>
     </div>

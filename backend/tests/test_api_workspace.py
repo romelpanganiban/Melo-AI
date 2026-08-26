@@ -1,3 +1,6 @@
+from core.settings import settings
+
+
 def test_registration_creates_default_workspace(client):
     response = client.post(
         "/auth/register",
@@ -20,7 +23,7 @@ def test_registration_creates_default_workspace(client):
 def test_designated_admin_registration_gets_admin_role(client):
     response = client.post(
         "/auth/register",
-        json={"email": "romelpanganiban284@gmail.com", "password": "correct horse battery staple"},
+        json={"email": settings.ADMIN_EMAIL, "password": "correct horse battery staple"},
     )
     assert response.status_code == 201
     registration = response.json()

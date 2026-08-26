@@ -196,8 +196,8 @@ hosted infrastructure when the product is deployed.
 
 ## Phase 13 - Cloud Platform
 
-- [ ] User Accounts
-- [ ] Authentication
+- [x] User Accounts
+- [x] Authentication
 - [ ] Database
 - [ ] Deployment
 - [ ] Usage Tracking
@@ -243,7 +243,8 @@ Commercial SaaS Version
 - [ ] PostgreSQL as the single production source of truth
 - [x] Alembic database migrations
 - [ ] Rate limits, quotas, and token usage ledger
-- [x] Basic owner-exempt request rate limits
+- [x] Monthly token usage ledger and credit-limit enforcement
+- [x] Configured admin-exempt request rate limits
 - [ ] Distributed rate limits, quotas, and token usage ledger
 - [ ] Secure production configuration and secret management
 - [ ] Sandbox or disable server file and Git tools

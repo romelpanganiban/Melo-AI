@@ -20,7 +20,7 @@ describe('MessageInput', () => {
     );
     
     const input = screen.getByPlaceholderText(/message melo/i) as HTMLInputElement;
-    const sendButton = screen.getByRole('button');
+    const sendButton = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
     fireEvent.click(sendButton);
@@ -35,7 +35,7 @@ describe('MessageInput', () => {
     );
     
     const input = screen.getByPlaceholderText(/message melo/i) as HTMLInputElement;
-    const sendButton = screen.getByRole('button');
+    const sendButton = screen.getByRole('button', { name: 'Send' });
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
     fireEvent.click(sendButton);
@@ -49,7 +49,7 @@ describe('MessageInput', () => {
       <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
     );
     
-    const sendButton = screen.getByRole('button') as HTMLButtonElement;
+    const sendButton = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
     
     // Button should be disabled when input is empty
     expect(sendButton.disabled).toBe(true);
@@ -62,11 +62,28 @@ describe('MessageInput', () => {
     );
     
     const input = screen.getByPlaceholderText(/message melo/i);
-    const sendButton = screen.getByRole('button') as HTMLButtonElement;
+    const sendButton = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
     
     expect(sendButton.disabled).toBe(false);
+  });
+
+  it('allows sending an attachment without text', () => {
+    const mockOnSend = jest.fn();
+    render(
+      <MessageInput sessionId="session-1" onSendMessage={mockOnSend} isSending={false} />
+    );
+
+    const file = new File(['document text'], 'notes.txt', { type: 'text/plain' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const sendButton = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
+    expect(sendButton.disabled).toBe(false);
+    fireEvent.click(sendButton);
+
+    expect(mockOnSend).toHaveBeenCalledWith('Please read and summarize this file.', file);
   });
 
   it('sends message through the send action', () => {
@@ -76,7 +93,7 @@ describe('MessageInput', () => {
     );
     
     const input = screen.getByPlaceholderText(/message melo/i);
-    const sendButton = screen.getByRole('button');
+    const sendButton = screen.getByRole('button', { name: 'Send' });
     
     fireEvent.change(input, { target: { value: 'Hello!' } });
     fireEvent.click(sendButton);

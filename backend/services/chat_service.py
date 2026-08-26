@@ -6,6 +6,7 @@ from typing import Generator
 from sqlalchemy.orm import Session
 from database import get_db_session, SessionRepository, MessageRepository
 from services.ollama_client import OllamaClient
+from services.usage_service import record_usage
 from services.embedding_service import get_embedding_service
 from services.qdrant_client import get_qdrant_client
 from services.settings_manager import SettingsManager
@@ -80,7 +81,7 @@ class ChatService:
             return "ask"
         return "chat"
 
-    def _search_documents(self, query: str, session_id: str = None, top_k: int = 5, owner_id: str = None, collection_id: str = None, workspace_id: str = None) -> dict:
+    def _search_documents(self, query: str, session_id: str = None, top_k: int = 5, owner_id: str = None, collection_id: str = None, workspace_id: str = None, document_id: str = None) -> dict:
         """Search for relevant documents using vector similarity
         
         Args:
@@ -107,11 +108,16 @@ class ChatService:
             query_embedding = embedding_service.embed_query(query)
             
             # Search Qdrant for similar chunks
-            filters = {**({"session_id": session_id} if session_id else {}), **({"owner_id": owner_id} if owner_id else {}), **({"workspace_id": workspace_id} if workspace_id else {}), **({"collection_id": collection_id} if collection_id else {})} or None
+            filters = {
+                **({"session_id": session_id} if session_id else {}),
+                **({"workspace_id": workspace_id} if workspace_id else {"owner_id": owner_id} if owner_id else {}),
+                **({"collection_id": collection_id} if collection_id else {}),
+                **({"document_id": document_id} if document_id else {}),
+            } or None
             search_results = qdrant_client.search(
                 query_embedding=query_embedding,
                 limit=top_k,
-                score_threshold=settings.QDRANT_SCORE_THRESHOLD,
+                score_threshold=0.0 if document_id else settings.QDRANT_SCORE_THRESHOLD,
                 filters=filters
             )
             
@@ -191,7 +197,7 @@ class ChatService:
         if title:
             session_repo.update_title(session.id, title)
 
-    def process_message(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None, workspace_id: str = None) -> dict:
+    def process_message(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None, workspace_id: str = None, document_id: str = None) -> dict:
         """Process a user message
         
         Args:
@@ -236,7 +242,7 @@ class ChatService:
             history = self._get_history_dicts(session_id, db)
             
             # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id)
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id, document_id=document_id)
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             # Generate response with document context
@@ -257,6 +263,7 @@ class ChatService:
                 tokens_used=usage.get("total_tokens", 0),
                 model_name=self.ollama.model,
             )
+            record_usage(db, owner_id, workspace_id, usage.get("total_tokens", 0))
 
             logger.info(
                 "Response generated",
@@ -282,7 +289,7 @@ class ChatService:
             if should_close:
                 db.close()
 
-    def process_message_stream(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None, workspace_id: str = None) -> Generator[str, None, None]:
+    def process_message_stream(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None, workspace_id: str = None, document_id: str = None) -> Generator[str, None, None]:
         """Process a user message and stream assistant response chunks as NDJSON lines."""
         if db is None:
             db = get_db_session()
@@ -302,7 +309,7 @@ class ChatService:
             history = self._get_history_dicts(session_id, db)
             
             # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id)
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id, document_id=document_id)
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             chunks: list[str] = []
@@ -330,6 +337,7 @@ class ChatService:
                 tokens_used=usage.get("total_tokens", 0),
                 model_name=self.ollama.model,
             )
+            record_usage(db, owner_id, workspace_id, usage.get("total_tokens", 0))
             yield json.dumps(
                 {
                     "type": "done",
@@ -459,7 +467,8 @@ class ChatService:
 
         if mode == "ask":
             grounding = (
-                "You are in Ask mode. Answer using only the provided document context. "
+                "You are in Ask mode. The document text below was extracted from a file uploaded by the user and is available to you. "
+                "Answer using only the provided document context. Never claim that you cannot access files, external files, or the user's local machine when document context is provided. "
                 "If the context does not contain enough evidence, say so clearly and do not guess. "
                 "Cite supporting filenames in square brackets, for example [guide.pdf]."
             )
@@ -500,7 +509,11 @@ class ChatService:
             return f"{agent_prompt}\n\n{context}User: {current_message}\n\nDocument context:\n{context_block}\n\nAssistant:"
 
         if doc_context.strip():
-            return f"{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
+            grounding = (
+                "The document text below was extracted from a file uploaded by the user and is available to you. "
+                "Use it to answer the user. Do not say that you cannot access or analyze files."
+            )
+            return f"{grounding}\n\n{context}User: {current_message}\n\nContext from documents:\n{doc_context}\n\nAssistant:"
         return f"{context}User: {current_message}\nAssistant:"
 
     def _generate_response(self, session_id: str, history: list[dict], doc_context: str = "", mode: str = "chat") -> str:

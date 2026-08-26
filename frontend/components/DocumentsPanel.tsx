@@ -20,9 +20,10 @@ import { FileText, Search, Upload } from "lucide-react";
 type Props = {
   sessionId: string | null;
   onCollectionChange?: (collectionId?: string) => void;
+  refreshKey?: number;
 };
 
-export default function DocumentsPanel({ sessionId, onCollectionChange }: Props) {
+export default function DocumentsPanel({ sessionId, onCollectionChange, refreshKey = 0 }: Props) {
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [chunkMap, setChunkMap] = useState<Record<string, DocumentChunk[]>>({});
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,7 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
   const [content, setContent] = useState("");
   const [fileType, setFileType] = useState<"txt" | "pdf" | "docx">("txt");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<DocumentSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -74,7 +76,7 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [loadDocuments]);
+  }, [loadDocuments, refreshKey]);
 
   useEffect(() => {
     void getCollections().then((response) => {
@@ -142,8 +144,8 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
     }
   }
 
-  async function handleFileUpload() {
-    if (!sessionId || !selectedFile) {
+  async function handleFileUpload(file = selectedFile) {
+    if (!sessionId || !file) {
       setError("Select a PDF, DOCX, or TXT file first");
       return;
     }
@@ -152,7 +154,7 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
     setError(null);
 
     try {
-      await uploadDocumentFile(selectedFile, sessionId, collectionId || undefined);
+      await uploadDocumentFile(file, sessionId, collectionId || undefined);
       setSelectedFile(null);
       await loadDocuments();
     } catch (err) {
@@ -160,6 +162,20 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
     } finally {
       setUploading(false);
     }
+  }
+
+  function handleFileDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    const extension = file.name.toLowerCase().split(".").pop();
+    if (!extension || !["txt", "pdf", "docx"].includes(extension)) {
+      setError("Only PDF, DOCX, and TXT files are supported");
+      return;
+    }
+    setSelectedFile(file);
+    void handleFileUpload(file);
   }
 
   async function handleDelete(documentId: string) {
@@ -238,7 +254,7 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
         </div>
       ) : (
         <>
-          <div className="mt-4 space-y-3">
+          <div className="documents-controls mt-4 space-y-3 md:order-last md:max-h-[58%] md:overflow-y-auto md:pr-1">
             <div>
               <label htmlFor="knowledge-collection" className="mb-1 block text-xs font-semibold text-slate-300">Knowledge collection</label>
               <select id="knowledge-collection" value={collectionId} onChange={(event) => setCollectionId(event.target.value)} className="w-full rounded-lg border border-white/15 bg-white/5 p-2 text-sm text-slate-100">
@@ -285,12 +301,24 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
               <label className="mb-1 block text-xs font-semibold text-slate-300">
                 📎 Upload a file
               </label>
-              <input
-                type="file"
-                accept=".txt,.pdf,.docx"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
-                className="document-file-input w-full min-w-0 text-xs text-slate-300"
-              />
+              <div
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleFileDrop}
+                className={`rounded-lg border border-dashed p-3 text-center transition ${isDragging ? "border-cyan-300 bg-cyan-300/10" : "border-white/15 bg-white/5"}`}
+              >
+                <p className="text-xs text-slate-300">Drop a file here</p>
+                <p className="mt-1 text-[11px] text-slate-400/65">PDF, DOCX, or TXT</p>
+                <input
+                  type="file"
+                  accept=".txt,.pdf,.docx"
+                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                  className="document-file-input mt-2 w-full min-w-0 text-xs text-slate-300"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => void handleFileUpload()}
@@ -335,16 +363,12 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
               {searchResults.length > 0 && <ul className="mt-3 space-y-2">{searchResults.map((result, index) => <li key={`${result.filename}-${result.chunk_index ?? index}`} className="rounded-lg border border-white/10 bg-white/5 p-2 text-xs text-slate-300"><p className="font-semibold text-teal-200">{result.filename} <span className="font-normal text-slate-400">{result.relevance}%</span></p><p className="mt-1 line-clamp-3">{result.content}</p></li>)}</ul>}
             </div>
 
-            {documents.length === 0 && !uploading && (
-              <div className="mt-3 rounded bg-white/5 p-3 text-center text-xs text-slate-400/60">
-                No documents yet. Upload one to get started!
-              </div>
-            )}
           </div>
 
-          <div className="mt-6 min-h-0 min-w-0 max-w-full space-y-2 overflow-x-hidden overflow-y-auto pr-1 md:flex-1">
-            <h3 className="text-xs font-semibold text-emerald-900 mb-2">
-              📚 Documents in this Session
+          <div className="documents-list-scroll mt-6 min-h-0 min-w-0 max-w-full space-y-2 overflow-x-hidden overflow-y-auto pr-1 md:order-first md:mt-4 md:flex-1">
+            <h3 className="flex items-center justify-between text-xs font-semibold text-emerald-900 mb-2">
+              <span>📚 Documents in this Session</span>
+              <span className="font-normal opacity-70">{documents.length}</span>
             </h3>
             
             {loading ? (
@@ -353,7 +377,7 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
               <p className="text-sm text-emerald-900/65">✨ No documents yet. Upload one above!</p>
             ) : (
               documents.map((doc) => (
-                <div key={doc.id} className="min-w-0 max-w-full overflow-hidden rounded-lg border border-emerald-900/10 bg-gradient-to-r from-white to-emerald-50/30 p-3 hover:border-emerald-900/20 transition">
+                <div key={doc.id} className="document-card min-w-0 max-w-full overflow-hidden rounded-lg border border-emerald-900/10 bg-gradient-to-r from-white to-emerald-50/30 p-3 transition hover:border-emerald-900/20">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-semibold text-emerald-950" title={doc.filename}>
@@ -384,7 +408,7 @@ export default function DocumentsPanel({ sessionId, onCollectionChange }: Props)
                   </div>
 
                   {chunkMap[doc.id] && (
-                    <div className="mt-3 min-w-0 max-w-full space-y-2 overflow-x-hidden overflow-y-auto rounded-md border border-emerald-900/10 bg-emerald-50/80 p-2.5 max-h-[200px]">
+                    <div className="documents-list-scroll mt-3 max-h-[200px] min-w-0 max-w-full space-y-2 overflow-x-hidden overflow-y-auto rounded-md border border-emerald-900/10 bg-emerald-50/80 p-2.5">
                       <p className="text-xs font-semibold text-emerald-900 mb-2">
                         📑 Chunks ({chunkMap[doc.id].length})
                       </p>

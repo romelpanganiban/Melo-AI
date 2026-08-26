@@ -42,7 +42,8 @@ class Settings:
     RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
     AUTH_RATE_LIMIT_REQUESTS: int = int(os.getenv("AUTH_RATE_LIMIT_REQUESTS", "10"))
     AUTH_RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("AUTH_RATE_LIMIT_WINDOW_SECONDS", "300"))
-    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "romelpanganiban284@gmail.com").strip().lower()
+    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "").strip().lower()
+    MONTHLY_TOKEN_LIMIT: int = int(os.getenv("MONTHLY_TOKEN_LIMIT", "100000"))
     CORS_ORIGINS: list[str] = [
         origin.strip() 
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")

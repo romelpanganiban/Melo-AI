@@ -195,14 +195,10 @@ class QdrantVectorClient:
                 # Convert filters dict to Qdrant filter format
                 conditions = []
                 for key, value in filters.items():
-                    conditions.append(
-                        models.HasIdCondition(has_id=[value])
-                        if key == "document_id"
-                        else models.FieldCondition(
-                            key=key,
-                            match=models.MatchValue(value=value)
-                        )
-                    )
+                    conditions.append(models.FieldCondition(
+                        key=key,
+                        match=models.MatchValue(value=value)
+                    ))
                 query_filter = models.Filter(must=conditions) if conditions else None
             
             # Search in collection

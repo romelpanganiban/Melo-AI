@@ -1,5 +1,11 @@
 from fastapi import APIRouter, status, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+from xml.sax.saxutils import escape
 from pydantic import BaseModel, Field
 from typing import Literal
 from sqlalchemy.orm import Session
@@ -12,6 +18,7 @@ from core.settings import settings
 from database.connection import get_db
 from core.auth import get_current_membership
 from core.rate_limit import enforce_request_rate_limit
+from services.usage_service import enforce_credit_limit
 
 router = APIRouter()
 
@@ -21,6 +28,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=settings.MAX_MESSAGE_LENGTH, description="User message")
     mode: Literal["chat", "ask", "study", "plan", "agent", "auto"] = Field(default="chat", description="Response mode")
     collection_id: str | None = Field(None, description="Optional private knowledge collection ID")
+    document_id: str | None = Field(None, description="Optional uploaded document ID to use as context")
 
 
 class ChatResponse(BaseModel):
@@ -30,8 +38,46 @@ class ChatResponse(BaseModel):
     sources: list[dict] = []  # List of {"filename": str, "relevance": float}
 
 
+class PdfExportRequest(BaseModel):
+    content: str = Field(..., min_length=1, max_length=settings.MAX_MESSAGE_LENGTH * 10)
+    filename: str = Field(default="melo-response.pdf", min_length=1, max_length=120)
+
+
+def enforce_chat_credits(db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+    enforce_credit_limit(db, membership.user, membership.workspace_id)
+
+
+@router.post("/chat/export/pdf", status_code=status.HTTP_200_OK)
+def export_response_pdf(request: PdfExportRequest, membership=Depends(get_current_membership)):
+    """Render an assistant response as a downloadable PDF."""
+    filename = request.filename.replace("/", "_").replace("\\", "_")
+    if not filename.lower().endswith(".pdf"):
+        filename += ".pdf"
+
+    output = BytesIO()
+    document = SimpleDocTemplate(
+        output,
+        pagesize=letter,
+        rightMargin=0.7 * inch,
+        leftMargin=0.7 * inch,
+        topMargin=0.7 * inch,
+        bottomMargin=0.7 * inch,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+    for line in request.content.splitlines() or [request.content]:
+        story.append(Paragraph(escape(line) or "&nbsp;", styles["BodyText"]))
+        story.append(Spacer(1, 6))
+    document.build(story)
+    return Response(
+        content=output.getvalue(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit), __: None = Depends(enforce_chat_credits)):
     """Process a chat message for a session
     
     Args:
@@ -51,6 +97,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends
         session_id = validate_uuid(request.session_id, field_name="session_id")
         message = validate_message(request.message, max_length=settings.MAX_MESSAGE_LENGTH)
         collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
+        document_id = validate_uuid(request.document_id, field_name="document_id") if request.document_id else None
         
         logger.info(
             f"Processing chat message",
@@ -62,7 +109,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends
         
         # Process message with injected database session
         service = ChatService(workspace_id=membership.workspace_id)
-        result = service.process_message(session_id, message, db, mode=request.mode, workspace_id=membership.workspace_id, collection_id=collection_id)
+        result = service.process_message(session_id, message, db, mode=request.mode, owner_id=membership.user_id, workspace_id=membership.workspace_id, collection_id=collection_id, document_id=document_id)
         
         return result
         
@@ -79,7 +126,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends
 
 
 @router.post("/chat/stream", status_code=status.HTTP_200_OK)
-def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit), __: None = Depends(enforce_chat_credits)):
     """Process a chat message and stream assistant response chunks.
 
     Response format is newline-delimited JSON (NDJSON) with events:
@@ -91,6 +138,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=
         session_id = validate_uuid(request.session_id, field_name="session_id")
         message = validate_message(request.message, max_length=settings.MAX_MESSAGE_LENGTH)
         collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
+        document_id = validate_uuid(request.document_id, field_name="document_id") if request.document_id else None
 
         logger.info(
             "Processing streaming chat message",
@@ -101,7 +149,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=
         )
 
         service = ChatService(workspace_id=membership.workspace_id)
-        stream = service.process_message_stream(session_id, message, db, mode=request.mode, workspace_id=membership.workspace_id, collection_id=collection_id)
+        stream = service.process_message_stream(session_id, message, db, mode=request.mode, owner_id=membership.user_id, workspace_id=membership.workspace_id, collection_id=collection_id, document_id=document_id)
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     except ValidationError:
@@ -141,7 +189,7 @@ def history(session_id: str, db: Session = Depends(get_db), membership=Depends(g
         )
         
         service = ChatService()
-        history = service.get_history(session_id, db, workspace_id=membership.workspace_id)
+        history = service.get_history(session_id, db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
         
         return {
             "session_id": session_id,

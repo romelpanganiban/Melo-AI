@@ -111,6 +111,19 @@ export type AppSettings = {
   quiz_difficulty?: "easy" | "medium" | "hard";
 };
 
+export type UsageSummary = {
+  used_tokens: number;
+  limit_tokens: number | null;
+  remaining_tokens: number | null;
+  period_start: string;
+  unlimited: boolean;
+};
+
+export async function getUsage(): Promise<{ usage: UsageSummary | null }> {
+  const response = await fetch(`${API_URL}/usage`);
+  return handleResponse(response);
+}
+
 export type StudyProgress = {
   id: number;
   session_id: string;
@@ -627,6 +640,7 @@ type StreamEvent = StreamChunkEvent | StreamDoneEvent | StreamErrorEvent;
 type SendMessageStreamOptions = {
   mode?: ChatMode;
   collectionId?: string;
+  documentId?: string;
   onChunk?: (chunk: string) => void;
   onSources?: (sources: ChatSource[]) => void;
   onMetadata?: (metadata: { model?: string; usage?: ChatUsage }) => void;
@@ -666,6 +680,7 @@ export async function sendMessageStream(
       message: message.trim(),
       mode: options.mode || "chat",
       collection_id: options.collectionId,
+      document_id: options.documentId,
     }),
     signal: options.signal,
   });
@@ -1080,4 +1095,16 @@ export async function logout(): Promise<void> {
   } finally {
     clearAccessToken();
   }
+}
+
+export async function downloadResponsePdf(content: string): Promise<Blob> {
+  const response = await fetch(`${API_URL}/chat/export/pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content, filename: "melo-response.pdf" }),
+  });
+  if (!response.ok) {
+    await handleResponse(response);
+  }
+  return response.blob();
 }

@@ -71,7 +71,12 @@ def get_collections(membership=Depends(get_current_membership), _: None = Depend
 @router.post("/collections", status_code=status.HTTP_201_CREATED)
 def create_collection(request: CollectionRequest, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Create a named private knowledge collection."""
-    return service.create_collection(request.name, request.description, workspace_id=membership.workspace_id)
+    return service.create_collection(
+        request.name,
+        request.description,
+        owner_id=membership.user_id,
+        workspace_id=membership.workspace_id,
+    )
 
 
 @router.post("/documents/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -100,6 +105,7 @@ def upload_document_file(
             content=content,
             session_id=session_id,
             collection_id=collection_id,
+            owner_id=membership.user_id,
             workspace_id=membership.workspace_id,
         )
     except ValidationError:
@@ -147,6 +153,7 @@ def upload_document(request: UploadDocumentRequest, membership=Depends(get_curre
             content=request.content,
             session_id=request.session_id,
             collection_id=request.collection_id,
+            owner_id=membership.user_id,
             workspace_id=membership.workspace_id,
         )
         

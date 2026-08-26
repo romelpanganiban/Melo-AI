@@ -87,6 +87,18 @@ class ChatServiceError(MeloAIException):
         )
 
 
+class CreditLimitError(MeloAIException):
+    """Raised when a workspace has exhausted its monthly token budget."""
+
+    def __init__(self, used: int, limit: int):
+        super().__init__(
+            message="Monthly token limit reached",
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            error_code="CREDIT_LIMIT_EXCEEDED",
+            details={"used_tokens": used, "limit_tokens": limit},
+        )
+
+
 class FileOperationError(MeloAIException):
     """Raised when file operation fails"""
     

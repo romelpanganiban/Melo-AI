@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { type ChatMode, type InstalledModel } from "@/lib/api";
-import { Bot, BookOpen, ClipboardList, MessageCircle, Search, Sparkles } from "lucide-react";
+import { Bot, BookOpen, ClipboardList, FileText, MessageCircle, Paperclip, Search, Sparkles, X } from "lucide-react";
 
 type Props = {
   sessionId: string | null;
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, file?: File) => void;
   isSending: boolean;
   selectedModel?: string;
   availableModels?: InstalledModel[];
@@ -30,6 +30,8 @@ export default function MessageInput({
   const [message, setMessage] = useState("");
   const maxMessageLength = MAX_MESSAGE_LENGTH;
   const [error, setError] = useState<string | null>(null);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   function handleSend() {
     if (!sessionId) {
@@ -38,7 +40,7 @@ export default function MessageInput({
     }
 
     const trimmedMessage = message.trim();
-    if (!trimmedMessage) {
+    if (!trimmedMessage && !attachedFile) {
       setError("Message cannot be empty");
       return;
     }
@@ -50,7 +52,23 @@ export default function MessageInput({
 
     setError(null);
     setMessage("");
-    onSendMessage(trimmedMessage);
+    if (attachedFile) {
+      onSendMessage(trimmedMessage || "Please read and summarize this file.", attachedFile);
+    } else {
+      onSendMessage(trimmedMessage);
+    }
+    setAttachedFile(null);
+  }
+
+  function selectFile(file: File | undefined) {
+    if (!file) return;
+    const extension = file.name.toLowerCase().split(".").pop();
+    if (!extension || !["txt", "pdf", "docx"].includes(extension)) {
+      setError("Only PDF, DOCX, and TXT files are supported");
+      return;
+    }
+    setAttachedFile(file);
+    setError(null);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -68,7 +86,24 @@ export default function MessageInput({
         </div>
       )}
 
-      <div className="composer-box flex flex-wrap items-end gap-2 rounded-2xl border border-white/15 bg-[#131a17]/95 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.3)] focus-within:border-teal-400/60 focus-within:shadow-[0_12px_30px_rgba(15,118,110,0.18)]">
+      <div
+        className="composer-box flex flex-wrap items-end gap-2 rounded-2xl border border-white/15 bg-[#131a17]/95 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.3)] focus-within:border-teal-400/60 focus-within:shadow-[0_12px_30px_rgba(15,118,110,0.18)]"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          selectFile(event.dataTransfer.files[0]);
+        }}
+      >
+        {attachedFile && (
+          <div className="order-first flex basis-full items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200">
+            <FileText size={16} className="text-red-300" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate" title={attachedFile.name}>{attachedFile.name}</span>
+            <span className="text-slate-400">{attachedFile.name.split(".").pop()?.toUpperCase()}</span>
+            <button type="button" onClick={() => setAttachedFile(null)} aria-label="Remove attached file" className="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+              <X size={14} aria-hidden="true" />
+            </button>
+          </div>
+        )}
         <textarea
           value={message}
           onChange={(e) => {
@@ -85,6 +120,17 @@ export default function MessageInput({
           }
         />
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt,.pdf,.docx"
+          className="hidden"
+          onChange={(event) => selectFile(event.target.files?.[0])}
+        />
+        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isSending || !sessionId} aria-label="Attach a document" className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-40">
+          <Paperclip size={17} aria-hidden="true" />
+        </button>
+
         <label className="flex items-center gap-1 rounded-xl border border-white/15 bg-[#1a2823] px-2 text-xs text-slate-100">
           {mode === "ask" ? <Search size={14} aria-hidden="true" /> : mode === "study" ? <BookOpen size={14} aria-hidden="true" /> : mode === "plan" ? <ClipboardList size={14} aria-hidden="true" /> : mode === "agent" ? <Bot size={14} aria-hidden="true" /> : mode === "auto" ? <Sparkles size={14} aria-hidden="true" /> : <MessageCircle size={14} aria-hidden="true" />}
           <span className="sr-only">Choose response mode</span>
@@ -93,7 +139,6 @@ export default function MessageInput({
             onChange={(event) => onModeChange(event.target.value as ChatMode)}
             disabled={isSending}
             aria-label="Choose response mode"
-            style={{ colorScheme: "dark" }}
             className="max-w-20 bg-transparent py-2 text-xs text-slate-100 outline-none disabled:opacity-50"
           >
             <option value="chat" className="bg-[#1a2823] text-slate-100">Chat</option>
@@ -110,7 +155,6 @@ export default function MessageInput({
           onChange={(event) => onModelChange(event.target.value)}
           disabled={isSending}
           aria-label="Choose chat model"
-          style={{ colorScheme: "dark" }}
           className="min-w-0 max-w-40 flex-1 rounded-xl border border-white/15 bg-[#1a2823] px-2 py-2 text-xs text-slate-100 outline-none transition hover:bg-[#24362f] disabled:opacity-50 sm:flex-none"
         >
           <option value="auto" className="bg-[#1a2823] text-slate-100">Auto</option>
@@ -124,7 +168,7 @@ export default function MessageInput({
         <button
           type="button"
           onClick={handleSend}
-          disabled={isSending || !sessionId || !message.trim()}
+          disabled={isSending || !sessionId || (!message.trim() && !attachedFile)}
           className="min-h-11 flex-1 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 sm:flex-none"
         >
           {isSending ? (

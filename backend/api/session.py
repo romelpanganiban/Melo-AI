@@ -32,7 +32,7 @@ def create_session(db: Session = Depends(get_db), membership=Depends(get_current
     try:
         logger.info("Creating new session")
         service = SessionService()
-        session = service.create_session(db, workspace_id=membership.workspace_id)
+        session = service.create_session(db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
         return session
         
     except Exception as e:
@@ -50,7 +50,7 @@ def get_sessions(db: Session = Depends(get_db), membership=Depends(get_current_m
     try:
         logger.info("Retrieving all sessions")
         service = SessionService()
-        sessions = service.get_sessions(db, workspace_id=membership.workspace_id)
+        sessions = service.get_sessions(db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
         return {
             "sessions": sessions,
             "count": len(sessions)
@@ -93,7 +93,7 @@ def rename_session(
         )
         
         service = SessionService()
-        session = service.rename_session(session_id, title, db, workspace_id=membership.workspace_id)
+        session = service.rename_session(session_id, title, db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
         return session
         
     except ValidationError:
@@ -130,7 +130,7 @@ def delete_session(session_id: str, db: Session = Depends(get_db), membership=De
         )
         
         service = SessionService()
-        service.delete_session(session_id, db, workspace_id=membership.workspace_id)
+        service.delete_session(session_id, db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
         
     except ValidationError:
         raise

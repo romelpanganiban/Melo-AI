@@ -15,6 +15,7 @@ type Props = {
   isLoading: boolean;
   error: string | null;
   onRetry: () => void;
+  onFileDrop?: (file: File) => void;
 };
 
 export default function ChatWindow({
@@ -23,6 +24,7 @@ export default function ChatWindow({
   isLoading,
   error,
   onRetry,
+  onFileDrop,
 }: Props) {
   const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
 
@@ -82,7 +84,15 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="chat-panel chat-scrollbar mx-3 my-3 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-4 text-slate-100 shadow-[0_14px_36px_rgba(0,0,0,0.25)] md:mx-4 md:p-6">
+    <div
+      className="chat-panel chat-scrollbar mx-3 my-3 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-4 text-slate-100 shadow-[0_14px_36px_rgba(0,0,0,0.25)] md:mx-4 md:p-6"
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) onFileDrop?.(file);
+      }}
+    >
       {messages.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <div className="max-w-sm text-center">

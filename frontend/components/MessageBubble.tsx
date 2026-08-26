@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Download } from "lucide-react";
 import type { ReactNode } from "react";
-import { ChatSource, ChatUsage } from "@/lib/api";
+import { ChatSource, ChatUsage, downloadResponsePdf } from "@/lib/api";
 
 type MessageBubbleProps = {
   role: string;
@@ -12,6 +13,16 @@ type MessageBubbleProps = {
   model?: string;
   usage?: ChatUsage;
 };
+
+function downloadResponse(content: string) {
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "melo-response.md";
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 type MessagePart =
   | { type: "text"; content: string }
@@ -48,9 +59,40 @@ function renderText(content: string): ReactNode {
     .filter((line) => !/^\s*(?:\*{3,}|-{3,}|_{3,})\s*$/.test(line))
     .map((line) => line.replace(/^\s*#{1,6}\s+/, ""))
     .join("\n");
-  const parts = cleaned.split(/(\*\*[^*]+\*\*|__[^_]+__|`[^`]+`)/g);
+  const parts = cleaned.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|https?:\/\/[^\s<]+|\*\*[^*]+\*\*|__[^_]+__|`[^`]+`)/g);
 
   return parts.map((part, index) => {
+    const markdownLink = part.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (markdownLink) {
+      return (
+        <a
+          key={`link-${index}`}
+          href={markdownLink[2]}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="break-words rounded px-0.5 text-cyan-300 underline decoration-cyan-300/80 underline-offset-2 transition-colors hover:bg-cyan-300/10 hover:text-cyan-100"
+        >
+          {markdownLink[1]}
+        </a>
+      );
+    }
+    if (/^https?:\/\//.test(part)) {
+      const trailingPunctuation = part.match(/[.,!?;:]+$/)?.[0] || "";
+      const href = trailingPunctuation ? part.slice(0, -trailingPunctuation.length) : part;
+      return (
+        <span key={`url-${index}`}>
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="break-words rounded px-0.5 text-cyan-300 underline decoration-cyan-300/80 underline-offset-2 transition-colors hover:bg-cyan-300/10 hover:text-cyan-100"
+          >
+            {href}
+          </a>
+          {trailingPunctuation}
+        </span>
+      );
+    }
     if ((part.startsWith("**") && part.endsWith("**")) || (part.startsWith("__") && part.endsWith("__"))) {
       return <strong key={`bold-${index}`}>{part.slice(2, -2)}</strong>;
     }
@@ -145,6 +187,36 @@ export default function MessageBubble({
           {usage ? `Credits: ${usage.total_tokens} tokens` : ""}
         </p>
       )}
+      {!isUser && !isStreaming && content.trim() && (
+        <div>
+          <button
+            type="button"
+            onClick={() => downloadResponse(content)}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 hover:text-white"
+          >
+            <Download size={13} aria-hidden="true" />
+            Download Markdown
+          </button>
+          <button
+            type="button"
+            onClick={() => void downloadPdfResponse(content)}
+            className="mt-2 ml-2 inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/20 px-2.5 py-1.5 text-xs text-cyan-300 transition hover:bg-cyan-300/10 hover:text-cyan-100"
+          >
+            <Download size={13} aria-hidden="true" />
+            Download PDF
+          </button>
+        </div>
+      )}
     </div>
   );
+}
+
+async function downloadPdfResponse(content: string) {
+  const blob = await downloadResponsePdf(content);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "melo-response.pdf";
+  link.click();
+  URL.revokeObjectURL(url);
 }

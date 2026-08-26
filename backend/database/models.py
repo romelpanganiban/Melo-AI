@@ -43,6 +43,18 @@ class WorkspaceMember(Base):
     __table_args__ = (Index("ix_workspace_members_workspace_user", "workspace_id", "user_id", unique=True),)
 
 
+class UsageLedger(Base):
+    """Monthly token usage for a user in a workspace."""
+    __tablename__ = "usage_ledger"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    workspace_id = Column(String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    period_start = Column(DateTime, nullable=False, index=True)
+    tokens_used = Column(Integer, nullable=False, default=0)
+    __table_args__ = (Index("ix_usage_ledger_workspace_user_period", "workspace_id", "user_id", "period_start", unique=True),)
+
+
 class Session(Base):
     """Chat session model"""
     __tablename__ = "sessions"

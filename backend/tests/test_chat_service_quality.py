@@ -10,6 +10,7 @@ def test_ask_prompt_requires_grounded_filename_citations():
     )
 
     assert "using only the provided document context" in prompt
+    assert "Never claim that you cannot access files" in prompt
     assert "do not guess" in prompt
     assert "[guide.pdf]" in prompt
     assert "Use staged approvals." in prompt

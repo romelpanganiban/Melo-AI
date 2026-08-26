@@ -46,7 +46,7 @@ engine = create_engine(
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-REQUIRED_MIGRATION_REVISION = "0003_resource_workspaces"
+REQUIRED_MIGRATION_REVISION = "0005_backfill_resource_owners"
 
 
 def validate_migration_state(database_engine) -> None:

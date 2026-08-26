@@ -9,7 +9,7 @@ from core.settings import settings
 
 
 def test_admin_is_exempt_from_request_limit():
-    admin = SimpleNamespace(email="romelpanganiban284@gmail.com")
+    admin = SimpleNamespace(email=settings.ADMIN_EMAIL)
     membership = SimpleNamespace(role="admin", workspace_id="workspace-1", user_id="user-1", user=admin)
     request = SimpleNamespace(url=SimpleNamespace(path="/chat"))
 
