@@ -46,6 +46,22 @@ engine = create_engine(
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+REQUIRED_MIGRATION_REVISION = "0003_resource_workspaces"
+
+
+def validate_migration_state(database_engine) -> None:
+    """Require a PostgreSQL database to be stamped at the application head."""
+    inspector = inspect(database_engine)
+    if "alembic_version" not in inspector.get_table_names():
+        raise ChatServiceError(
+            "PostgreSQL schema is not migrated. Run 'alembic upgrade head' before starting Melo-AI."
+        )
+    with database_engine.connect() as connection:
+        revision = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
+    if revision != REQUIRED_MIGRATION_REVISION:
+        raise ChatServiceError(
+            f"PostgreSQL schema revision {revision!r} is not supported. Run 'alembic upgrade head'."
+        )
 
 
 def init_database() -> None:
@@ -56,17 +72,7 @@ def init_database() -> None:
             extra={"database_url": db_config.get_safe_connection_string()}
         )
         if "sqlite" not in db_config.database_url:
-            inspector = inspect(engine)
-            if "alembic_version" not in inspector.get_table_names():
-                raise ChatServiceError(
-                    "PostgreSQL schema is not migrated. Run 'alembic upgrade head' before starting Melo-AI."
-                )
-            with engine.connect() as connection:
-                revision = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            if revision != "0003_resource_workspaces":
-                raise ChatServiceError(
-                    f"PostgreSQL schema revision {revision!r} is not supported. Run 'alembic upgrade head'."
-                )
+            validate_migration_state(engine)
         else:
             Base.metadata.create_all(bind=engine)
         logger.info("Database initialized successfully")
