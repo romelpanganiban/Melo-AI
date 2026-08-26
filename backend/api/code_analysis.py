@@ -9,7 +9,7 @@ from services.code_analysis_service import get_code_analysis_service
 from services.code_assistant_service import CodeAssistantService
 from services.git_service import GitService
 from services.approval_service import get_approval_service
-from core.auth import get_current_membership, require_workspace_role
+from core.auth import require_workspace_role, require_workspace_tools
 
 router = APIRouter()
 service = get_code_analysis_service()
@@ -83,7 +83,7 @@ def write_workspace_file(request: FileWriteRequest, membership=Depends(require_w
 
 
 @router.post("/files/read", status_code=status.HTTP_200_OK)
-def read_workspace_file(request: CodeAnalysisRequest, membership=Depends(get_current_membership)):
+def read_workspace_file(request: CodeAnalysisRequest, membership=Depends(require_workspace_tools)):
     """Read a UTF-8 text file inside the workspace without modifying it."""
     try:
         return service.read_file(request.path)
@@ -95,7 +95,7 @@ def read_workspace_file(request: CodeAnalysisRequest, membership=Depends(get_cur
 
 
 @router.post("/analysis/code", status_code=status.HTTP_200_OK)
-def analyze_code(request: CodeAnalysisRequest, membership=Depends(get_current_membership)):
+def analyze_code(request: CodeAnalysisRequest, membership=Depends(require_workspace_tools)):
     """Analyze a workspace source file without changing it."""
     try:
         return service.analyze_file(request.path)
@@ -107,7 +107,7 @@ def analyze_code(request: CodeAnalysisRequest, membership=Depends(get_current_me
 
 
 @router.post("/coding/review", status_code=status.HTTP_200_OK)
-def review_code(request: CodeAssistantRequest, membership=Depends(get_current_membership)):
+def review_code(request: CodeAssistantRequest, membership=Depends(require_workspace_tools)):
     """Review a workspace file with the configured local model."""
     try:
         return assistant_service.review_file(request.path, request.instruction)
@@ -119,7 +119,7 @@ def review_code(request: CodeAssistantRequest, membership=Depends(get_current_me
 
 
 @router.post("/coding/generate", status_code=status.HTTP_200_OK)
-def generate_code(request: CodeAssistantRequest, membership=Depends(get_current_membership)):
+def generate_code(request: CodeAssistantRequest, membership=Depends(require_workspace_tools)):
     """Generate a proposed replacement for a workspace file."""
     try:
         return assistant_service.generate_code(request.path, request.instruction or "")
@@ -131,7 +131,7 @@ def generate_code(request: CodeAssistantRequest, membership=Depends(get_current_
 
 
 @router.get("/git/status", status_code=status.HTTP_200_OK)
-def git_status(membership=Depends(get_current_membership)):
+def git_status(membership=Depends(require_workspace_tools)):
     """Return the current branch and changed workspace files."""
     try:
         return git_service.status()
@@ -141,7 +141,7 @@ def git_status(membership=Depends(get_current_membership)):
 
 
 @router.get("/git/diff", status_code=status.HTTP_200_OK)
-def git_diff(path: str | None = None, membership=Depends(get_current_membership)):
+def git_diff(path: str | None = None, membership=Depends(require_workspace_tools)):
     """Return the working-tree diff, optionally limited to one workspace path."""
     try:
         return git_service.diff(path)

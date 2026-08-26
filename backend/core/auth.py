@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import User, WorkspaceMember
 from services.auth_service import verify_access_token
+from core.settings import settings
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -39,7 +40,15 @@ def get_current_membership(
 
 def require_workspace_role(*allowed_roles: str):
     def dependency(membership: WorkspaceMember = Depends(get_current_membership)) -> WorkspaceMember:
+        if not settings.ENABLE_WORKSPACE_TOOLS:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
         if membership.role not in allowed_roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient workspace role")
         return membership
     return dependency
+
+
+def require_workspace_tools(membership: WorkspaceMember = Depends(get_current_membership)) -> WorkspaceMember:
+    if not settings.ENABLE_WORKSPACE_TOOLS:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
+    return membership

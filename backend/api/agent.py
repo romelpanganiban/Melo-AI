@@ -10,7 +10,7 @@ from core.validation import validate_uuid
 from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
 from services.approval_service import get_approval_service
-from core.auth import get_current_membership, require_workspace_role
+from core.auth import get_current_membership, require_workspace_role, require_workspace_tools
 
 router = APIRouter()
 code_service = get_code_analysis_service()
@@ -42,7 +42,7 @@ def create_approval(request: ApprovalRequest, membership=Depends(require_workspa
 
 
 @router.post("/agent/run", status_code=status.HTTP_200_OK)
-def run_read_only_agent(request: AgentRunRequest, membership=Depends(get_current_membership)):
+def run_read_only_agent(request: AgentRunRequest, membership=Depends(require_workspace_tools)):
     """Execute bounded read-only actions; side-effecting actions are unsupported."""
     results = []
     try:

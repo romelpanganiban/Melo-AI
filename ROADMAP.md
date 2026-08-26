@@ -245,6 +245,7 @@ Commercial SaaS Version
 - [ ] Rate limits, quotas, and token usage ledger
 - [ ] Secure production configuration and secret management
 - [ ] Sandbox or disable server file and Git tools
+- [x] Disable shared file/Git tools by default until workspace roots exist
 - [ ] Provider abstraction for hosted Qwen and other model APIs
 - [ ] Production deployment, backups, monitoring, and CI/CD
 

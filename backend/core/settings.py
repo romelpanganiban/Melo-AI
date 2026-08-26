@@ -36,6 +36,7 @@ class Settings:
     
     # Feature flags
     ENABLE_CORS: bool = os.getenv("ENABLE_CORS", "true").lower() == "true"
+    ENABLE_WORKSPACE_TOOLS: bool = os.getenv("ENABLE_WORKSPACE_TOOLS", "false").lower() == "true"
     CORS_ORIGINS: list[str] = [
         origin.strip() 
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
