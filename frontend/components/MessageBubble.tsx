@@ -59,7 +59,8 @@ function renderText(content: string): ReactNode {
     .filter((line) => !/^\s*(?:\*{3,}|-{3,}|_{3,})\s*$/.test(line))
     .map((line) => line.replace(/^\s*#{1,6}\s+/, ""))
     .join("\n");
-  const parts = cleaned.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|https?:\/\/[^\s<]+|\*\*[^*]+\*\*|__[^_]+__|`[^`]+`)/g);
+  const normalized = cleaned.replace(/^\s*[-*]\s+/gm, "• ");
+  const parts = normalized.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|https?:\/\/[^\s<]+|\*\*[^*]+\*\*|__[^_]+__|`[^`]+`)/g);
 
   return parts.map((part, index) => {
     const markdownLink = part.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);

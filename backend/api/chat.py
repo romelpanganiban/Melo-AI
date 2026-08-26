@@ -5,6 +5,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import HRFlowable
+import re
 from xml.sax.saxutils import escape
 from pydantic import BaseModel, Field
 from typing import Literal
@@ -43,6 +45,34 @@ class PdfExportRequest(BaseModel):
     filename: str = Field(default="melo-response.pdf", min_length=1, max_length=120)
 
 
+def markdown_to_pdf_markup(line: str) -> tuple[str, str]:
+    """Convert the common Markdown produced by chat into ReportLab markup."""
+    stripped = line.strip()
+    if not stripped or re.fullmatch(r"(?:\*{3,}|-{3,}|_{3,})", stripped):
+        return "", "separator" if stripped else "spacer"
+
+    heading = re.match(r"^#{1,6}\s+(.+)$", stripped)
+    if heading:
+        heading_text = re.sub(r"\*\*(.+?)\*\*|__(.+?)__", r"\1\2", heading.group(1))
+        return f"<b>{escape(heading_text)}</b>", "heading"
+
+    bullet = re.match(r"^[-*]\s+(.+)$", stripped)
+    if bullet:
+        stripped = f"• {bullet.group(1)}"
+
+    # Standard PDF fonts cannot render emoji reliably; remove them rather than
+    # emitting missing-glyph squares in the downloaded document.
+    stripped = re.sub(r"[\U0001F000-\U0001FAFF\u2600-\u27BF]", "", stripped).strip()
+    if not stripped:
+        return "", "spacer"
+
+    markup = escape(stripped)
+    markup = re.sub(r"\*\*(.+?)\*\*|__(.+?)__", lambda match: f"<b>{match.group(1) or match.group(2)}</b>", markup)
+    markup = re.sub(r"`([^`]+)`", lambda match: f"<font name=\"Courier\">{escape(match.group(1))}</font>", markup)
+    markup = re.sub(r"\[([^\]]+)\]\((https?://[^\s)]+)\)", r'<link href="\2" color="#0f766e"><u>\1</u></link>', markup)
+    return markup, "bullet" if stripped.startswith("• ") else "body"
+
+
 def enforce_chat_credits(db: Session = Depends(get_db), membership=Depends(get_current_membership)):
     enforce_credit_limit(db, membership.user, membership.workspace_id)
 
@@ -66,8 +96,16 @@ def export_response_pdf(request: PdfExportRequest, membership=Depends(get_curren
     styles = getSampleStyleSheet()
     story = []
     for line in request.content.splitlines() or [request.content]:
-        story.append(Paragraph(escape(line) or "&nbsp;", styles["BodyText"]))
-        story.append(Spacer(1, 6))
+        markup, line_type = markdown_to_pdf_markup(line)
+        if line_type == "separator":
+            story.append(HRFlowable(width="100%", thickness=0.6, color="#cbd5d1", spaceBefore=7, spaceAfter=7))
+        elif line_type == "heading":
+            story.append(Paragraph(markup, styles["Heading2"]))
+        elif line_type == "spacer":
+            story.append(Spacer(1, 8))
+        else:
+            story.append(Paragraph(markup or "&nbsp;", styles["BodyText"]))
+            story.append(Spacer(1, 6))
     document.build(story)
     return Response(
         content=output.getvalue(),
