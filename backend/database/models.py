@@ -16,6 +16,31 @@ class User(Base):
     email = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    memberships = relationship("WorkspaceMember", back_populates="user", cascade="all, delete-orphan")
+
+
+class Workspace(Base):
+    """Workspace boundary for tenant-scoped Melo data."""
+    __tablename__ = "workspaces"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(120), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    memberships = relationship("WorkspaceMember", back_populates="workspace", cascade="all, delete-orphan")
+
+
+class WorkspaceMember(Base):
+    """User membership and role within a workspace."""
+    __tablename__ = "workspace_members"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    workspace_id = Column(String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(20), nullable=False, default="member")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    workspace = relationship("Workspace", back_populates="memberships")
+    user = relationship("User", back_populates="memberships")
+    __table_args__ = (Index("ix_workspace_members_workspace_user", "workspace_id", "user_id", unique=True),)
 
 
 class Session(Base):
@@ -23,6 +48,7 @@ class Session(Base):
     __tablename__ = "sessions"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id = Column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     owner_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     title = Column(String(255), nullable=False, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
@@ -82,6 +108,7 @@ class KnowledgeCollection(Base):
     __tablename__ = "knowledge_collections"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id = Column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     owner_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     name = Column(String(100), nullable=False, unique=True, index=True)
     description = Column(String(500), nullable=True)
@@ -95,6 +122,7 @@ class StudyProgress(Base):
     __tablename__ = "study_progress"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    workspace_id = Column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     session_id = Column(String(36), nullable=False, index=True)
     collection_id = Column(String(36), nullable=True, index=True)
     topic = Column(String(255), nullable=False)
@@ -108,6 +136,7 @@ class Document(Base):
     __tablename__ = "documents"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id = Column(String(36), ForeignKey("workspaces.id"), nullable=True, index=True)
     owner_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     session_id = Column(String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=True, index=True)
     collection_id = Column(String(36), ForeignKey("knowledge_collections.id", ondelete="SET NULL"), nullable=True, index=True)

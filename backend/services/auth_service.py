@@ -11,7 +11,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from database.models import User
+from database.models import User, Workspace, WorkspaceMember
 
 
 TOKEN_TTL_SECONDS = 60 * 60 * 24
@@ -70,6 +70,25 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 def register_user(db: Session, email: str, password: str) -> User:
     user = User(email=email.lower(), password_hash=hash_password(password))
     db.add(user)
+    db.flush()
+    workspace = Workspace(name=f"{email.split('@')[0]}'s Workspace")
+    db.add(workspace)
+    db.flush()
+    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role="owner"))
     db.commit()
     db.refresh(user)
     return user
+
+
+def ensure_default_workspace(db: Session, user: User) -> WorkspaceMember:
+    membership = db.query(WorkspaceMember).filter(WorkspaceMember.user_id == user.id).first()
+    if membership:
+        return membership
+    workspace = Workspace(name=f"{user.email.split('@')[0]}'s Workspace")
+    db.add(workspace)
+    db.flush()
+    membership = WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role="owner")
+    db.add(membership)
+    db.commit()
+    db.refresh(membership)
+    return membership

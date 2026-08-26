@@ -209,7 +209,7 @@ Status: In Progress
 - [x] Auto mode with task-aware mode selection
 - [x] Persistent learning preferences and study progress
 - [x] End-to-end tests for modes, search, and approvals
-- [ ] Authentication-backed authorization for private knowledge and tools
+- [x] Authentication-backed authorization for private knowledge and tools
 - [ ] Multi-step tool execution with replanning and verification
 - [ ] Approval gates for all side-effecting actions
 - [ ] Auto mode with task-aware model selection
@@ -266,12 +266,14 @@ Status: Planned
 Status: In Progress
 
 - [x] Backend authentication and user accounts
-- [ ] Frontend login and token handling
-- [ ] Organizations, workspaces, and role-based access
+- [x] Frontend login and token handling
+- [x] Workspace and membership models with default workspace backfill
+- [ ] Organizations, multiple workspaces, and role-based access policies
 - [x] Ownership fields and authorization checks for sessions, chat/history, documents, collections, and RAG retrieval
 - [x] Cross-user isolation tests for sessions and documents
-- [ ] Authorization checks for settings, training, approvals, file, and Git tools
+- [x] Authorization checks for settings, training, approvals, file, and Git tools
 - [x] PostgreSQL database initialization and configuration support
+- [x] Alembic baseline migration for PostgreSQL schema management
 - [ ] PostgreSQL as the single production source of truth
 - [ ] Alembic migrations and deployment-safe schema changes
 - [ ] Rate limits, quotas, and token usage/cost ledger

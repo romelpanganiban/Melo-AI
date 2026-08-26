@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import User
+from database.models import User, WorkspaceMember
 from services.auth_service import verify_access_token
 
 
@@ -23,3 +23,10 @@ def get_current_user(
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
     return user
+
+
+def get_current_membership(user: User = Depends(get_current_user)) -> WorkspaceMember:
+    membership = user.memberships[0] if user.memberships else None
+    if membership is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No workspace membership")
+    return membership

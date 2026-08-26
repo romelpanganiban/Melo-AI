@@ -18,6 +18,7 @@ from api.training import router as training_router
 from api.agent import router as agent_router
 from api.study import router as study_router
 from api.auth import router as auth_router
+from api.workspace import router as workspace_router
 from core.errors import MeloAIException
 from core.settings import settings
 from core.logging import logger
@@ -90,6 +91,7 @@ app.include_router(training_router)
 app.include_router(agent_router)
 app.include_router(study_router)
 app.include_router(auth_router)
+app.include_router(workspace_router)
 
 @app.get("/")
 def home():

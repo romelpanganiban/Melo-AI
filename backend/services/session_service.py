@@ -7,7 +7,7 @@ from core.errors import SessionNotFoundError, ChatServiceError
 class SessionService:
     """Service for handling session operations with database backend"""
 
-    def create_session(self, db: Session = None, owner_id: str = None) -> dict:
+    def create_session(self, db: Session = None, owner_id: str = None, workspace_id: str = None) -> dict:
         """Create a new session
         
         Returns:
@@ -20,7 +20,7 @@ class SessionService:
             should_close = False
         try:
             repo = SessionRepository(db)
-            session = repo.create(title="New Chat", owner_id=owner_id)
+            session = repo.create(title="New Chat", owner_id=owner_id, workspace_id=workspace_id)
             logger.info(
                 f"Session created",
                 extra={"session_id": session.id}
@@ -37,7 +37,7 @@ class SessionService:
             if should_close:
                 db.close()
 
-    def get_sessions(self, db: Session = None, owner_id: str = None) -> list[dict]:
+    def get_sessions(self, db: Session = None, owner_id: str = None, workspace_id: str = None) -> list[dict]:
         """Get all sessions
         
         Returns:
@@ -50,7 +50,7 @@ class SessionService:
             should_close = False
         try:
             repo = SessionRepository(db)
-            sessions = repo.get_all(owner_id=owner_id)
+            sessions = repo.get_all(owner_id=owner_id, workspace_id=workspace_id)
             logger.info(
                 f"Sessions retrieved",
                 extra={"count": len(sessions)}
@@ -67,7 +67,7 @@ class SessionService:
             if should_close:
                 db.close()
 
-    def rename_session(self, session_id: str, title: str, db: Session = None, owner_id: str = None) -> dict:
+    def rename_session(self, session_id: str, title: str, db: Session = None, owner_id: str = None, workspace_id: str = None) -> dict:
         """Rename a session
         
         Args:
@@ -88,7 +88,7 @@ class SessionService:
             should_close = False
         try:
             repo = SessionRepository(db)
-            session = repo.update_title(session_id, title, owner_id=owner_id)
+            session = repo.update_title(session_id, title, owner_id=owner_id, workspace_id=workspace_id)
             
             logger.info(
                 f"Session renamed",
@@ -111,7 +111,7 @@ class SessionService:
             if should_close:
                 db.close()
 
-    def delete_session(self, session_id: str, db: Session = None, owner_id: str = None) -> None:
+    def delete_session(self, session_id: str, db: Session = None, owner_id: str = None, workspace_id: str = None) -> None:
         """Delete a session
         
         Args:
@@ -128,7 +128,7 @@ class SessionService:
             should_close = False
         try:
             repo = SessionRepository(db)
-            repo.delete(session_id, owner_id=owner_id)
+            repo.delete(session_id, owner_id=owner_id, workspace_id=workspace_id)
             
             logger.info(
                 f"Session deleted",

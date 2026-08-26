@@ -17,10 +17,10 @@ class SessionRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def create(self, title: str = "New Chat", owner_id: Optional[str] = None) -> SessionModel:
+    def create(self, title: str = "New Chat", owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> SessionModel:
         """Create a new session"""
         try:
-            session = SessionModel(id=str(uuid.uuid4()), title=title, owner_id=owner_id)
+            session = SessionModel(id=str(uuid.uuid4()), title=title, owner_id=owner_id, workspace_id=workspace_id)
             self.db.add(session)
             self.db.commit()
             self.db.refresh(session)
@@ -31,32 +31,36 @@ class SessionRepository:
             logger.error(f"Error creating session: {str(e)}")
             raise ChatServiceError(f"Failed to create session: {str(e)}")
     
-    def get_by_id(self, session_id: str, owner_id: Optional[str] = None) -> Optional[SessionModel]:
+    def get_by_id(self, session_id: str, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> Optional[SessionModel]:
         """Get session by ID"""
         try:
             query = self.db.query(SessionModel).filter(SessionModel.id == session_id)
             if owner_id is not None:
                 query = query.filter(SessionModel.owner_id == owner_id)
+            if workspace_id is not None:
+                query = query.filter(SessionModel.workspace_id == workspace_id)
             return query.first()
         except Exception as e:
             logger.error(f"Error getting session: {str(e)}")
             raise ChatServiceError(f"Failed to get session: {str(e)}")
     
-    def get_all(self, owner_id: Optional[str] = None) -> List[SessionModel]:
+    def get_all(self, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> List[SessionModel]:
         """Get all sessions, ordered by most recent"""
         try:
             query = self.db.query(SessionModel)
             if owner_id is not None:
                 query = query.filter(SessionModel.owner_id == owner_id)
+            if workspace_id is not None:
+                query = query.filter(SessionModel.workspace_id == workspace_id)
             return query.order_by(desc(SessionModel.updated_at)).all()
         except Exception as e:
             logger.error(f"Error getting sessions: {str(e)}")
             raise ChatServiceError(f"Failed to get sessions: {str(e)}")
     
-    def update_title(self, session_id: str, title: str, owner_id: Optional[str] = None) -> SessionModel:
+    def update_title(self, session_id: str, title: str, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> SessionModel:
         """Update session title"""
         try:
-            session = self.get_by_id(session_id, owner_id)
+            session = self.get_by_id(session_id, owner_id, workspace_id)
             if not session:
                 raise SessionNotFoundError(session_id)
             
@@ -73,10 +77,10 @@ class SessionRepository:
             logger.error(f"Error updating session: {str(e)}")
             raise ChatServiceError(f"Failed to update session: {str(e)}")
     
-    def delete(self, session_id: str, owner_id: Optional[str] = None) -> None:
+    def delete(self, session_id: str, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> None:
         """Delete a session"""
         try:
-            session = self.get_by_id(session_id, owner_id)
+            session = self.get_by_id(session_id, owner_id, workspace_id)
             if not session:
                 raise SessionNotFoundError(session_id)
             
@@ -217,7 +221,7 @@ class DocumentRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def create(self, filename: str, file_type: str, content: str, session_id: Optional[str] = None, collection_id: Optional[str] = None, owner_id: Optional[str] = None) -> Document:
+    def create(self, filename: str, file_type: str, content: str, session_id: Optional[str] = None, collection_id: Optional[str] = None, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> Document:
         """Create a new document"""
         try:
             document = Document(
@@ -228,6 +232,7 @@ class DocumentRepository:
                 session_id=session_id,
                 collection_id=collection_id,
                 owner_id=owner_id,
+                workspace_id=workspace_id,
             )
             self.db.add(document)
             self.db.commit()
@@ -239,23 +244,27 @@ class DocumentRepository:
             logger.error(f"Error creating document: {str(e)}")
             raise ChatServiceError(f"Failed to create document: {str(e)}")
     
-    def get_by_id(self, document_id: str, owner_id: Optional[str] = None) -> Optional[Document]:
+    def get_by_id(self, document_id: str, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> Optional[Document]:
         """Get document by ID"""
         try:
             query = self.db.query(Document).filter(Document.id == document_id)
             if owner_id is not None:
                 query = query.filter(Document.owner_id == owner_id)
+            if workspace_id is not None:
+                query = query.filter(Document.workspace_id == workspace_id)
             return query.first()
         except Exception as e:
             logger.error(f"Error getting document: {str(e)}")
             raise ChatServiceError(f"Failed to get document: {str(e)}")
     
-    def get_by_session(self, session_id: str, owner_id: Optional[str] = None) -> List[Document]:
+    def get_by_session(self, session_id: str, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> List[Document]:
         """Get all documents for a session"""
         try:
             query = self.db.query(Document).filter(Document.session_id == session_id)
             if owner_id is not None:
                 query = query.filter(Document.owner_id == owner_id)
+            if workspace_id is not None:
+                query = query.filter(Document.workspace_id == workspace_id)
             return query.order_by(desc(Document.created_at)).all()
         except Exception as e:
             logger.error(f"Error getting documents: {str(e)}")
@@ -268,9 +277,9 @@ class KnowledgeCollectionRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, name: str, description: Optional[str] = None, owner_id: Optional[str] = None) -> KnowledgeCollection:
+    def create(self, name: str, description: Optional[str] = None, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> KnowledgeCollection:
         try:
-            collection = KnowledgeCollection(id=str(uuid.uuid4()), name=name, description=description, owner_id=owner_id)
+            collection = KnowledgeCollection(id=str(uuid.uuid4()), name=name, description=description, owner_id=owner_id, workspace_id=workspace_id)
             self.db.add(collection)
             self.db.commit()
             self.db.refresh(collection)
@@ -279,16 +288,20 @@ class KnowledgeCollectionRepository:
             self.db.rollback()
             raise ChatServiceError(f"Failed to create knowledge collection: {str(e)}")
 
-    def get_by_id(self, collection_id: str, owner_id: Optional[str] = None) -> Optional[KnowledgeCollection]:
+    def get_by_id(self, collection_id: str, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> Optional[KnowledgeCollection]:
         query = self.db.query(KnowledgeCollection).filter(KnowledgeCollection.id == collection_id)
         if owner_id is not None:
             query = query.filter(KnowledgeCollection.owner_id == owner_id)
+        if workspace_id is not None:
+            query = query.filter(KnowledgeCollection.workspace_id == workspace_id)
         return query.first()
 
-    def get_all(self, owner_id: Optional[str] = None) -> List[KnowledgeCollection]:
+    def get_all(self, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> List[KnowledgeCollection]:
         query = self.db.query(KnowledgeCollection)
         if owner_id is not None:
             query = query.filter(KnowledgeCollection.owner_id == owner_id)
+        if workspace_id is not None:
+            query = query.filter(KnowledgeCollection.workspace_id == workspace_id)
         return query.order_by(KnowledgeCollection.name).all()
 
 

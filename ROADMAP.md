@@ -152,7 +152,7 @@ Local knowledge assistant with Ask, Study, Plan, Agent, and Auto modes
 Implementation boundary:
 - Completed locally: grounded modes, collections, study persistence, citations,
 	agent proposals, bounded read-only actions, and approval-token primitives.
-- Not yet production-safe: authentication, authorization, tenant isolation, and
+- Not yet production-safe: workspace roles, full tenant isolation, and
 	side-effecting agent execution.
 
 ## Platform Direction
@@ -174,7 +174,7 @@ chat wrapper. Melo's durable value is the orchestration around the model:
 	workflows.
 
 Recommended delivery order:
-1. Authentication, authorization, and tenant isolation.
+1. Workspace roles, resource migration to workspace scope, and production authorization policy.
 2. Retrieval quality and citation correctness.
 3. Reliable multi-step agents with sandboxing and approvals.
 4. Durable memory and context policies.
@@ -233,13 +233,15 @@ Commercial SaaS Version
 ## Version 1.1 - Cloud Readiness
 
 - [x] Backend authentication and user accounts
-- [ ] Frontend login and token handling
-- [ ] Organizations and workspace ownership
-- [x] Tenant-isolated sessions, documents, collections, and vector retrieval
-- [ ] Tenant-isolated settings, training, approvals, and coding tools
+- [x] Frontend login and token handling
+- [x] Default workspace creation and membership roles
+- [ ] Organizations and workspace ownership across multiple workspaces
+- [x] Workspace-scoped sessions, documents, collections, and vector retrieval
+- [x] Workspace-scoped study progress and Agent document search
+- [ ] Workspace-scoped settings, training, approvals, and coding tool policies
 - [x] PostgreSQL database initialization and configuration support
 - [ ] PostgreSQL as the single production source of truth
-- [ ] Alembic database migrations
+- [x] Alembic database migrations
 - [ ] Rate limits, quotas, and token usage ledger
 - [ ] Secure production configuration and secret management
 - [ ] Sandbox or disable server file and Git tools

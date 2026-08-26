@@ -20,6 +20,11 @@
 - Session-scoped conversation memory
 - Persistent learning preferences and study progress
 
+### Authentication
+- User registration and login
+- Signed bearer-token authentication
+- Authenticated API access for private resources and tools
+
 ### Intelligence Modes
 - Ask mode with grounded filename citations
 - Study mode with summaries, flashcards, quizzes, and explanations
@@ -39,6 +44,8 @@
 - TXT, PDF, and DOCX upload
 - RAG retrieval and source attribution
 - Named knowledge collections
+- Collection-aware chat retrieval
+- Deduplicated source metadata with document and chunk identifiers
 
 ### UI
 - Light and Dark appearance modes
@@ -46,8 +53,10 @@
 ## Planned
 
 ### Platform
-- Authentication and authorization
+- Default workspace and membership creation
+- Authenticated workspace listing
 - Organizations, workspaces, roles, and tenant isolation
+- Frontend workspace authorization policies
 - Provider abstraction and task-aware model routing
 - Durable user, workspace, and task memory
 - Retrieval evaluation, answer grounding checks, latency, usage, and cost metrics
@@ -56,7 +65,7 @@
 - Hybrid keyword and semantic retrieval
 - Reranking and context compression
 - Page/section-level citation mapping
-- Permission-aware retrieval
+- Advanced permission-aware retrieval for workspace roles
 
 ### Agents and Workflows
 - Multi-step tool execution with replanning and verification

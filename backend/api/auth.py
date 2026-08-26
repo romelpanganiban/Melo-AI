@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from core.errors import ValidationError
 from core.auth import get_current_user
 from database.connection import get_db
-from services.auth_service import create_access_token, get_user_by_email, register_user, verify_password
+from database.models import WorkspaceMember
+from services.auth_service import create_access_token, ensure_default_workspace, get_user_by_email, register_user, verify_password
 
 
 router = APIRouter()
@@ -31,6 +32,7 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user_id: str
+    workspace_id: str
 
 
 @router.post("/auth/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -42,7 +44,8 @@ def register(request: AuthRequest, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         raise ValidationError("An account with this email already exists", field="email")
-    return AuthResponse(access_token=create_access_token(user.id), user_id=user.id)
+    membership = ensure_default_workspace(db, user)
+    return AuthResponse(access_token=create_access_token(user.id), user_id=user.id, workspace_id=membership.workspace_id)
 
 
 @router.post("/auth/login", response_model=AuthResponse)
@@ -50,9 +53,11 @@ def login(request: AuthRequest, db: Session = Depends(get_db)):
     user = get_user_by_email(db, request.email)
     if user is None or not verify_password(request.password, user.password_hash):
         raise ValidationError("Invalid email or password")
-    return AuthResponse(access_token=create_access_token(user.id), user_id=user.id)
+    membership = ensure_default_workspace(db, user)
+    return AuthResponse(access_token=create_access_token(user.id), user_id=user.id, workspace_id=membership.workspace_id)
 
 
 @router.get("/auth/me")
 def me(user=Depends(get_current_user)):
-    return {"user_id": user.id, "email": user.email}
+    membership = user.memberships[0] if user.memberships else None
+    return {"user_id": user.id, "email": user.email, "workspace_id": membership.workspace_id if membership else None}

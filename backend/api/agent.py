@@ -10,7 +10,7 @@ from core.validation import validate_uuid
 from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
 from services.approval_service import get_approval_service
-from core.auth import get_current_user
+from core.auth import get_current_membership
 
 router = APIRouter()
 code_service = get_code_analysis_service()
@@ -36,13 +36,13 @@ class ApprovalRequest(BaseModel):
 
 
 @router.post("/agent/approvals", status_code=status.HTTP_201_CREATED)
-def create_approval(request: ApprovalRequest, user=Depends(get_current_user)):
+def create_approval(request: ApprovalRequest, membership=Depends(get_current_membership)):
     """Issue a short-lived approval token for a specific side-effecting action."""
-    return approval_service.create(request.action, request.target, owner_id=user.id)
+    return approval_service.create(request.action, request.target, owner_id=membership.user_id)
 
 
 @router.post("/agent/run", status_code=status.HTTP_200_OK)
-def run_read_only_agent(request: AgentRunRequest, user=Depends(get_current_user)):
+def run_read_only_agent(request: AgentRunRequest, membership=Depends(get_current_membership)):
     """Execute bounded read-only actions; side-effecting actions are unsupported."""
     results = []
     try:
@@ -65,7 +65,8 @@ def run_read_only_agent(request: AgentRunRequest, user=Depends(get_current_user)
                         action.query,
                         session_id,
                         action.collection_id,
-                        owner_id=user.id,
+                        owner_id=membership.user_id,
+                        workspace_id=membership.workspace_id,
                     ),
                 })
         return {"results": results, "executed": len(results), "side_effects": False}

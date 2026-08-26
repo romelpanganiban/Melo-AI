@@ -10,7 +10,7 @@ from core.validation import validate_message, validate_uuid
 from core.logging import logger
 from core.settings import settings
 from database.connection import get_db
-from core.auth import get_current_user
+from core.auth import get_current_membership
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
     """Process a chat message for a session
     
     Args:
@@ -61,7 +61,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_c
         
         # Process message with injected database session
         service = ChatService()
-        result = service.process_message(session_id, message, db, mode=request.mode, owner_id=user.id, collection_id=collection_id)
+        result = service.process_message(session_id, message, db, mode=request.mode, workspace_id=membership.workspace_id, collection_id=collection_id)
         
         return result
         
@@ -78,7 +78,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_c
 
 
 @router.post("/chat/stream", status_code=status.HTTP_200_OK)
-def chat_stream(request: ChatRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
     """Process a chat message and stream assistant response chunks.
 
     Response format is newline-delimited JSON (NDJSON) with events:
@@ -100,7 +100,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), user=Depend
         )
 
         service = ChatService()
-        stream = service.process_message_stream(session_id, message, db, mode=request.mode, owner_id=user.id, collection_id=collection_id)
+        stream = service.process_message_stream(session_id, message, db, mode=request.mode, workspace_id=membership.workspace_id, collection_id=collection_id)
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     except ValidationError:
@@ -116,7 +116,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), user=Depend
 
 
 @router.get("/history/{session_id}", status_code=status.HTTP_200_OK)
-def history(session_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def history(session_id: str, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
     """Get chat history for a session
     
     Args:
@@ -140,7 +140,7 @@ def history(session_id: str, db: Session = Depends(get_db), user=Depends(get_cur
         )
         
         service = ChatService()
-        history = service.get_history(session_id, db, owner_id=user.id)
+        history = service.get_history(session_id, db, workspace_id=membership.workspace_id)
         
         return {
             "session_id": session_id,

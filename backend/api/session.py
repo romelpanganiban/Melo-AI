@@ -7,7 +7,7 @@ from core.errors import ValidationError, SessionNotFoundError
 from core.validation import validate_uuid, validate_session_title
 from core.logging import logger
 from database.connection import get_db
-from core.auth import get_current_user
+from core.auth import get_current_membership
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ class SessionResponse(BaseModel):
 
 
 @router.post("/sessions", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
-def create_session(db: Session = Depends(get_db), user=Depends(get_current_user)):
+def create_session(db: Session = Depends(get_db), membership=Depends(get_current_membership)):
     """Create a new chat session
     
     Returns:
@@ -31,7 +31,7 @@ def create_session(db: Session = Depends(get_db), user=Depends(get_current_user)
     try:
         logger.info("Creating new session")
         service = SessionService()
-        session = service.create_session(db, owner_id=user.id)
+        session = service.create_session(db, workspace_id=membership.workspace_id)
         return session
         
     except Exception as e:
@@ -40,7 +40,7 @@ def create_session(db: Session = Depends(get_db), user=Depends(get_current_user)
 
 
 @router.get("/sessions", status_code=status.HTTP_200_OK)
-def get_sessions(db: Session = Depends(get_db), user=Depends(get_current_user)):
+def get_sessions(db: Session = Depends(get_db), membership=Depends(get_current_membership)):
     """Get all sessions
     
     Returns:
@@ -49,7 +49,7 @@ def get_sessions(db: Session = Depends(get_db), user=Depends(get_current_user)):
     try:
         logger.info("Retrieving all sessions")
         service = SessionService()
-        sessions = service.get_sessions(db, owner_id=user.id)
+        sessions = service.get_sessions(db, workspace_id=membership.workspace_id)
         return {
             "sessions": sessions,
             "count": len(sessions)
@@ -65,7 +65,7 @@ def rename_session(
     session_id: str,
     request: RenameSessionRequest,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    membership=Depends(get_current_membership),
 ):
     """Rename an existing session
     
@@ -92,7 +92,7 @@ def rename_session(
         )
         
         service = SessionService()
-        session = service.rename_session(session_id, title, db, owner_id=user.id)
+        session = service.rename_session(session_id, title, db, workspace_id=membership.workspace_id)
         return session
         
     except ValidationError:
@@ -108,7 +108,7 @@ def rename_session(
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_session(session_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def delete_session(session_id: str, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
     """Delete an existing session
     
     Args:
@@ -129,7 +129,7 @@ def delete_session(session_id: str, db: Session = Depends(get_db), user=Depends(
         )
         
         service = SessionService()
-        service.delete_session(session_id, db, owner_id=user.id)
+        service.delete_session(session_id, db, workspace_id=membership.workspace_id)
         
     except ValidationError:
         raise

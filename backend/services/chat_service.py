@@ -80,7 +80,7 @@ class ChatService:
             return "ask"
         return "chat"
 
-    def _search_documents(self, query: str, session_id: str = None, top_k: int = 5, owner_id: str = None, collection_id: str = None) -> dict:
+    def _search_documents(self, query: str, session_id: str = None, top_k: int = 5, owner_id: str = None, collection_id: str = None, workspace_id: str = None) -> dict:
         """Search for relevant documents using vector similarity
         
         Args:
@@ -107,7 +107,7 @@ class ChatService:
             query_embedding = embedding_service.embed_query(query)
             
             # Search Qdrant for similar chunks
-            filters = {**({"session_id": session_id} if session_id else {}), **({"owner_id": owner_id} if owner_id else {}), **({"collection_id": collection_id} if collection_id else {})} or None
+            filters = {**({"session_id": session_id} if session_id else {}), **({"owner_id": owner_id} if owner_id else {}), **({"workspace_id": workspace_id} if workspace_id else {}), **({"collection_id": collection_id} if collection_id else {})} or None
             search_results = qdrant_client.search(
                 query_embedding=query_embedding,
                 limit=top_k,
@@ -191,7 +191,7 @@ class ChatService:
         if title:
             session_repo.update_title(session.id, title)
 
-    def process_message(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None) -> dict:
+    def process_message(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None, workspace_id: str = None) -> dict:
         """Process a user message
         
         Args:
@@ -215,7 +215,7 @@ class ChatService:
         try:
             # Validate session exists
             session_repo = SessionRepository(db)
-            session = session_repo.get_by_id(session_id, owner_id=owner_id)
+            session = session_repo.get_by_id(session_id, owner_id=owner_id, workspace_id=workspace_id)
             if not session:
                 raise SessionNotFoundError(session_id)
             
@@ -236,7 +236,7 @@ class ChatService:
             history = self._get_history_dicts(session_id, db)
             
             # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id)
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id)
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             # Generate response with document context
@@ -282,7 +282,7 @@ class ChatService:
             if should_close:
                 db.close()
 
-    def process_message_stream(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None) -> Generator[str, None, None]:
+    def process_message_stream(self, session_id: str, message: str, db: Session = None, mode: str = "chat", owner_id: str = None, collection_id: str = None, workspace_id: str = None) -> Generator[str, None, None]:
         """Process a user message and stream assistant response chunks as NDJSON lines."""
         if db is None:
             db = get_db_session()
@@ -292,7 +292,7 @@ class ChatService:
 
         try:
             session_repo = SessionRepository(db)
-            session = session_repo.get_by_id(session_id, owner_id=owner_id)
+            session = session_repo.get_by_id(session_id, owner_id=owner_id, workspace_id=workspace_id)
             if not session:
                 raise SessionNotFoundError(session_id)
 
@@ -302,7 +302,7 @@ class ChatService:
             history = self._get_history_dicts(session_id, db)
             
             # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id)
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id)
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             chunks: list[str] = []
@@ -365,7 +365,7 @@ class ChatService:
             if should_close:
                 db.close()
 
-    def get_history(self, session_id: str, db: Session = None, owner_id: str = None) -> list[dict]:
+    def get_history(self, session_id: str, db: Session = None, owner_id: str = None, workspace_id: str = None) -> list[dict]:
         """Get chat history for a session
         
         Args:
@@ -388,7 +388,7 @@ class ChatService:
         try:
             # Validate session exists
             session_repo = SessionRepository(db)
-            session = session_repo.get_by_id(session_id, owner_id=owner_id)
+            session = session_repo.get_by_id(session_id, owner_id=owner_id, workspace_id=workspace_id)
             if not session:
                 raise SessionNotFoundError(session_id)
             

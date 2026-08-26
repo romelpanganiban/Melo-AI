@@ -8,9 +8,9 @@ experience around it.
 
 The current implementation is a strong local foundation for that direction. It
 already provides persistent sessions, document ingestion and retrieval, grounded
-response modes, code analysis, Git operations, and bounded read-only agent actions.
-Cloud identity, tenant isolation, advanced retrieval, and production-grade agent
-execution remain future work.
+response modes, code analysis, Git operations, bounded read-only agent actions,
+and authenticated default workspaces. Resource migration to workspace scope,
+advanced retrieval, and production-grade agent execution remain future work.
 
 ## Current Architecture
 
@@ -70,9 +70,9 @@ Persisted response and source/mode metadata
 
 Ask, Study, and Plan modes specialize the prompt and response contract. Agent
 mode currently supports bounded read-only actions such as file reads, code
-analysis, and document search. Side-effecting actions require a future
-authentication and authorization boundary; approval tokens alone are not that
-boundary.
+analysis, and document search. Side-effecting actions require workspace policy
+and sandboxing; approval tokens are bound to the authenticated user but do not
+replace authorization.
 
 ---
 
@@ -137,7 +137,7 @@ This is a target architecture, not a claim that every box is implemented today.
 
 ## Priority Order
 
-1. Authentication, authorization, workspace ownership, and tenant isolation.
+1. Workspace roles, authorization policy, and full multi-workspace tenant isolation.
 2. Retrieval quality: hybrid search, reranking, context compression, and robust
 	citation mapping.
 3. Reliable agent execution: multi-step plans, approval gates, sandboxing, and

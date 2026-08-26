@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 os.environ["DATABASE_URL"] = "sqlite:///./test_melo_ai.db"
 
 import database.connection as db_connection
-from database.models import Base, User
+from database.models import Base, User, Workspace, WorkspaceMember
 from database.connection import get_db
 from main import app
 from services.auth_service import create_access_token
@@ -56,16 +56,25 @@ def test_db():
 
 
 @pytest.fixture(scope="function")
-def client(test_db):
+def test_user(test_db):
+    user = User(email=f"test-{uuid.uuid4()}@example.com", password_hash="test-hash")
+    test_db.add(user)
+    test_db.flush()
+    workspace = Workspace(name=f"Test Workspace {uuid.uuid4()}")
+    test_db.add(workspace)
+    test_db.flush()
+    test_db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role="owner"))
+    test_db.commit()
+    test_db.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+def client(test_db, test_user):
     """Create a FastAPI test client with a dependency override."""
 
     def override_get_db():
         yield test_db
-
-    test_user = User(email=f"test-{uuid.uuid4()}@example.com", password_hash="test-hash")
-    test_db.add(test_user)
-    test_db.commit()
-    test_db.refresh(test_user)
 
     app.dependency_overrides[get_db] = override_get_db
     try:
@@ -78,11 +87,11 @@ def client(test_db):
 
 
 @pytest.fixture(scope="function")
-def test_session_id(test_db):
+def test_session_id(test_db, test_user):
     """Create a test session in the shared file-backed database."""
     from database.repositories import SessionRepository
 
     repo = SessionRepository(test_db)
-    owner = test_db.query(User).order_by(User.created_at.desc()).first()
-    session = repo.create(title="Test Session", owner_id=owner.id if owner else None)
+    workspace_id = test_user.memberships[0].workspace_id
+    session = repo.create(title="Test Session", owner_id=test_user.id, workspace_id=workspace_id)
     return session.id

@@ -23,10 +23,9 @@ def test_register_login_and_get_current_user(client):
         "/auth/me",
     )
     assert me_response.status_code == 200
-    assert me_response.json() == {
-        "user_id": registration["user_id"],
-        "email": credentials["email"],
-    }
+    assert me_response.json()["user_id"] == registration["user_id"]
+    assert me_response.json()["email"] == credentials["email"]
+    assert me_response.json()["workspace_id"] == registration["workspace_id"]
 
 
 def test_duplicate_registration_is_rejected(client):

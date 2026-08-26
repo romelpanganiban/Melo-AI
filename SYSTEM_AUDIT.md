@@ -23,7 +23,7 @@ Date: 2026-08-26
 - The frontend API client exposes typed approval requests for future side-effect execution.
 - Confirmed file and Git mutations now consume matching one-time approval tokens.
 - Collection searches combine session and collection filters to preserve private document isolation.
-- Approval tokens are not an authentication boundary until API authentication is implemented.
+- Approval tokens are not a complete authorization boundary; they are now bound to authenticated users, but workspace policy and sandboxing remain required.
 - Non-auth hardening now bounds extracted documents and JSON uploads, limits dataset output size, uses atomic settings replacement, protects approval consumption with a lock, and disables credentialed wildcard CORS.
 - Agent approval primitives now issue short-lived, action/target-bound tokens; side-effect execution remains disabled until mutation endpoints consume them.
 - Qdrant retrieval now uses the current `query_points` API, with legacy fallback support; embedding dimension lookup uses the current SentenceTransformers method.
@@ -39,10 +39,14 @@ Date: 2026-08-26
 - Alembic now contains an initial PostgreSQL schema revision; new databases can use `alembic upgrade head`.
 - The configured `melo_ai` database was initialized previously, so it was safely marked with `alembic stamp head` rather than recreating its existing tables.
 - Settings, study, training, agent, coding, Git, and approval endpoints now require authentication; approvals are user-bound.
+- Chat retrieval accepts an optional collection scope and deduplicates retrieved chunks while returning document/chunk source metadata.
+- Workspace and membership models now exist, default workspaces are created/backfilled, and `/workspaces` lists authenticated memberships.
+- Resource workspace migration `0003_resource_workspaces` is applied; existing sessions and documents are workspace-scoped, while multi-workspace membership and role policy remain unfinished.
+- Study progress now validates the session workspace and persists/filter progress by workspace; Agent document search now propagates workspace scope.
 
 ## Validation
 
-- Backend: `171 passed`
+- Backend: `174 passed`
 - Frontend: `34 passed`
 - Frontend lint: passed
 - Frontend production build: passed
@@ -52,7 +56,7 @@ Date: 2026-08-26
 
 ### High
 
-1. Complete frontend authentication UX and workspace authorization before exposing the API beyond localhost. File write/delete and Git stage/commit endpoints can mutate the workspace; authentication and approval tokens are necessary but further policy and sandboxing are still required.
+1. Complete multi-workspace membership and role policy, then remove compatibility-only user `owner_id` filters after all resources use workspace membership. File write/delete and Git stage/commit endpoints can mutate the workspace; authentication and approval tokens are necessary but further policy and sandboxing are still required.
 2. Define an explicit consistency policy for document records, SQL chunks, and Qdrant vectors. Current embedding failures can leave a document reported as uploaded but unavailable to RAG, and vector deletion failures can leave stale retrieval results.
 
 ### Medium
