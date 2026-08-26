@@ -1,6 +1,6 @@
 """FastAPI authentication dependencies."""
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -25,8 +25,21 @@ def get_current_user(
     return user
 
 
-def get_current_membership(user: User = Depends(get_current_user)) -> WorkspaceMember:
-    membership = user.memberships[0] if user.memberships else None
+def get_current_membership(
+    user: User = Depends(get_current_user),
+    workspace_id: str | None = Header(default=None, alias="X-Workspace-ID"),
+) -> WorkspaceMember:
+    memberships = user.memberships
+    membership = next((item for item in memberships if item.workspace_id == workspace_id), None) if workspace_id else (memberships[0] if memberships else None)
     if membership is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No workspace membership")
+        detail = "Workspace membership not found" if workspace_id else "No workspace membership"
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
     return membership
+
+
+def require_workspace_role(*allowed_roles: str):
+    def dependency(membership: WorkspaceMember = Depends(get_current_membership)) -> WorkspaceMember:
+        if membership.role not in allowed_roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient workspace role")
+        return membership
+    return dependency

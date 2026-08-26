@@ -19,8 +19,8 @@ class ChatService:
 
     _availability_checked = False
 
-    def __init__(self):
-        saved_settings = SettingsManager().get_settings()
+    def __init__(self, workspace_id: str = None):
+        saved_settings = SettingsManager(workspace_id=workspace_id).get_settings()
         selected_model = saved_settings.get("model", settings.OLLAMA_MODEL)
         self.learning_level = saved_settings.get("learning_level", "intermediate")
         self.explanation_style = saved_settings.get("explanation_style", "clear")

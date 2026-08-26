@@ -60,7 +60,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends
         )
         
         # Process message with injected database session
-        service = ChatService()
+        service = ChatService(workspace_id=membership.workspace_id)
         result = service.process_message(session_id, message, db, mode=request.mode, workspace_id=membership.workspace_id, collection_id=collection_id)
         
         return result
@@ -99,7 +99,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=
             }
         )
 
-        service = ChatService()
+        service = ChatService(workspace_id=membership.workspace_id)
         stream = service.process_message_stream(session_id, message, db, mode=request.mode, workspace_id=membership.workspace_id, collection_id=collection_id)
         return StreamingResponse(stream, media_type="application/x-ndjson")
 

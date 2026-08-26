@@ -58,3 +58,8 @@ def test_me_rejects_missing_or_tampered_token(client):
         "/auth/me",
         headers={"Authorization": "Bearer invalid.token"},
     ).status_code == 401
+
+
+def test_malformed_token_is_rejected_as_unauthorized(client):
+    client.headers["Authorization"] = "Bearer %%%%"
+    assert client.get("/auth/me").status_code == 401

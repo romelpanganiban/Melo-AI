@@ -1,6 +1,7 @@
 """Database connection and session management"""
 
 from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator, Optional
 import os
@@ -28,6 +29,10 @@ class DatabaseConfig:
         """Get the database connection string"""
         return self.database_url
 
+    def get_safe_connection_string(self) -> str:
+        """Return the connection string with its password hidden in logs."""
+        return make_url(self.database_url).render_as_string(hide_password=True)
+
 
 # Database configuration instance
 db_config = DatabaseConfig()
@@ -48,7 +53,7 @@ def init_database() -> None:
     try:
         logger.info(
             "Initializing database",
-            extra={"database_url": db_config.get_connection_string()}
+            extra={"database_url": db_config.get_safe_connection_string()}
         )
         Base.metadata.create_all(bind=engine)
         if "messages" in inspect(engine).get_table_names():
@@ -80,7 +85,7 @@ def init_database() -> None:
     except Exception as e:
         logger.error(
             f"Failed to initialize database: {str(e)}",
-            extra={"database_url": db_config.get_connection_string()}
+            extra={"database_url": db_config.get_safe_connection_string()}
         )
         raise ChatServiceError(f"Database initialization failed: {str(e)}")
 

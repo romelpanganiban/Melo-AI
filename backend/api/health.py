@@ -1,16 +1,17 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pathlib import Path
 
 from core.settings import settings
 from core.logging import logger
 from services.ollama_client import OllamaClient
 from services.qdrant_client import get_qdrant_client
+from core.auth import get_current_user
 
 router = APIRouter()
 
 
 @router.get("/models", status_code=status.HTTP_200_OK)
-def list_models():
+def list_models(user=Depends(get_current_user)):
     """List models installed in the configured Ollama instance."""
     try:
         client = OllamaClient(

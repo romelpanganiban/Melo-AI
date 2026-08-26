@@ -11,7 +11,7 @@ class Settings:
     # API Configuration
     API_HOST: str = os.getenv("API_HOST", "127.0.0.1")
     API_PORT: int = int(os.getenv("API_PORT", "8000"))
-    API_RELOAD: bool = os.getenv("API_RELOAD", "true").lower() == "true"
+    API_RELOAD: bool = os.getenv("API_RELOAD", "false").lower() == "true"
     
     # Frontend Configuration
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")

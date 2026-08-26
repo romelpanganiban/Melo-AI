@@ -5,12 +5,9 @@ from typing import Literal
 from services.settings_service import SettingsService
 from core.errors import SettingsError
 from core.logging import logger
-from core.auth import get_current_user
+from core.auth import get_current_membership, require_workspace_role
 
 router = APIRouter()
-
-service = SettingsService()
-
 
 class SettingsRequest(BaseModel):
     model: str = Field(default="qwen3:8b", min_length=1, description="Model name")
@@ -33,7 +30,7 @@ class SettingsResponse(BaseModel):
 
 
 @router.get("/settings", response_model=SettingsResponse, status_code=status.HTTP_200_OK)
-def get_settings(user=Depends(get_current_user)):
+def get_settings(membership=Depends(get_current_membership)):
     """Get current application settings
     
     Returns:
@@ -44,7 +41,7 @@ def get_settings(user=Depends(get_current_user)):
     """
     try:
         logger.info("Retrieving settings")
-        settings = service.get_settings()
+        settings = SettingsService(membership.workspace_id).get_settings()
         return settings
         
     except Exception as e:
@@ -53,7 +50,7 @@ def get_settings(user=Depends(get_current_user)):
 
 
 @router.put("/settings", response_model=SettingsResponse, status_code=status.HTTP_200_OK)
-def update_settings(request: SettingsRequest, user=Depends(get_current_user)):
+def update_settings(request: SettingsRequest, membership=Depends(require_workspace_role("owner", "admin"))):
     """Update application settings
     
     Args:
@@ -75,7 +72,7 @@ def update_settings(request: SettingsRequest, user=Depends(get_current_user)):
             }
         )
         
-        settings = service.update_settings(request.model_dump())
+        settings = SettingsService(membership.workspace_id).update_settings(request.model_dump())
         return settings
         
     except Exception as e:

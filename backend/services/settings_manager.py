@@ -24,10 +24,12 @@ class SettingsManager:
         "quiz_difficulty": "medium",
     }
 
-    def __init__(self, file_path: Optional[Path] = None):
+    def __init__(self, file_path: Optional[Path] = None, workspace_id: Optional[str] = None):
         if file_path is None:
             from core.settings import settings
             file_path = settings.SETTINGS_FILE
+            if workspace_id:
+                file_path = settings.DATA_DIR / "workspaces" / workspace_id / "settings.json"
         
         self.file = Path(file_path)
         self._ensure_file()

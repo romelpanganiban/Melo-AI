@@ -16,8 +16,12 @@ class DatasetService:
     MAX_EXAMPLES = 10_000
     MAX_CONTENT_LENGTH = 50_000
 
-    def __init__(self, directory: Path | None = None):
-        self.directory = directory or settings.TRAINING_DATA_DIR
+    def __init__(self, directory: Path | None = None, workspace_id: str | None = None):
+        self.directory = directory or (
+            settings.TRAINING_DATA_DIR / "workspaces" / workspace_id
+            if workspace_id
+            else settings.TRAINING_DATA_DIR
+        )
         self.directory.mkdir(parents=True, exist_ok=True)
 
     def create_dataset(self, name: str, examples: list[dict]) -> dict:

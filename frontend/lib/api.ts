@@ -20,6 +20,7 @@ export class APIError extends Error {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 const AUTH_TOKEN_KEY = 'melo_access_token';
+const WORKSPACE_ID_KEY = 'melo_workspace_id';
 
 export function getAccessToken(): string | null {
   return typeof window === 'undefined' ? null : window.localStorage.getItem(AUTH_TOKEN_KEY);
@@ -31,6 +32,15 @@ export function setAccessToken(token: string): void {
 
 export function clearAccessToken(): void {
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  window.localStorage.removeItem(WORKSPACE_ID_KEY);
+}
+
+export function getWorkspaceId(): string | null {
+  return typeof window === 'undefined' ? null : window.localStorage.getItem(WORKSPACE_ID_KEY);
+}
+
+export function setWorkspaceId(workspaceId: string): void {
+  window.localStorage.setItem(WORKSPACE_ID_KEY, workspaceId);
 }
 
 export function hasAccessToken(): boolean {
@@ -43,6 +53,10 @@ async function fetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
+  const workspaceId = getWorkspaceId();
+  if (workspaceId) {
+    headers.set('X-Workspace-ID', workspaceId);
+  }
   return globalThis.fetch(input, { ...init, headers });
 }
 
@@ -52,6 +66,9 @@ async function fetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<
 async function handleResponse<T>(response: Response): Promise<T> {
   // Check if response is ok
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAccessToken();
+    }
     let errorData;
     try {
       errorData = await response.json();
@@ -1008,6 +1025,7 @@ export type AuthResponse = {
   access_token: string;
   token_type: string;
   user_id: string;
+  workspace_id: string;
 };
 
 export async function register(email: string, password: string): Promise<AuthResponse> {
@@ -1018,6 +1036,7 @@ export async function register(email: string, password: string): Promise<AuthRes
   });
   const result = await handleResponse<AuthResponse>(response);
   setAccessToken(result.access_token);
+  setWorkspaceId(result.workspace_id);
   return result;
 }
 
@@ -1029,5 +1048,6 @@ export async function login(email: string, password: string): Promise<AuthRespon
   });
   const result = await handleResponse<AuthResponse>(response);
   setAccessToken(result.access_token);
+  setWorkspaceId(result.workspace_id);
   return result;
 }

@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 os.environ["DATABASE_URL"] = "sqlite:///./test_melo_ai.db"
+os.environ["MELO_AUTH_SECRET"] = "test-secret-for-local-tests-please-replace"
 
 import database.connection as db_connection
 from database.models import Base, User, Workspace, WorkspaceMember

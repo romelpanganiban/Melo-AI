@@ -1,6 +1,7 @@
 """Password hashing and signed access tokens for local authentication."""
 
 import base64
+import binascii
 import hashlib
 import hmac
 import json
@@ -19,7 +20,10 @@ _SALT_BYTES = 16
 
 
 def _token_secret() -> bytes:
-    return os.getenv("MELO_AUTH_SECRET", "local-development-secret-change-me").encode()
+    secret = os.getenv("MELO_AUTH_SECRET", "").strip()
+    if len(secret) < 32 or secret.lower().startswith("replace_with_"):
+        raise RuntimeError("MELO_AUTH_SECRET must be set to a random value of at least 32 characters")
+    return secret.encode()
 
 
 def hash_password(password: str) -> str:
@@ -59,7 +63,7 @@ def verify_access_token(token: str) -> str | None:
         if payload.get("exp", 0) < time.time():
             return None
         return str(uuid.UUID(payload["sub"]))
-    except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+    except (ValueError, TypeError, KeyError, binascii.Error, json.JSONDecodeError):
         return None
 
 

@@ -10,7 +10,7 @@ from core.errors import ValidationError
 from core.auth import get_current_membership
 from core.validation import validate_uuid
 from database.connection import get_db
-from database.models import Session as SessionModel, StudyProgress
+from database.models import KnowledgeCollection, Session as SessionModel, StudyProgress
 
 router = APIRouter()
 
@@ -49,6 +49,12 @@ def get_study_progress(session_id: str, collection_id: Optional[str] = None, db:
     )
     if collection_id:
         collection_id = validate_uuid(collection_id, field_name="collection_id")
+        collection = db.query(KnowledgeCollection).filter(
+            KnowledgeCollection.id == collection_id,
+            KnowledgeCollection.workspace_id == membership.workspace_id,
+        ).first()
+        if not collection:
+            raise ValidationError("collection was not found", field="collection_id")
         query = query.filter(StudyProgress.collection_id == collection_id)
     return {"progress": [_serialize(item) for item in query.order_by(StudyProgress.updated_at.desc()).all()]}
 
@@ -63,6 +69,11 @@ def save_study_progress(session_id: str, request: StudyProgressRequest, db: Sess
     if not session:
         raise ValidationError("session was not found", field="session_id")
     collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
+    if collection_id and not db.query(KnowledgeCollection).filter(
+        KnowledgeCollection.id == collection_id,
+        KnowledgeCollection.workspace_id == membership.workspace_id,
+    ).first():
+        raise ValidationError("collection was not found", field="collection_id")
     progress = db.query(StudyProgress).filter(
         StudyProgress.session_id == session_id,
         StudyProgress.workspace_id == membership.workspace_id,

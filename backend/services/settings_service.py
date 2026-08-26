@@ -6,8 +6,8 @@ from core.errors import SettingsError
 class SettingsService:
     """Service for handling settings operations"""
 
-    def __init__(self):
-        self.manager = SettingsManager()
+    def __init__(self, workspace_id: str = None):
+        self.manager = SettingsManager(workspace_id=workspace_id)
 
     def get_settings(self) -> dict:
         """Get current settings
