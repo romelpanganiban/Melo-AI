@@ -63,13 +63,13 @@ class CollectionRequest(BaseModel):
 
 
 @router.get("/collections", status_code=status.HTTP_200_OK)
-def get_collections(membership=Depends(get_current_membership)):
+def get_collections(membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """List named private knowledge collections."""
     return {"collections": service.get_collections(workspace_id=membership.workspace_id)}
 
 
 @router.post("/collections", status_code=status.HTTP_201_CREATED)
-def create_collection(request: CollectionRequest, membership=Depends(get_current_membership)):
+def create_collection(request: CollectionRequest, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Create a named private knowledge collection."""
     return service.create_collection(request.name, request.description, workspace_id=membership.workspace_id)
 
@@ -171,7 +171,7 @@ def upload_document(request: UploadDocumentRequest, membership=Depends(get_curre
 
 
 @router.get("/documents/{document_id}", response_model=DocumentDetailResponse, status_code=status.HTTP_200_OK)
-def get_document(document_id: str, membership=Depends(get_current_membership)):
+def get_document(document_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Get document details including content
     
     Args:
@@ -209,7 +209,7 @@ def get_document(document_id: str, membership=Depends(get_current_membership)):
 
 
 @router.get("/sessions/{session_id}/documents", status_code=status.HTTP_200_OK)
-def get_session_documents(session_id: str, membership=Depends(get_current_membership)):
+def get_session_documents(session_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Get all documents for a session
     
     Args:
@@ -250,7 +250,7 @@ def get_session_documents(session_id: str, membership=Depends(get_current_member
 
 
 @router.get("/documents/{document_id}/chunks", status_code=status.HTTP_200_OK)
-def get_document_chunks(document_id: str, membership=Depends(get_current_membership)):
+def get_document_chunks(document_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Get stored chunks for a document.
 
     This works offline with the current text-based chunking pipeline.
@@ -298,7 +298,7 @@ def search_documents(request: DocumentSearchRequest, membership=Depends(get_curr
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(document_id: str, membership=Depends(get_current_membership)):
+def delete_document(document_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Delete a document
     
     Args:

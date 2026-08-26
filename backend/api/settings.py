@@ -6,8 +6,9 @@ from services.settings_service import SettingsService
 from core.errors import SettingsError
 from core.logging import logger
 from core.auth import get_current_membership, require_workspace_role
+from core.rate_limit import enforce_request_rate_limit
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 
 class SettingsRequest(BaseModel):
     model: str = Field(default="qwen3:8b", min_length=1, description="Model name")

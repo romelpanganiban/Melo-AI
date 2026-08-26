@@ -11,8 +11,9 @@ from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
 from services.approval_service import get_approval_service
 from core.auth import get_current_membership, require_workspace_role, require_workspace_tools
+from core.rate_limit import enforce_request_rate_limit
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 code_service = get_code_analysis_service()
 document_service = DocumentService()
 approval_service = get_approval_service()

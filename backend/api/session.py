@@ -8,8 +8,9 @@ from core.validation import validate_uuid, validate_session_title
 from core.logging import logger
 from database.connection import get_db
 from core.auth import get_current_membership
+from core.rate_limit import enforce_request_rate_limit
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 
 
 class RenameSessionRequest(BaseModel):

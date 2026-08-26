@@ -12,6 +12,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from core.settings import settings
 from database.models import User, Workspace, WorkspaceMember
 
 
@@ -87,7 +88,8 @@ def register_user(db: Session, email: str, password: str) -> User:
     workspace = Workspace(name=f"{email.split('@')[0]}'s Workspace")
     db.add(workspace)
     db.flush()
-    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role="owner"))
+    role = "admin" if user.email == settings.ADMIN_EMAIL else "owner"
+    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=role))
     db.commit()
     db.refresh(user)
     return user
@@ -96,6 +98,10 @@ def register_user(db: Session, email: str, password: str) -> User:
 def ensure_default_workspace(db: Session, user: User) -> WorkspaceMember:
     membership = db.query(WorkspaceMember).filter(WorkspaceMember.user_id == user.id).first()
     if membership:
+        if user.email == settings.ADMIN_EMAIL and membership.role != "admin":
+            membership.role = "admin"
+            db.commit()
+            db.refresh(membership)
         return membership
     workspace = Workspace(name=f"{user.email.split('@')[0]}'s Workspace")
     db.add(workspace)

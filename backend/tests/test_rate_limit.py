@@ -8,8 +8,9 @@ from core.rate_limit import enforce_request_rate_limit
 from core.settings import settings
 
 
-def test_owner_is_exempt_from_request_limit():
-    membership = SimpleNamespace(role="owner", workspace_id="workspace-1", user_id="user-1")
+def test_admin_is_exempt_from_request_limit():
+    admin = SimpleNamespace(email="romelpanganiban284@gmail.com")
+    membership = SimpleNamespace(role="admin", workspace_id="workspace-1", user_id="user-1", user=admin)
     request = SimpleNamespace(url=SimpleNamespace(path="/chat"))
 
     original_enabled = settings.RATE_LIMIT_ENABLED
@@ -24,8 +25,9 @@ def test_owner_is_exempt_from_request_limit():
         settings.RATE_LIMIT_REQUESTS = original_limit
 
 
-def test_member_is_limited_with_429():
-    membership = SimpleNamespace(role="member", workspace_id="workspace-limit", user_id="user-limit")
+def test_registered_owner_is_limited_with_429():
+    user = SimpleNamespace(email="owner@example.com")
+    membership = SimpleNamespace(role="owner", workspace_id="workspace-limit", user_id="user-limit", user=user)
     request = SimpleNamespace(url=SimpleNamespace(path="/chat"))
     key = "request:workspace-limit:user-limit:/chat"
     rate_limit._requests.pop(key, None)

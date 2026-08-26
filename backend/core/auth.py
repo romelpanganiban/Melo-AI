@@ -13,6 +13,10 @@ from core.settings import settings
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
+def is_platform_admin(user: User) -> bool:
+    return user.email.strip().lower() == settings.ADMIN_EMAIL
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),

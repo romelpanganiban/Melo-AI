@@ -10,8 +10,9 @@ from services.code_assistant_service import CodeAssistantService
 from services.git_service import GitService
 from services.approval_service import get_approval_service
 from core.auth import require_workspace_role, require_workspace_tools
+from core.rate_limit import enforce_request_rate_limit
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 service = get_code_analysis_service()
 assistant_service = CodeAssistantService()
 git_service = GitService()

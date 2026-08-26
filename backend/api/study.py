@@ -11,8 +11,9 @@ from core.auth import get_current_membership
 from core.validation import validate_uuid
 from database.connection import get_db
 from database.models import KnowledgeCollection, Session as SessionModel, StudyProgress
+from core.rate_limit import enforce_request_rate_limit
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 
 
 class StudyProgressRequest(BaseModel):

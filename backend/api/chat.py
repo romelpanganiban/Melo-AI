@@ -117,7 +117,7 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=
 
 
 @router.get("/history/{session_id}", status_code=status.HTTP_200_OK)
-def history(session_id: str, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def history(session_id: str, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Get chat history for a session
     
     Args:

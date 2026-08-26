@@ -6,7 +6,7 @@ import time
 
 from fastapi import Depends, HTTPException, Request, status
 
-from core.auth import get_current_membership
+from core.auth import get_current_membership, is_platform_admin
 from core.settings import settings
 
 
@@ -39,7 +39,7 @@ def enforce_request_rate_limit(
     request: Request,
     membership=Depends(get_current_membership),
 ) -> None:
-    if not settings.RATE_LIMIT_ENABLED or membership.role == "owner":
+    if not settings.RATE_LIMIT_ENABLED or is_platform_admin(membership.user):
         return
     key = f"request:{membership.workspace_id}:{membership.user_id}:{request.url.path}"
     if not _allow(key, settings.RATE_LIMIT_REQUESTS, settings.RATE_LIMIT_WINDOW_SECONDS):

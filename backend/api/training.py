@@ -6,8 +6,9 @@ from pydantic import BaseModel, Field
 from core.errors import ChatServiceError, ValidationError
 from services.dataset_service import DatasetService
 from core.auth import get_current_membership
+from core.rate_limit import enforce_request_rate_limit
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 service = DatasetService()
 
 
