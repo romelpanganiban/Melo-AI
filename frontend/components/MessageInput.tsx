@@ -68,7 +68,7 @@ export default function MessageInput({
         </div>
       )}
 
-      <div className="composer-box flex items-end gap-2 rounded-2xl border border-white/15 bg-[#131a17]/95 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.3)] focus-within:border-teal-400/60 focus-within:shadow-[0_12px_30px_rgba(15,118,110,0.18)]">
+      <div className="composer-box flex flex-wrap items-end gap-2 rounded-2xl border border-white/15 bg-[#131a17]/95 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.3)] focus-within:border-teal-400/60 focus-within:shadow-[0_12px_30px_rgba(15,118,110,0.18)]">
         <textarea
           value={message}
           onChange={(e) => {
@@ -79,7 +79,7 @@ export default function MessageInput({
           disabled={isSending || !sessionId}
           maxLength={maxMessageLength}
           rows={2}
-          className="max-h-44 min-h-11 flex-1 resize-y border-0 bg-transparent px-2 py-2 text-sm leading-6 text-slate-100 outline-none disabled:text-slate-100/35"
+          className="max-h-44 min-h-11 min-w-[min(100%,14rem)] flex-[1_1_18rem] resize-y border-0 bg-transparent px-2 py-2 text-sm leading-6 text-slate-100 outline-none disabled:text-slate-100/35"
           placeholder={
             sessionId ? "Message Melo..." : "Select a session to start"
           }
@@ -111,7 +111,7 @@ export default function MessageInput({
           disabled={isSending}
           aria-label="Choose chat model"
           style={{ colorScheme: "dark" }}
-          className="max-w-40 rounded-xl border border-white/15 bg-[#1a2823] px-2 py-2 text-xs text-slate-100 outline-none transition hover:bg-[#24362f] disabled:opacity-50"
+          className="min-w-0 max-w-40 flex-1 rounded-xl border border-white/15 bg-[#1a2823] px-2 py-2 text-xs text-slate-100 outline-none transition hover:bg-[#24362f] disabled:opacity-50 sm:flex-none"
         >
           <option value="auto" className="bg-[#1a2823] text-slate-100">Auto</option>
           {availableModels.map((model) => (
@@ -125,7 +125,7 @@ export default function MessageInput({
           type="button"
           onClick={handleSend}
           disabled={isSending || !sessionId || !message.trim()}
-          className="min-h-11 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
+          className="min-h-11 flex-1 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 sm:flex-none"
         >
           {isSending ? (
             <span className="inline-flex items-center gap-1">

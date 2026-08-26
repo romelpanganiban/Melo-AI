@@ -30,7 +30,7 @@ export default function SettingsPage() {
         setModels(availableModels);
         setModel(settings.model || "qwen3:8b");
         setProvider(settings.provider || "ollama");
-        setTemperature(settings.temperature || 0.7);
+        setTemperature(settings.temperature ?? 0.7);
         setContextSize(settings.context_size || 8192);
         setLearningLevel(settings.learning_level || "intermediate");
         setExplanationStyle(settings.explanation_style || "clear");

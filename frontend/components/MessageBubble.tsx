@@ -65,9 +65,13 @@ function CodeBlock({ language, content }: { language: string; content: string })
   const [copied, setCopied] = useState(false);
 
   async function copyCode() {
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import Sidebar from "@/components/Sidebar";
@@ -18,6 +19,7 @@ import {
   getSettings,
   sendMessageStream,
   updateSettings,
+  logout,
   type InstalledModel,
   type ChatMode,
 } from "@/lib/api";
@@ -32,6 +34,7 @@ function createMessageId(prefix: string) {
 }
 
 export default function ChatPage() {
+  const router = useRouter();
   const [
     selectedSession,
     setSelectedSession,
@@ -333,6 +336,9 @@ export default function ChatPage() {
           void handleSessionDeleted(sessionId, remainingSessions);
         }}
         refreshKey={sessionRefresh}
+        onLogout={() => {
+          void logout().finally(() => router.replace("/login"));
+        }}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">

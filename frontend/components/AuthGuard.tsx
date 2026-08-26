@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { hasAccessToken, logout } from "@/lib/api";
+import { hasAccessToken } from "@/lib/api";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,7 +18,18 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       setIsHydrated(true);
     }, 0);
 
-    return () => window.clearTimeout(timeoutId);
+    function handleAuthChange() {
+      setIsAuthenticated(hasAccessToken());
+    }
+
+    window.addEventListener("melo-auth-change", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("melo-auth-change", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -38,21 +49,5 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  async function handleLogout() {
-    await logout().catch(() => undefined);
-    router.replace("/login");
-  }
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => void handleLogout()}
-        className="fixed right-4 top-4 z-50 rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/50"
-      >
-        Sign out
-      </button>
-      {children}
-    </>
-  );
+  return children;
 }

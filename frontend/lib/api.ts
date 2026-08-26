@@ -21,6 +21,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 const AUTH_TOKEN_KEY = 'melo_access_token';
 const WORKSPACE_ID_KEY = 'melo_workspace_id';
+const USER_EMAIL_KEY = 'melo_user_email';
 
 export function getAccessToken(): string | null {
   return typeof window === 'undefined' ? null : window.localStorage.getItem(AUTH_TOKEN_KEY);
@@ -28,11 +29,14 @@ export function getAccessToken(): string | null {
 
 export function setAccessToken(token: string): void {
   window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+  window.dispatchEvent(new Event('melo-auth-change'));
 }
 
 export function clearAccessToken(): void {
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
   window.localStorage.removeItem(WORKSPACE_ID_KEY);
+  window.localStorage.removeItem(USER_EMAIL_KEY);
+  window.dispatchEvent(new Event('melo-auth-change'));
 }
 
 export function getWorkspaceId(): string | null {
@@ -41,6 +45,10 @@ export function getWorkspaceId(): string | null {
 
 export function setWorkspaceId(workspaceId: string): void {
   window.localStorage.setItem(WORKSPACE_ID_KEY, workspaceId);
+}
+
+export function getUserEmail(): string | null {
+  return typeof window === 'undefined' ? null : window.localStorage.getItem(USER_EMAIL_KEY);
 }
 
 export function hasAccessToken(): boolean {
@@ -1028,6 +1036,17 @@ export type AuthResponse = {
   workspace_id: string;
 };
 
+export type CurrentUser = {
+  user_id: string;
+  email: string;
+  workspace_id?: string | null;
+};
+
+export async function getCurrentUser(): Promise<CurrentUser> {
+  const response = await fetch(`${API_URL}/auth/me`);
+  return handleResponse<CurrentUser>(response);
+}
+
 export async function register(email: string, password: string): Promise<AuthResponse> {
   const response = await globalThis.fetch(`${API_URL}/auth/register`, {
     method: 'POST',
@@ -1037,6 +1056,7 @@ export async function register(email: string, password: string): Promise<AuthRes
   const result = await handleResponse<AuthResponse>(response);
   setAccessToken(result.access_token);
   setWorkspaceId(result.workspace_id);
+  window.localStorage.setItem(USER_EMAIL_KEY, email.trim().toLowerCase());
   return result;
 }
 
@@ -1049,6 +1069,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
   const result = await handleResponse<AuthResponse>(response);
   setAccessToken(result.access_token);
   setWorkspaceId(result.workspace_id);
+  window.localStorage.setItem(USER_EMAIL_KEY, email.trim().toLowerCase());
   return result;
 }
 

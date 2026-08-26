@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LogOut, UserRound } from "lucide-react";
 import {
   getSessions,
   createSession,
   deleteSession,
   APIError,
+  getUserEmail,
 } from "@/lib/api";
 
 type Session = {
@@ -20,6 +22,7 @@ type SidebarProps = {
   isOpen: boolean;
   onClose: () => void;
   onSessionDeleted: (sessionId: string, remainingSessions: Session[]) => void;
+  onLogout?: () => void;
   refreshKey?: number;
 };
 
@@ -29,12 +32,14 @@ export default function Sidebar({
   isOpen,
   onClose,
   onSessionDeleted,
+  onLogout = () => undefined,
   refreshKey = 0,
 }: SidebarProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email] = useState(() => getUserEmail() || "Your account");
 
   async function loadSessions() {
     setIsLoading(true);
@@ -234,6 +239,26 @@ export default function Sidebar({
               </div>
             ))
           )}
+        </div>
+
+        <div className="mt-4 flex items-center gap-2 border-t border-white/10 pt-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white" aria-hidden="true">
+            <UserRound size={15} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-slate-200" title={email}>{email}</p>
+            <p className="text-[11px] text-slate-500">Local workspace</p>
+          </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400"
+            aria-label="Sign out of Melo-AI"
+            title="Sign out"
+          >
+            <LogOut size={13} aria-hidden="true" />
+            Sign out
+          </button>
         </div>
       </aside>
     </>
