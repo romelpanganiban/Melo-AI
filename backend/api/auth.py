@@ -11,6 +11,7 @@ from core.auth import get_current_user
 from database.connection import get_db
 from database.models import WorkspaceMember
 from services.auth_service import create_access_token, ensure_default_workspace, get_user_by_email, register_user, revoke_access_token, verify_password
+from core.rate_limit import enforce_auth_rate_limit
 
 
 router = APIRouter()
@@ -38,7 +39,7 @@ class AuthResponse(BaseModel):
 
 
 @router.post("/auth/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def register(request: AuthRequest, db: Session = Depends(get_db)):
+def register(request: AuthRequest, db: Session = Depends(get_db), _: None = Depends(enforce_auth_rate_limit)):
     if get_user_by_email(db, request.email):
         raise ValidationError("An account with this email already exists", field="email")
     try:
@@ -51,7 +52,7 @@ def register(request: AuthRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/auth/login", response_model=AuthResponse)
-def login(request: AuthRequest, db: Session = Depends(get_db)):
+def login(request: AuthRequest, db: Session = Depends(get_db), _: None = Depends(enforce_auth_rate_limit)):
     user = get_user_by_email(db, request.email)
     if user is None or not verify_password(request.password, user.password_hash):
         raise ValidationError("Invalid email or password")

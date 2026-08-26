@@ -18,6 +18,7 @@ from database.models import Base, User, Workspace, WorkspaceMember
 from database.connection import get_db
 from main import app
 from services.auth_service import create_access_token
+from core import rate_limit
 
 
 _test_engine = None
@@ -77,6 +78,8 @@ def client(test_db, test_user):
 
     def override_get_db():
         yield test_db
+
+    rate_limit._requests.clear()
 
     app.dependency_overrides[get_db] = override_get_db
     try:

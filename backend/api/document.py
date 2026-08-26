@@ -11,6 +11,7 @@ from core.errors import ChatServiceError, DocumentNotFoundError, ValidationError
 from core.validation import validate_uuid
 from core.logging import logger
 from core.auth import get_current_membership
+from core.rate_limit import enforce_request_rate_limit
 
 router = APIRouter()
 
@@ -79,6 +80,7 @@ def upload_document_file(
     session_id: Optional[str] = Form(None),
     collection_id: Optional[str] = Form(None),
     membership=Depends(get_current_membership),
+    _: None = Depends(enforce_request_rate_limit),
 ):
     """Extract and store a TXT, PDF, or DOCX upload."""
     try:
@@ -110,7 +112,7 @@ def upload_document_file(
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-def upload_document(request: UploadDocumentRequest, membership=Depends(get_current_membership)):
+def upload_document(request: UploadDocumentRequest, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Upload a new document
     
     Args:
@@ -282,7 +284,7 @@ def get_document_chunks(document_id: str, membership=Depends(get_current_members
 
 
 @router.post("/documents/search", status_code=status.HTTP_200_OK)
-def search_documents(request: DocumentSearchRequest, membership=Depends(get_current_membership)):
+def search_documents(request: DocumentSearchRequest, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Search indexed documents in a session without asking the language model."""
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")

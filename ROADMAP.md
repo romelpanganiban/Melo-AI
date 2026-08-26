@@ -243,6 +243,8 @@ Commercial SaaS Version
 - [ ] PostgreSQL as the single production source of truth
 - [x] Alembic database migrations
 - [ ] Rate limits, quotas, and token usage ledger
+- [x] Basic owner-exempt request rate limits
+- [ ] Distributed rate limits, quotas, and token usage ledger
 - [ ] Secure production configuration and secret management
 - [ ] Sandbox or disable server file and Git tools
 - [x] Disable shared file/Git tools by default until workspace roots exist

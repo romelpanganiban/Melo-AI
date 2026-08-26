@@ -11,6 +11,7 @@ from core.logging import logger
 from core.settings import settings
 from database.connection import get_db
 from core.auth import get_current_membership
+from core.rate_limit import enforce_request_rate_limit
 
 router = APIRouter()
 
@@ -30,7 +31,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Process a chat message for a session
     
     Args:
@@ -78,7 +79,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends
 
 
 @router.post("/chat/stream", status_code=status.HTTP_200_OK)
-def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
     """Process a chat message and stream assistant response chunks.
 
     Response format is newline-delimited JSON (NDJSON) with events:

@@ -37,6 +37,11 @@ class Settings:
     # Feature flags
     ENABLE_CORS: bool = os.getenv("ENABLE_CORS", "true").lower() == "true"
     ENABLE_WORKSPACE_TOOLS: bool = os.getenv("ENABLE_WORKSPACE_TOOLS", "false").lower() == "true"
+    RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+    RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "60"))
+    RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+    AUTH_RATE_LIMIT_REQUESTS: int = int(os.getenv("AUTH_RATE_LIMIT_REQUESTS", "10"))
+    AUTH_RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("AUTH_RATE_LIMIT_WINDOW_SECONDS", "300"))
     CORS_ORIGINS: list[str] = [
         origin.strip() 
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")

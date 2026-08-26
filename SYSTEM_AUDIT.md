@@ -45,6 +45,8 @@ Date: 2026-08-26
 - Frontend clears stored authentication and workspace tokens after a `401` response.
 - `/auth/logout` now revokes the current bearer token for the running backend process, and the frontend exposes a shared Sign out control.
 - Shared filesystem/Git and Agent file tools are disabled by default; trusted local development must explicitly set `ENABLE_WORKSPACE_TOOLS=true`.
+- Configurable request limits now protect authentication, chat, document upload, and document search; workspace owners are exempt from normal request limits.
+- Rate-limit state is intentionally in memory for local deployment; distributed quotas remain required for multi-instance production deployments.
 - Chat retrieval accepts an optional collection scope and deduplicates retrieved chunks while returning document/chunk source metadata.
 - Workspace and membership models now exist, default workspaces are created/backfilled, and `/workspaces` lists authenticated memberships.
 - Resource workspace migration `0003_resource_workspaces` is applied; existing sessions and documents are workspace-scoped, while multi-workspace membership and role policy remain unfinished.
@@ -52,7 +54,7 @@ Date: 2026-08-26
 
 ## Validation
 
-- Backend: `174 passed`
+- Backend: `182 passed`
 - Frontend: `34 passed`
 - Frontend lint: passed
 - Frontend production build: passed
@@ -62,7 +64,7 @@ Date: 2026-08-26
 
 ### High
 
-1. Complete multi-workspace membership and role policy, then remove compatibility-only user `owner_id` filters after all resources use workspace membership. File write/delete and Git stage/commit endpoints require explicit tool enablement but still target the shared server repository; per-workspace roots or sandboxing remain required before multi-user deployment.
+1. Replace the local in-memory limiter with distributed rate limits and durable quotas for multi-instance deployment. File write/delete and Git stage/commit endpoints require explicit tool enablement but still target the shared server repository; per-workspace roots or sandboxing remain required before multi-user deployment.
 2. Define an explicit consistency policy for document records, SQL chunks, and Qdrant vectors. Current embedding failures can leave a document reported as uploaded but unavailable to RAG, and vector deletion failures can leave stale retrieval results.
 
 ### Medium
