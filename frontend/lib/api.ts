@@ -1051,3 +1051,12 @@ export async function login(email: string, password: string): Promise<AuthRespon
   setWorkspaceId(result.workspace_id);
   return result;
 }
+
+export async function logout(): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
+    await handleResponse(response);
+  } finally {
+    clearAccessToken();
+  }
+}

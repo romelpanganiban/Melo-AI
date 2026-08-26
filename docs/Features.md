@@ -23,6 +23,7 @@
 ### Authentication
 - User registration and login
 - Signed bearer-token authentication
+- Logout and current-token revocation
 - Authenticated API access for private resources and tools
 
 ### Intelligence Modes

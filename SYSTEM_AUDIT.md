@@ -43,6 +43,7 @@ Date: 2026-08-26
 - Weak or placeholder `MELO_AUTH_SECRET` values now fail closed instead of falling back to a predictable signing key.
 - Database connection strings are redacted in initialization error and info logs, and API reload defaults to disabled.
 - Frontend clears stored authentication and workspace tokens after a `401` response.
+- `/auth/logout` now revokes the current bearer token for the running backend process, and the frontend exposes a shared Sign out control.
 - Shared filesystem/Git and Agent file tools are disabled by default; trusted local development must explicitly set `ENABLE_WORKSPACE_TOOLS=true`.
 - Chat retrieval accepts an optional collection scope and deduplicates retrieved chunks while returning document/chunk source metadata.
 - Workspace and membership models now exist, default workspaces are created/backfilled, and `/workspaces` lists authenticated memberships.
@@ -77,6 +78,12 @@ Date: 2026-08-26
 8. Remove the standalone `backend/test_qdrant.py` smoke functions from normal pytest collection or convert their returned values into assertions; they currently generate pytest warnings and can attempt remote service calls during the default suite.
 9. Replace deprecated Starlette status constants and update the TestClient/httpx dependency pairing.
 10. Add failure-path tests for unavailable Qdrant, partial document indexing, parser resource limits, CORS disabled behavior, and interrupted settings writes.
+
+### Token Revocation Note
+
+Logout revocations are currently kept in process memory. Restarting the backend
+clears the revocation set, so production deployments need a durable session or
+token-revocation store plus refresh-token rotation.
 
 ## Working Tree Note
 

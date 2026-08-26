@@ -1,6 +1,7 @@
 """Authentication endpoints."""
 
 from fastapi import APIRouter, Depends, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -9,10 +10,11 @@ from core.errors import ValidationError
 from core.auth import get_current_user
 from database.connection import get_db
 from database.models import WorkspaceMember
-from services.auth_service import create_access_token, ensure_default_workspace, get_user_by_email, register_user, verify_password
+from services.auth_service import create_access_token, ensure_default_workspace, get_user_by_email, register_user, revoke_access_token, verify_password
 
 
 router = APIRouter()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 class AuthRequest(BaseModel):
@@ -61,3 +63,9 @@ def login(request: AuthRequest, db: Session = Depends(get_db)):
 def me(user=Depends(get_current_user)):
     membership = user.memberships[0] if user.memberships else None
     return {"user_id": user.id, "email": user.email, "workspace_id": membership.workspace_id if membership else None}
+
+
+@router.post("/auth/logout")
+def logout(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme), user=Depends(get_current_user)):
+    revoke_access_token(credentials.credentials)
+    return {"logged_out": True}

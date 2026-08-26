@@ -17,6 +17,7 @@ from database.models import User, Workspace, WorkspaceMember
 
 TOKEN_TTL_SECONDS = 60 * 60 * 24
 _SALT_BYTES = 16
+_revoked_tokens: set[str] = set()
 
 
 def _token_secret() -> bytes:
@@ -54,6 +55,9 @@ def create_access_token(user_id: str) -> str:
 
 def verify_access_token(token: str) -> str | None:
     try:
+        token_fingerprint = hashlib.sha256(token.encode()).hexdigest()
+        if token_fingerprint in _revoked_tokens:
+            return None
         encoded, signature = token.split(".", 1)
         expected = hmac.new(_token_secret(), encoded.encode(), hashlib.sha256).digest()
         supplied = base64.urlsafe_b64decode((signature + "===").encode())
@@ -65,6 +69,11 @@ def verify_access_token(token: str) -> str | None:
         return str(uuid.UUID(payload["sub"]))
     except (ValueError, TypeError, KeyError, binascii.Error, json.JSONDecodeError):
         return None
+
+
+def revoke_access_token(token: str) -> None:
+    """Revoke a token until process restart or its natural expiry."""
+    _revoked_tokens.add(hashlib.sha256(token.encode()).hexdigest())
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
