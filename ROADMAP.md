@@ -224,12 +224,19 @@ Hosted Melo-AI Platform
 
 - [ ] Free Tier
 - [ ] Pro Tier
-- [ ] Payment Integration
+- [ ] Payment Integration - final technical task after the product and platform are ready
 - [ ] Subscription Management
 - [ ] Billing Dashboard
 
+Payment integration is intentionally the final Phase 14 implementation task.
+Business permits, tax registration, legal agreements, identity verification,
+merchant onboarding, and other compliance documents are postponed until the
+business requirements and documentation are available. The software work can
+be prepared beforehand, but live payment activation must wait for those
+business approvals.
+
 Deliverable:
-Commercial SaaS Version
+Commercial SaaS Version (payment activation pending business and compliance readiness)
 
 ## Version 1.0
 
