@@ -1,6 +1,44 @@
 # System Audit
 
-Date: 2026-08-26
+Date: 2026-08-27
+
+## Security Review - 2026-08-27
+
+Current ratings:
+
+- Overall engineering maturity: **6/10**
+- Security for single-user localhost use: **5/10**
+- Security for shared or internet-facing deployment: **3/10**
+
+The system has a solid early-stage FastAPI/Next.js/SQLAlchemy structure, password
+hashing, signed access tokens, authenticated feature APIs, path validation, and
+workspace-scoped resource migration. It is not yet ready for multi-user or
+internet-facing deployment.
+
+Confirmed risks requiring follow-up:
+
+1. Registration grants the `admin` role when the submitted email matches
+   `ADMIN_EMAIL`; this is not a secure admin bootstrap mechanism.
+2. Document retrieval, chunk retrieval, search, and deletion use workspace scope
+   without consistently enforcing document ownership. The intended private versus
+   shared document policy must be made explicit and enforced in every service and
+   Qdrant filter.
+3. When enabled, workspace file and Git tools target the shared repository root.
+   Per-workspace filesystem isolation or a sandbox is required before multi-user
+   enablement.
+4. Upload byte limits do not fully bound PDF/DOCX expansion, parsing time,
+   embedding work, or concurrent processing.
+5. Browser bearer tokens are stored in `localStorage`, and token revocation is
+   process-local. HttpOnly cookie sessions or equivalent XSS protections plus
+   durable revocation are needed for hosted deployment.
+6. Rate limits and usage enforcement are process-local or race-prone and need
+   shared, atomic enforcement for multi-worker deployment.
+7. CORS and deployment defaults need production validation, TLS guidance, and
+	reverse-proxy/process-manager hardening.
+
+Security test gaps include same-workspace cross-user document access, admin
+registration hijacking, concurrent usage-limit enforcement, upload expansion,
+multi-process rate limiting, token exposure, and production CORS configuration.
 
 ## Verified Changes
 
@@ -55,11 +93,12 @@ Date: 2026-08-26
 
 ## Validation
 
-- Backend: `192 passed`
-- Frontend: `34 passed`
-- Frontend lint: passed
-- Frontend production build: passed
-- Backend compile check: passed
+- Backend: not runnable in the current environment; pytest collection stops because
+	the installed environment is missing `reportlab`, which is listed in
+	`backend/requirements.txt`.
+- Frontend: `37 passed`
+- Static diagnostics: no errors reported
+- Repository working tree: clean before documentation updates
 
 ## Priority Improvements
 

@@ -157,6 +157,19 @@ Implementation boundary:
 
 ## Platform Direction
 
+### Security Review Checkpoint - 2026-08-27
+
+- [x] Complete a read-only system and security review
+- [x] Record localhost and hosted-deployment security ratings
+- [x] Identify authorization, filesystem isolation, upload, token, rate-limit,
+      and deployment hardening gaps
+- [ ] Resolve high-priority authorization and isolation findings before shared
+      or internet-facing deployment
+
+The current review rates Melo-AI **6/10 overall**, **5/10 for single-user
+localhost use**, and **3/10 for shared or internet-facing deployment**. See
+`SYSTEM_AUDIT.md` for the evidence, validation status, and remediation order.
+
 Melo-AI should be developed as a model-agnostic AI platform rather than a thin
 chat wrapper. Melo's durable value is the orchestration around the model:
 
