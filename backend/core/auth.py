@@ -237,3 +237,21 @@ def require_workspace_tools(membership: WorkspaceMember = Depends(get_current_me
     if not settings.ENABLE_WORKSPACE_TOOLS:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
     return membership
+
+
+def require_admin(user_id: str, db: Session) -> None:
+    """Check if user is a platform admin.
+    
+    Args:
+        user_id: User ID to check
+        db: Database session
+        
+    Raises:
+        HTTPException: If user is not an admin
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not is_platform_admin(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
