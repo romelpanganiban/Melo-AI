@@ -12,6 +12,7 @@ from database.connection import get_db
 from database.models import WorkspaceMember
 from services.auth_service import create_access_token, ensure_default_workspace, get_user_by_email, register_user, revoke_access_token, verify_password
 from core.rate_limit import enforce_auth_rate_limit
+from core.logging import audit_log
 
 
 router = APIRouter()
@@ -46,8 +47,10 @@ def register(request: AuthRequest, db: Session = Depends(get_db), _: None = Depe
         user = register_user(db, request.email, request.password)
     except IntegrityError:
         db.rollback()
+        audit_log("auth.register", email=request.email, outcome="failure", reason="duplicate_email")
         raise ValidationError("An account with this email already exists", field="email")
     membership = ensure_default_workspace(db, user)
+    audit_log("auth.register", user_id=str(user.id), workspace_id=str(membership.workspace_id), email=request.email, outcome="success")
     return AuthResponse(access_token=create_access_token(user.id), user_id=user.id, workspace_id=membership.workspace_id)
 
 
@@ -55,8 +58,10 @@ def register(request: AuthRequest, db: Session = Depends(get_db), _: None = Depe
 def login(request: AuthRequest, db: Session = Depends(get_db), _: None = Depends(enforce_auth_rate_limit)):
     user = get_user_by_email(db, request.email)
     if user is None or not verify_password(request.password, user.password_hash):
+        audit_log("auth.login", email=request.email, outcome="failure", reason="invalid_credentials")
         raise ValidationError("Invalid email or password")
     membership = ensure_default_workspace(db, user)
+    audit_log("auth.login", user_id=str(user.id), workspace_id=str(membership.workspace_id), email=request.email, outcome="success")
     return AuthResponse(access_token=create_access_token(user.id), user_id=user.id, workspace_id=membership.workspace_id)
 
 

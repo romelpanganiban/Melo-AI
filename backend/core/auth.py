@@ -10,6 +10,7 @@ from database.models import User, WorkspaceMember
 from services.auth_service import verify_access_token
 from core.settings import settings
 from core.authz import AuthorizationPolicy, WorkspaceRole
+from core.logging import audit_log
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -44,13 +45,16 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     if credentials is None or credentials.scheme.lower() != "bearer":
+        audit_log("auth.unauthorized", outcome="denied", reason="missing_bearer_token")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     token = credentials.credentials.strip() if credentials.credentials else ""
     if not token:
+        audit_log("auth.unauthorized", outcome="denied", reason="empty_token")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     user_id = verify_access_token(token, db)
     user = db.query(User).filter(User.id == user_id).first() if user_id else None
     if user is None:
+        audit_log("auth.unauthorized", outcome="denied", reason="invalid_or_expired_token")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
     return user
 
@@ -106,6 +110,14 @@ def require_workspace_access(workspace_id: str):
         decision = policy.authorize_workspace_read(current_user.id, workspace_id)
         
         if not decision.allowed:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=str(workspace_id),
+                action="workspace_read",
+                outcome="denied",
+                reason=decision.reason,
+            )
             raise HTTPException(status_code=decision.status_code, detail=decision.reason)
         
         membership = db.query(WorkspaceMember).filter(
@@ -114,6 +126,14 @@ def require_workspace_access(workspace_id: str):
         ).first()
         
         if membership is None:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=str(workspace_id),
+                action="workspace_read",
+                outcome="denied",
+                reason="workspace_membership_not_found",
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Workspace membership not found"
@@ -166,6 +186,14 @@ def require_workspace_access_from_header():
         db: Session = Depends(get_db),
     ) -> WorkspaceContext:
         if not workspace_id:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=None,
+                action="workspace_read",
+                outcome="denied",
+                reason="missing_workspace_id_header",
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="X-Workspace-ID header is required"
@@ -175,6 +203,14 @@ def require_workspace_access_from_header():
         decision = policy.authorize_workspace_read(current_user.id, workspace_id)
         
         if not decision.allowed:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=str(workspace_id),
+                action="workspace_read",
+                outcome="denied",
+                reason=decision.reason,
+            )
             raise HTTPException(status_code=decision.status_code, detail=decision.reason)
         
         membership = db.query(WorkspaceMember).filter(
@@ -183,6 +219,14 @@ def require_workspace_access_from_header():
         ).first()
         
         if membership is None:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=str(workspace_id),
+                action="workspace_read",
+                outcome="denied",
+                reason="workspace_membership_not_found",
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Workspace membership not found"
@@ -215,11 +259,27 @@ def require_workspace_role(*allowed_roles: str):
         if not settings.ENABLE_WORKSPACE_TOOLS:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
         if not workspace_id:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=None,
+                action="workspace_role_check",
+                outcome="denied",
+                reason="missing_workspace_id_header",
+            )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Workspace-ID header is required")
 
         policy = AuthorizationPolicy(db)
         decision = policy.authorize_workspace_role(current_user.id, workspace_id, set(allowed_roles))
         if not decision.allowed:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=str(workspace_id),
+                action="workspace_role_check",
+                outcome="denied",
+                reason=decision.reason,
+            )
             raise HTTPException(status_code=decision.status_code, detail=decision.reason)
 
         membership = db.query(WorkspaceMember).filter(
@@ -227,6 +287,14 @@ def require_workspace_role(*allowed_roles: str):
             WorkspaceMember.workspace_id == workspace_id,
         ).first()
         if membership is None:
+            audit_log(
+                "authz.denied",
+                user_id=str(current_user.id),
+                workspace_id=str(workspace_id),
+                action="workspace_role_check",
+                outcome="denied",
+                reason="workspace_membership_not_found",
+            )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership not found")
         return membership
 
@@ -251,6 +319,13 @@ def require_admin(user_id: str, db: Session) -> None:
     """
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not is_platform_admin(user):
+        audit_log(
+            "authz.denied",
+            user_id=str(user_id),
+            action="admin_access",
+            outcome="denied",
+            reason="admin_access_required",
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

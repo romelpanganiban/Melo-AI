@@ -85,25 +85,12 @@ class SessionRepository:
             if not self._supports_workspace_filter() and workspace_id is not None:
                 workspace_id = None
 
-            if self._supports_workspace_filter():
-                query = self.db.query(SessionModel)
-                if owner_id is not None:
-                    query = query.filter(SessionModel.owner_id == owner_id)
-                if workspace_id is not None:
-                    query = query.filter(SessionModel.workspace_id == workspace_id)
-                return query.order_by(desc(SessionModel.updated_at)).all()
-
-            sql = text("SELECT id, title, owner_id, created_at, updated_at FROM sessions")
-            clauses = []
-            params = {}
+            query = self.db.query(SessionModel)
             if owner_id is not None:
-                clauses.append("owner_id = :owner_id")
-                params["owner_id"] = owner_id
-            if clauses:
-                sql = text(f"SELECT id, title, owner_id, created_at, updated_at FROM sessions WHERE {' AND '.join(clauses)}")
-            sql = text(str(sql) + " ORDER BY updated_at DESC")
-            rows = self.db.execute(sql, params).mappings().all()
-            return [self._row_to_session(row) for row in rows]
+                query = query.filter(SessionModel.owner_id == owner_id)
+            if workspace_id is not None:
+                query = query.filter(SessionModel.workspace_id == workspace_id)
+            return query.order_by(desc(SessionModel.updated_at)).all()
         except Exception as e:
             logger.error(f"Error getting sessions: {str(e)}")
             raise ChatServiceError(f"Failed to get sessions: {str(e)}")
@@ -330,39 +317,18 @@ class DocumentRepository:
             is_shared=row.get("is_shared", False),
         )
 
-    def _legacy_document_sql(self, base_where: str, params: Optional[dict] = None) -> text:
-        columns = "id, owner_id, session_id, collection_id, filename, file_type, content, chunk_count, created_at, updated_at"
-        if self._supports_workspace_filter():
-            columns += ", workspace_id"
-        if self._supports_shared_flag():
-            columns += ", is_shared"
-        return text(f"SELECT {columns} FROM documents WHERE {base_where}")
-
     def get_by_id(self, document_id: str, owner_id: Optional[str] = None, workspace_id: Optional[str] = None) -> Optional[Document]:
         """Get document by ID"""
         try:
             if not self._supports_workspace_filter() and workspace_id is not None:
                 workspace_id = None
 
-            if self._supports_workspace_filter() and self._supports_shared_flag():
-                query = self.db.query(Document).filter(Document.id == document_id)
-                if owner_id is not None:
-                    query = query.filter(Document.owner_id == owner_id)
-                if workspace_id is not None:
-                    query = query.filter(Document.workspace_id == workspace_id)
-                return query.first()
-
-            sql = self._legacy_document_sql("id = :document_id")
-            params = {"document_id": document_id}
+            query = self.db.query(Document).filter(Document.id == document_id)
             if owner_id is not None:
-                sql = self._legacy_document_sql("id = :document_id AND owner_id = :owner_id")
-                params["owner_id"] = owner_id
+                query = query.filter(Document.owner_id == owner_id)
             if workspace_id is not None and self._supports_workspace_filter():
-                sql = self._legacy_document_sql("id = :document_id AND workspace_id = :workspace_id")
-                params["workspace_id"] = workspace_id
-
-            row = self.db.execute(sql, params).mappings().first()
-            return self._row_to_document(row) if row is not None else None
+                query = query.filter(Document.workspace_id == workspace_id)
+            return query.first()
         except Exception as e:
             logger.error(f"Error getting document: {str(e)}")
             raise ChatServiceError(f"Failed to get document: {str(e)}")
@@ -373,26 +339,12 @@ class DocumentRepository:
             if not self._supports_workspace_filter() and workspace_id is not None:
                 workspace_id = None
 
-            if self._supports_workspace_filter() and self._supports_shared_flag():
-                query = self.db.query(Document).filter(Document.session_id == session_id)
-                if owner_id is not None:
-                    query = query.filter(Document.owner_id == owner_id)
-                if workspace_id is not None:
-                    query = query.filter(Document.workspace_id == workspace_id)
-                return query.order_by(desc(Document.created_at)).all()
-
-            sql = self._legacy_document_sql("session_id = :session_id")
-            params = {"session_id": session_id}
+            query = self.db.query(Document).filter(Document.session_id == session_id)
             if owner_id is not None:
-                sql = self._legacy_document_sql("session_id = :session_id AND owner_id = :owner_id")
-                params["owner_id"] = owner_id
+                query = query.filter(Document.owner_id == owner_id)
             if workspace_id is not None and self._supports_workspace_filter():
-                sql = self._legacy_document_sql("session_id = :session_id AND workspace_id = :workspace_id")
-                params["workspace_id"] = workspace_id
-            sql = text(str(sql) + " ORDER BY created_at DESC")
-
-            rows = self.db.execute(sql, params).mappings().all()
-            return [self._row_to_document(row) for row in rows]
+                query = query.filter(Document.workspace_id == workspace_id)
+            return query.order_by(desc(Document.created_at)).all()
         except Exception as e:
             logger.error(f"Error getting documents: {str(e)}")
             raise ChatServiceError(f"Failed to get documents: {str(e)}")

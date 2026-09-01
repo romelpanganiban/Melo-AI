@@ -15,6 +15,7 @@ from core.logging import logger
 from core.auth import require_workspace_access_from_header, WorkspaceContext
 from core.rate_limit import enforce_request_rate_limit
 from core.settings import settings
+from core.logging import audit_log
 
 router = APIRouter()
 
@@ -188,6 +189,15 @@ def upload_document(
                 "workspace_id": workspace_ctx.workspace_id,
             }
         )
+        audit_log(
+            "document.upload",
+            user_id=str(workspace_ctx.user.id),
+            workspace_id=str(workspace_ctx.workspace_id),
+            document_name=request.filename,
+            session_id=request.session_id,
+            file_type=request.file_type,
+            outcome="success",
+        )
         
         document = service.upload_document(
             filename=request.filename,
@@ -248,6 +258,13 @@ def get_document(
         logger.info(
             f"Retrieving document",
             extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
+        )
+        audit_log(
+            "document.read",
+            user_id=str(workspace_ctx.user.id),
+            workspace_id=str(workspace_ctx.workspace_id),
+            document_id=str(document_id),
+            outcome="success",
         )
         
         document = service.get_document(
@@ -399,6 +416,13 @@ def delete_document(
         logger.info(
             f"Deleting document",
             extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
+        )
+        audit_log(
+            "document.delete",
+            user_id=str(workspace_ctx.user.id),
+            workspace_id=str(workspace_ctx.workspace_id),
+            document_id=str(document_id),
+            outcome="success",
         )
         
         service.delete_document(

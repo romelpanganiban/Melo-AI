@@ -7,7 +7,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from reportlab.platypus import HRFlowable
 import re
-from xml.sax.saxutils import escape
+from html import escape
 from pydantic import BaseModel, Field
 from typing import Literal
 from sqlalchemy.orm import Session

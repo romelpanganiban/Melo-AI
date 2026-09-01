@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from core.auth import get_current_user, require_admin
 from database import get_db
 from services.reconciliation_service import get_reconciliation_service
-from core.logging import logger
+from core.logging import logger, audit_log
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -24,11 +24,13 @@ def audit_reconciliation(db: Session = Depends(get_db), user_id: str = Depends(g
     
     try:
         logger.info("Admin reconciliation audit initiated", extra={"user_id": user_id})
+        audit_log("admin.reconciliation.audit", user_id=str(user_id), outcome="success")
         service = get_reconciliation_service()
         report = service.audit()
         return report.to_dict()
     except Exception as e:
         logger.error(f"Reconciliation audit failed: {str(e)}", extra={"user_id": user_id})
+        audit_log("admin.reconciliation.audit", user_id=str(user_id), outcome="error", reason=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Reconciliation audit failed: {str(e)}"
@@ -71,6 +73,13 @@ def repair_reconciliation(
                 "delete_orphaned": delete_orphaned
             }
         )
+        audit_log(
+            "admin.reconciliation.repair",
+            user_id=str(user_id),
+            missing_embeddings=missing_embeddings,
+            delete_orphaned=delete_orphaned,
+            outcome="success",
+        )
         service = get_reconciliation_service()
         report = service.repair(
             missing_embeddings=missing_embeddings,
@@ -79,6 +88,14 @@ def repair_reconciliation(
         return report.to_dict()
     except Exception as e:
         logger.error(f"Reconciliation repair failed: {str(e)}", extra={"user_id": user_id})
+        audit_log(
+            "admin.reconciliation.repair",
+            user_id=str(user_id),
+            missing_embeddings=missing_embeddings,
+            delete_orphaned=delete_orphaned,
+            outcome="error",
+            reason=str(e),
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Reconciliation repair failed: {str(e)}"

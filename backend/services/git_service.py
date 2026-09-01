@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import subprocess
+import shutil
+import subprocess  # nosec B404
 from pathlib import Path
 
 from core.errors import ChatServiceError, ValidationError
@@ -73,15 +74,20 @@ class GitService:
         return workspace_path.relative_to(self.workspace).as_posix()
 
     def _run(self, *arguments: str) -> str:
+        git_executable = shutil.which("git")
+        if not git_executable:
+            raise ChatServiceError("Git is not installed or not available on PATH")
+
         try:
-            result = subprocess.run(
-                ["git", "-C", str(self.workspace), *arguments],
+            result = subprocess.run(  # nosec B603
+                [git_executable, "-C", str(self.workspace), *arguments],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
                 timeout=self.COMMAND_TIMEOUT,
                 check=False,
+                shell=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise ChatServiceError("Git is unavailable or timed out") from exc
