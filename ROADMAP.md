@@ -289,12 +289,14 @@ The next milestone is security hardening rather than another AI feature. Work sh
 7. [x] Durable session/revocation
 8. [x] Redis-based distributed rate limits
 9. [x] Document processing resource limits
-10. [ ] Qdrant/SQL reconciliation
+10. [x] Qdrant/SQL reconciliation (audit and repair with admin API + CLI)
 11. [x] Prompt-injection defense for RAG/agents
 12. [x] Cross-tenant security regression tests
 13. [x] Fix README's stale test results
 14. [x] Remove committed `__pycache__`
 15. [x] Run a clean backend test environment
+
+**Status: Milestone 14.2 COMPLETE** - All 15 security hardening tasks implemented and tested.
 
 ---
 
