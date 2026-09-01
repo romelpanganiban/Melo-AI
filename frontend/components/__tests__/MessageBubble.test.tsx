@@ -83,10 +83,24 @@ describe('MessageBubble', () => {
     expect(screen.getAllByRole('link')[0]).toHaveAttribute('target', '_blank');
   });
 
-  it('offers a download action for completed assistant responses', () => {
+  it('does not show file download actions for ordinary chat responses', () => {
     render(<MessageBubble role="assistant" content="Formatted document content" />);
 
-    expect(screen.getByRole('button', { name: /download markdown/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /download markdown/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /download pdf/i })).not.toBeInTheDocument();
+  });
+
+  it('shows export actions only when explicitly enabled', () => {
+    render(
+      <MessageBubble
+        role="assistant"
+        content="Revised resume"
+        sources={[{ filename: "resume.pdf", relevance: 100 }]}
+        canExport
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /download docx/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download pdf/i })).toBeInTheDocument();
   });
 });

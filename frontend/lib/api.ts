@@ -1139,3 +1139,15 @@ export async function downloadResponsePdf(content: string): Promise<Blob> {
   }
   return response.blob();
 }
+
+export async function downloadResponseDocx(content: string): Promise<Blob> {
+  const response = await fetch(`${API_URL}/chat/export/docx`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content, filename: "melo-response.docx" }),
+  });
+  if (!response.ok) {
+    await handleResponse(response);
+  }
+  return response.blob();
+}

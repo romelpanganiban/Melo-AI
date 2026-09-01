@@ -12,21 +12,40 @@ from core.settings import settings
 
 def sanitize_filename(filename: str) -> str:
     """Normalize a user-provided filename into a safe, database-friendly value."""
-    if not filename:
+    if filename is None:
         raise ValidationError("filename is required")
 
-    normalized = filename.strip().replace("\\", "/")
-    normalized = normalized.split("/")[-1]
-    normalized = normalized.strip(". ")
-    normalized = normalized.replace("\x00", "")
-    normalized = re.sub(r"[<>:\"|?*\r\n\t]", "_", normalized)
-    normalized = re.sub(r"\s+", " ", normalized)
-    normalized = normalized.strip()
+    raw_name = str(filename).strip()
+    if not raw_name:
+        raise ValidationError("filename is required")
 
-    if not normalized or normalized in {".", ".."}:
-        raise ValidationError("The filename format is invalid. Please use a valid filename.")
+    from core.logging import logger
+    logger.info(f"[sanitize_filename] Input filename: {repr(filename)}")
 
-    return normalized
+    normalized = raw_name.replace("\\", "/")
+    logger.info(f"[sanitize_filename] After strip/replace backslash: {repr(normalized)}")
+
+    basename = normalized.split("/")[-1]
+    logger.info(f"[sanitize_filename] After split by /: {repr(basename)}")
+
+    basename = basename.replace("\x00", "")
+    basename = re.sub(r"[<>:\"|?*\r\n\t]", "_", basename)
+    basename = re.sub(r"\s+", " ", basename).strip()
+    logger.info(f"[sanitize_filename] After regex replacements: {repr(basename)}")
+
+    basename = basename.strip(". ")
+    logger.info(f"[sanitize_filename] After strip dots/spaces: {repr(basename)}")
+
+    if not basename or basename in {".", ".."}:
+        suffix = Path(raw_name).suffix.lower()
+        safe_name = "uploaded-document"
+        if suffix:
+            safe_name = f"{safe_name}{suffix}"
+
+        logger.warning(f"[sanitize_filename] Falling back to safe name: {repr(safe_name)}")
+        return safe_name
+
+    return basename
 
 
 class DocumentParser:

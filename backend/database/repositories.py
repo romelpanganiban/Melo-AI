@@ -2,13 +2,14 @@
 
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, inspect, text
+from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 
 from database.models import Session as SessionModel, Message, Settings, KnowledgeCollection, Document, DocumentChunk
 from core.logging import logger
-from core.errors import SessionNotFoundError, ChatServiceError
+from core.errors import SessionNotFoundError, ChatServiceError, ValidationError
 
 
 class SessionRepository:
@@ -410,6 +411,13 @@ class KnowledgeCollectionRepository:
             self.db.commit()
             self.db.refresh(collection)
             return collection
+        except IntegrityError as e:
+            self.db.rollback()
+            logger.warning(
+                "Knowledge collection name already exists",
+                extra={"name": name, "owner_id": owner_id, "workspace_id": workspace_id},
+            )
+            raise ValidationError("A collection with this name already exists in this workspace.") from e
         except Exception as e:
             self.db.rollback()
             raise ChatServiceError(f"Failed to create knowledge collection: {str(e)}")

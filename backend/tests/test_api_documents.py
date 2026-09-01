@@ -51,6 +51,16 @@ def test_create_collection_and_associate_document(client, test_session_id):
     assert document_response.json()["collection_id"] == collection["id"]
 
 
+def test_create_collection_rejects_duplicate_name(client):
+    first = client.post("/collections", json={"name": "Test Collection", "description": "First"})
+    assert first.status_code == 201
+
+    second = client.post("/collections", json={"name": "Test Collection", "description": "Second"})
+    assert second.status_code == 422
+    payload = second.json()
+    assert "already exists" in payload["message"].lower()
+
+
 def test_upload_rejects_unknown_collection(client, test_session_id):
     response = client.post(
         "/documents",

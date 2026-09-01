@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import type { ReactNode } from "react";
-import { ChatSource, ChatUsage, downloadResponsePdf } from "@/lib/api";
+import { ChatSource, ChatUsage, downloadResponseDocx, downloadResponsePdf } from "@/lib/api";
 
 type MessageBubbleProps = {
   role: string;
@@ -12,17 +12,8 @@ type MessageBubbleProps = {
   isStreaming?: boolean;
   model?: string;
   usage?: ChatUsage;
+  canExport?: boolean;
 };
-
-function downloadResponse(content: string) {
-  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "melo-response.md";
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 type MessagePart =
   | { type: "text"; content: string }
@@ -142,6 +133,7 @@ export default function MessageBubble({
   isStreaming = false,
   model,
   usage,
+  canExport = false,
 }: MessageBubbleProps) {
   const isUser = role === "user";
 
@@ -188,23 +180,13 @@ export default function MessageBubble({
           {usage ? `Credits: ${usage.total_tokens} tokens` : ""}
         </p>
       )}
-      {!isUser && !isStreaming && content.trim() && (
-        <div>
-          <button
-            type="button"
-            onClick={() => downloadResponse(content)}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 hover:text-white"
-          >
-            <Download size={13} aria-hidden="true" />
-            Download Markdown
+      {!isUser && !isStreaming && canExport && content.trim() && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="button" onClick={() => void downloadFile(downloadResponseDocx, content, "melo-resume.docx")} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 hover:text-white">
+            <Download size={13} aria-hidden="true" /> Download DOCX
           </button>
-          <button
-            type="button"
-            onClick={() => void downloadPdfResponse(content)}
-            className="mt-2 ml-2 inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/20 px-2.5 py-1.5 text-xs text-cyan-300 transition hover:bg-cyan-300/10 hover:text-cyan-100"
-          >
-            <Download size={13} aria-hidden="true" />
-            Download PDF
+          <button type="button" onClick={() => void downloadFile(downloadResponsePdf, content, "melo-resume.pdf")} className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/20 px-2.5 py-1.5 text-xs text-cyan-300 transition hover:bg-cyan-300/10 hover:text-cyan-100">
+            <Download size={13} aria-hidden="true" /> Download PDF
           </button>
         </div>
       )}
@@ -212,12 +194,16 @@ export default function MessageBubble({
   );
 }
 
-async function downloadPdfResponse(content: string) {
-  const blob = await downloadResponsePdf(content);
+async function downloadFile(
+  exporter: (content: string) => Promise<Blob>,
+  content: string,
+  filename: string,
+) {
+  const blob = await exporter(content);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "melo-response.pdf";
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
 }

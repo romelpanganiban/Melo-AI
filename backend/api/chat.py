@@ -117,6 +117,42 @@ def export_response_pdf(
     )
 
 
+@router.post("/chat/export/docx", status_code=status.HTTP_200_OK)
+def export_response_docx(
+    request: PdfExportRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
+    """Render an assistant response as a downloadable Word document."""
+    from docx import Document
+
+    filename = request.filename.replace("/", "_").replace("\\", "_")
+    filename = re.sub(r"\.pdf$", ".docx", filename, flags=re.IGNORECASE)
+    if not filename.lower().endswith(".docx"):
+        filename += ".docx"
+
+    document = Document()
+    for line in request.content.splitlines() or [request.content]:
+        stripped = line.strip()
+        if not stripped:
+            document.add_paragraph()
+            continue
+        heading = re.match(r"^#{1,6}\s+(.+)$", stripped)
+        if heading:
+            document.add_heading(re.sub(r"\*\*(.+?)\*\*|__(.+?)__", r"\1\2", heading.group(1)), level=2)
+            continue
+        bullet = re.match(r"^[-*]\s+(.+)$", stripped)
+        paragraph = document.add_paragraph(style="List Bullet" if bullet else None)
+        paragraph.add_run((bullet.group(1) if bullet else stripped).replace("**", ""))
+
+    output = BytesIO()
+    document.save(output)
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
 def chat(
     request: ChatRequest,

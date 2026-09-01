@@ -113,6 +113,13 @@ export default function ChatWindow({
               isStreaming={message.isStreaming}
               model={message.model}
               usage={message.usage}
+              canExport={
+                message.role !== "user" &&
+                Boolean(message.sources?.length) &&
+                /resume|cv|curriculum vitae|revise|rewrite|format|download|docx|pdf/i.test(
+                  messages[index - 1]?.role === "user" ? messages[index - 1].content : ""
+                )
+              }
             />
           ))}
           <div ref={endOfMessagesRef} aria-hidden="true" />

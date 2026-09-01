@@ -119,6 +119,8 @@ def upload_document_file(
         raise
     except DocumentNotFoundError:
         raise
+    except ChatServiceError:
+        raise
     except Exception as e:
         import traceback
         error_detail = str(e)

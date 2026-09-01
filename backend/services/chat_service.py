@@ -4,7 +4,7 @@ import json
 from typing import Generator
 
 from sqlalchemy.orm import Session
-from database import get_db_session, SessionRepository, MessageRepository
+from database import get_db_session, SessionRepository, MessageRepository, DocumentRepository, ChunkRepository
 from services.ollama_client import OllamaClient
 from services.usage_service import record_usage
 from services.embedding_service import get_embedding_service
@@ -92,6 +92,35 @@ class ChatService:
         Returns:
             Dictionary with sources list and context text, or empty if no documents or Qdrant disabled
         """
+        if document_id:
+            try:
+                db = get_db_session()
+                document = DocumentRepository(db).get_by_id(
+                    document_id,
+                    owner_id=owner_id,
+                    workspace_id=workspace_id,
+                )
+                if document and (not session_id or document.session_id == session_id):
+                    chunks = ChunkRepository(db).get_by_document(document_id)
+                    context = "\n\n".join(
+                        f"[{document.filename} | chunk {chunk.chunk_index}]\n{chunk.content}"
+                        for chunk in chunks
+                    ) or f"[{document.filename}]\n{document.content}"
+                    return {
+                        "sources": [{
+                            "document_id": document.id,
+                            "filename": document.filename,
+                            "relevance": 100.0,
+                            "chunks": [chunk.chunk_index for chunk in chunks],
+                        }],
+                        "context": context,
+                    }
+            except Exception as e:
+                logger.warning(f"Direct document context lookup failed: {str(e)}")
+            finally:
+                if "db" in locals():
+                    db.close()
+
         if not settings.QDRANT_ENABLED:
             return {"sources": [], "context": ""}
 
@@ -464,6 +493,21 @@ class ChatService:
             for msg in context_messages[:-1]
         )
         current_message = history[-1].get("content", "") if history else ""
+
+        if doc_context.strip() and any(
+            keyword in current_message.lower()
+            for keyword in ("resume", "cv", "curriculum vitae", "revise", "rewrite", "format")
+        ):
+            resume_prompt = (
+                "You are a professional resume editor. The uploaded document is the source resume. "
+                "Revise it directly using only facts present in the document; never invent employers, dates, "
+                "degrees, metrics, or skills. Return a polished, ATS-friendly resume in Markdown with these "
+                "sections when supported by the source: Professional Summary, Skills, Experience, Education, "
+                "Certifications, and Projects. Improve wording, grammar, consistency, and formatting. "
+                "If information is missing, omit that section rather than asking the user to paste the resume. "
+                "Return only the revised resume followed by a short Notes section listing any important missing details."
+            )
+            return f"{resume_prompt}\n\nSource resume:\n{doc_context}\n\nUser request: {current_message}\n\nRevised resume:"
 
         if mode == "ask":
             grounding = (

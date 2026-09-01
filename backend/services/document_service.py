@@ -193,6 +193,8 @@ class DocumentService:
             
         except ValidationError:
             raise
+        except ChatServiceError:
+            raise
         except Exception as e:
             error_msg = str(e)
             # Hide technical details from user, show friendly message
@@ -373,7 +375,14 @@ class DocumentService:
         try:
             if not name or not name.strip():
                 raise ValidationError("name is required", field="name")
-            collection = KnowledgeCollectionRepository(db).create(name.strip(), description.strip() if description else None, owner_id=owner_id, workspace_id=workspace_id)
+
+            trimmed_name = name.strip()
+            repo = KnowledgeCollectionRepository(db)
+            existing = repo.get_all(owner_id=owner_id, workspace_id=workspace_id)
+            if any(item.name.strip().lower() == trimmed_name.lower() for item in existing):
+                raise ValidationError("A collection with this name already exists in this workspace.", field="name")
+
+            collection = repo.create(trimmed_name, description.strip() if description else None, owner_id=owner_id, workspace_id=workspace_id)
             return {"id": collection.id, "name": collection.name, "description": collection.description, "created_at": collection.created_at.isoformat()}
         finally:
             db.close()

@@ -4,7 +4,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import pytest
 
 from core.errors import ValidationError
-from services.document_parser import DocumentParser
+from services.document_parser import DocumentParser, sanitize_filename
 
 
 def test_parse_txt():
@@ -58,6 +58,11 @@ def test_parse_txt_utf16():
 
     assert file_type == "txt"
     assert text == "Hello from UTF-16"
+
+
+def test_sanitize_filename_falls_back_for_extension_only_names():
+    assert sanitize_filename(" .pdf ") == "uploaded-document.pdf"
+    assert sanitize_filename("C:/fakepath/") == "uploaded-document"
 
 
 def test_parse_rejects_unsupported_type():
