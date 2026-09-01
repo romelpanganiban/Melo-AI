@@ -1,5 +1,15 @@
 # Phase 14: Production Security Hardening - Implementation Plan
 
+⚠️ **STATUS: Development/Planning Phase**
+
+This document outlines the security hardening roadmap for production deployment.
+
+**Current Status**: Melo-AI is rated **3/10 for internet-facing deployment** and is intended for **local single-user use only** until Phase 14 is complete.
+
+- Current security posture: See [SYSTEM_AUDIT.md](SYSTEM_AUDIT.md)
+- Production deployment timeline: After Phase 14 completion
+- **DO NOT deploy publicly before Phase 14 hardening is implemented**
+
 Date: 2026-09-01
 
 ## Overview
