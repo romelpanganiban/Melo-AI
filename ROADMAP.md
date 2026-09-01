@@ -220,7 +220,108 @@ Hosted Melo-AI Platform
 
 ---
 
-## Phase 14 - Subscriptions
+## Phase 14 - Production Security Hardening
+
+Status: Required before shared or internet-facing deployment
+
+### Critical / must implement first
+
+- [ ] Central authorization middleware for all authenticated endpoints and tool actions
+- [ ] Workspace membership enforcement on every read/write/delete/query by workspace
+- [ ] Document ownership enforcement for document retrieval, updates, and deletion
+- [ ] Qdrant tenant isolation with workspace-scoped filters and private vector indexes
+- [ ] Path traversal protection for file access, uploads, and workspace operations
+- [ ] Workspace filesystem sandbox with per-workspace root isolation and deny-by-default access
+- [ ] Agent capability allowlist restricting available tools, resources, and side effects
+- [ ] Action-bound approvals for all mutating agent operations and Git/file changes
+- [ ] Secret isolation so agents and tool execution never receive raw credentials or production secrets
+- [ ] Git safety policy with repo-bound operations, branch restrictions, and diff review checks
+
+### High priority hardening
+
+- [ ] Upload/resource limits for file size, parsing expansion, embedding workload, and concurrency
+- [ ] Redis-backed distributed rate limiting and atomic quota enforcement for multi-instance deployment
+- [ ] Secure session/token handling, including XSS-resistant storage, rotation, expiration, and durable revocation
+- [ ] Security audit logs for auth, workspace actions, approvals, file mutations, and admin operations
+- [ ] Security regression tests covering cross-user access, secret leakage, approval bypass, and tenant isolation
+- [ ] Dependency and SAST scanning in CI for vulnerable packages and dangerous patterns
+- [ ] Prompt-injection and RAG security tests for retrieval poisoning, prompt leakage, and unsafe context handling
+- [ ] Production security configuration for TLS, reverse proxy headers, CORS allowlists, and deployment defaults
+
+### Delivery expectation
+
+This phase should close the remaining gaps that currently reduce Melo-AI to a strong localhost prototype rather than a production-safe multi-user platform. It is required before enabling shared deployments, public networking, or multi-tenant workspace use.
+
+---
+
+## Phase 15 - Safe Online Learning & Personalization
+
+Status: Planned after the security hardening milestones are complete
+
+### Goal
+
+Add adaptive learning without turning the system into unsafe or unstable online model training. Melo should improve through safe memory, feedback capture, curated examples, and periodic training workflows rather than by directly mutating the base model during every chat.
+
+### Phase 15.1 - Learning Data Pipeline
+
+- [ ] Capture user feedback signals: thumbs up/down, corrections, explicit preferences, and save-to-memory actions
+- [ ] Store feedback in a structured learning ledger with user, workspace, timestamp, source, and rationale
+- [ ] Separate raw memory from approved training examples to avoid poisoning the model with low-quality chat content
+- [ ] Add review and moderation workflow for examples before they become training data
+- [ ] Define safe retention and deletion policies for learning data and preference memory
+
+### Phase 15.2 - Personal Memory Layer
+
+- [ ] Persist user preferences, writing style, domain context, and learning goals by workspace or user
+- [ ] Add retrieval of personal memory alongside document RAG for context personalization
+- [ ] Support opt-in personalization toggles and explicit override controls
+- [ ] Keep personal memory isolated by workspace and user, with audit logging for access and changes
+
+### Phase 15.3 - Curated Training Data Engine
+
+- [ ] Convert approved interactions into JSONL examples for fine-tuning or PEFT workflows
+- [ ] Tag examples by task type: chat, ask, plan, study, coding, summarization, RAG grounding
+- [ ] Validate data quality, duplicate suppression, and prompt safety before training exports
+- [ ] Add dataset versioning and human review for every training snapshot
+
+### Phase 15.4 - Safe Fine-Tuning / Adapter Training
+
+- [ ] Use LoRA or PEFT-based adapters instead of direct full-model retraining for local-first tuning
+- [ ] Train only on approved, de-duplicated, privacy-safe examples
+- [ ] Benchmark before and after with evaluation prompts and regression checks
+- [ ] Keep a rollback path to previous adapters and model weights
+- [ ] Expose adapter selection per workspace or user profile when needed
+
+### Phase 15.5 - Feedback-Driven Improvement Loop
+
+- [ ] Measure response quality with rating signals, acceptance rates, and citation usefulness
+- [ ] Run periodic quality evaluation jobs over a holdout set of prompts
+- [ ] Promote only high-confidence examples into the training queue
+- [ ] Prevent low-quality or adversarial prompts from silently poisoning the model
+
+### Phase 15.6 - Governance and Safety Controls
+
+- [ ] Block training on sensitive or unreviewed user content by default
+- [ ] Require admin approval for large-scale training dataset ingestion
+- [ ] Add opt-in consent for personalization and learning pipelines
+- [ ] Log every training/export/review decision with traceability
+- [ ] Keep a clear separation between retrieval memory and training memory
+
+### Implementation sequence
+
+1. Safe feedback capture and learning ledger
+2. Personal memory and preference isolation
+3. Approved dataset generation and validation
+4. Fine-tuning adapters with rollback and evaluation
+5. Periodic improvement loop and governance reviews
+
+### Decision rule
+
+Melo should improve through curated learning, verified memory, and periodic safe training workflows. It should not directly self-train from raw chat traffic or unreviewed agent actions.
+
+---
+
+## Phase 16 - Subscriptions
 
 - [ ] Free Tier
 - [ ] Pro Tier

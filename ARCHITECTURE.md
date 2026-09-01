@@ -125,6 +125,62 @@ Grounded, observable response with citations and usage data
 
 This is a target architecture, not a claim that every box is implemented today.
 
+## Learning and Personalization Architecture
+
+Melo should evolve as a retrieval-first assistant with a separate learning layer, rather than turning every chat interaction into uncontrolled model updates.
+
+### Architecture Layers
+
+User interaction
+ ↓
+Authentication + workspace authorization
+ ↓
+Context engine
+ ├── Session memory
+ ├── Workspace memory
+ ├── Personal preferences
+ ├── Document RAG retrieval
+ └── Approved feedback ledger
+ ↓
+Learning control plane
+ ├── Feedback capture and moderation
+ ├── Preference and style memory
+ ├── Training dataset builder
+ ├── Safety validation and quality checks
+ └── Periodic PEFT/LoRA adapter updates
+ ↓
+Model provider interface
+ ├── Local Ollama models
+ ├── Hosted model adapters
+ └── Versioned model registry
+ ↓
+Grounded response with citations, memory, and safe personalization
+
+### Design principles
+
+- Retrieval is the default knowledge source.
+- Personalization is opt-in and workspace-scoped.
+- Raw chat traffic is never directly promoted to training without review.
+- Approved examples go through a dataset pipeline and model evaluation before deployment.
+- Training updates are versioned, reversible, and auditable.
+- Model behavior changes are isolated behind adapters or controlled model versions.
+
+### Safe learning loop
+
+1. User feedback is captured as explicit signals: thumbs up/down, corrections, saved preferences, or accepted suggestions.
+2. The backend writes those signals to a structured learning ledger with timestamps, user, and workspace metadata.
+3. Approved examples are filtered, deduplicated, and trimmed for privacy safety.
+4. A curated dataset builder exports training examples for a validation and fine-tuning workflow.
+5. A PEFT/LoRA-style adapter is trained and benchmarked against a regression set.
+6. The new adapter is deployed behind version control and can be rolled back without affecting the base model.
+
+### Governance and safety
+
+- Training data must be consented, reviewed, and scoped by workspace and user.
+- Sensitive or unreviewed content must not be used for unsupervised training.
+- Personal memory and training memory must stay separate.
+- Every training decision should produce an audit record for traceability and rollback.
+
 ## Planned Components
 
 - Ollama
