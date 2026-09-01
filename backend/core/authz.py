@@ -401,6 +401,93 @@ class AuthorizationPolicy:
                 reason=f"Authorization check failed: {str(e)}",
             )
 
+    def authorize_document_share(
+        self, user_id: str, document_id: str, workspace_id: str
+    ) -> AuthzDecision:
+        """
+        Check if user can share/unshare a document.
+        
+        Rules:
+        - User must be document owner (only owner controls sharing)
+        - Document must exist in workspace
+        - User must have workspace write permission
+        
+        Args:
+            user_id: UUID of authenticated user
+            document_id: UUID of target document
+            workspace_id: UUID of document's workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        # First check workspace write permission
+        ws_decision = self.authorize_workspace_write(user_id, workspace_id)
+        if not ws_decision.allowed:
+            return AuthzDecision(
+                allowed=False,
+                status_code=ws_decision.status_code,
+                reason=f"{ws_decision.reason}; only the document owner can control sharing",
+            )
+
+        try:
+            doc = self._get_document_row(document_id, workspace_id)
+
+            if doc is None:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=404,
+                    reason=f"Document {document_id} not found",
+                )
+
+            # Only owner can control sharing
+            if doc.get("owner_id") != user_id:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"Only document owner can control sharing",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User is document owner and can control sharing",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    def authorize_document_search(
+        self, user_id: str, workspace_id: str
+    ) -> AuthzDecision:
+        """
+        Check if user can search documents in workspace.
+        
+        Rules:
+        - User must be workspace member with read access
+        - Search will return only documents user can read
+          (own documents + shared documents)
+        
+        Args:
+            user_id: UUID of authenticated user
+            workspace_id: UUID of workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        # Check workspace read permission
+        ws_decision = self.authorize_workspace_read(user_id, workspace_id)
+        if not ws_decision.allowed:
+            return ws_decision
+
+        return AuthzDecision(
+            allowed=True,
+            status_code=200,
+            reason=f"User can search workspace documents (filtered by ownership/sharing)",
+        )
+
     # ============================================================================
     # Agent Tool Access
     # ============================================================================

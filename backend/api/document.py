@@ -2,9 +2,11 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
+from database.connection import get_db
 from services.document_service import DocumentService
 from services.document_parser import get_document_parser
 from core.errors import ChatServiceError, DocumentNotFoundError, ValidationError
@@ -48,6 +50,17 @@ class DocumentChunkResponse(BaseModel):
     content: str
     tokens: int | None = None
     created_at: str | None = None
+
+
+class ShareDocumentRequest(BaseModel):
+    is_shared: bool = Field(..., description="Whether document should be shared with workspace")
+
+
+class ShareDocumentResponse(BaseModel):
+    id: str
+    filename: str
+    is_shared: bool
+    message: str
 
 
 class DocumentSearchRequest(BaseModel):
@@ -403,3 +416,77 @@ def delete_document(
             extra={"doc_id": document_id}
         )
         raise ChatServiceError(f"Failed to delete document: {str(e)}")
+
+
+@router.post("/documents/{document_id}/share", response_model=ShareDocumentResponse)
+def share_document(
+    document_id: str,
+    request: ShareDocumentRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+    db: Session = Depends(get_db),
+):
+    """Share or unshare a document with workspace members
+    
+    Only the document owner can control sharing. Shared documents are readable
+    by all workspace members, but only the owner can modify or delete.
+    
+    Args:
+        document_id: Document ID (UUID)
+        request: ShareDocumentRequest with is_shared boolean
+        
+    Returns:
+        ShareDocumentResponse with updated sharing status
+        
+    Raises:
+        ValidationError: If document_id is invalid
+        ChatServiceError: If document not found or operation fails
+    """
+    try:
+        # Validate input
+        document_id = validate_uuid(document_id, field_name="document_id")
+        
+        # Check authorization - only document owner can share
+        from core.authz import AuthorizationPolicy
+        authz = AuthorizationPolicy(db)
+        decision = authz.authorize_document_share(
+            workspace_ctx.user.id,
+            document_id,
+            workspace_ctx.workspace_id
+        )
+        
+        if not decision.allowed:
+            raise HTTPException(status_code=decision.status_code, detail=decision.reason)
+        
+        logger.info(
+            f"{'Sharing' if request.is_shared else 'Unsharing'} document",
+            extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id, "is_shared": request.is_shared}
+        )
+        
+        # Update document sharing status
+        result = service.share_document(
+            document_id,
+            is_shared=request.is_shared,
+            workspace_id=workspace_ctx.workspace_id,
+            user_id=workspace_ctx.user.id
+        )
+        
+        return ShareDocumentResponse(
+            id=result["id"],
+            filename=result["filename"],
+            is_shared=result["is_shared"],
+            message=f"Document {'shared with' if request.is_shared else 'unshared from'} workspace"
+        )
+        
+    except ValidationError:
+        raise
+    except HTTPException:
+        raise
+    except ChatServiceError:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error sharing document: {str(e)}",
+            extra={"doc_id": document_id}
+        )
+        raise ChatServiceError(f"Failed to share document: {str(e)}")

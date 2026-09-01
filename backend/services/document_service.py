@@ -473,3 +473,66 @@ class DocumentService:
             raise ChatServiceError(f"Failed to get document chunks: {str(e)}")
         finally:
             db.close()
+
+    def share_document(self, document_id: str, is_shared: bool, workspace_id: str = None, user_id: str = None) -> dict:
+        """Share or unshare a document with workspace members
+        
+        Args:
+            document_id: Document identifier
+            is_shared: Whether document should be shared with workspace
+            workspace_id: Workspace ID for authorization
+            user_id: Authenticated user ID for authorization
+            
+        Returns:
+            Dictionary with document id, filename, and is_shared status
+            
+        Raises:
+            ChatServiceError: If operation fails
+        """
+        db = get_db_session()
+        try:
+            repo = DocumentRepository(db)
+            document = repo.get_by_id(document_id, workspace_id=workspace_id)
+            
+            if not document:
+                raise DocumentNotFoundError(document_id)
+            
+            # Perform authorization check if user_id provided
+            if user_id and workspace_id:
+                policy = AuthorizationPolicy(db)
+                decision = policy.authorize_document_share(user_id, document_id, workspace_id)
+                if not decision.allowed:
+                    logger.warning(
+                        f"Document share denied: {decision.reason}",
+                        extra={"user_id": user_id, "document_id": document_id}
+                    )
+                    raise ChatServiceError(decision.reason)
+            
+            # Update sharing status
+            document.is_shared = is_shared
+            db.commit()
+            db.refresh(document)
+            
+            logger.info(
+                f"Document sharing updated",
+                extra={"document_id": document_id, "is_shared": is_shared}
+            )
+            
+            return {
+                "id": document.id,
+                "filename": document.filename,
+                "is_shared": document.is_shared
+            }
+            
+        except DocumentNotFoundError:
+            raise
+        except ChatServiceError:
+            raise
+        except Exception as e:
+            logger.error(
+                f"Error updating document sharing: {str(e)}",
+                extra={"document_id": document_id}
+            )
+            raise ChatServiceError(f"Failed to update document sharing: {str(e)}")
+        finally:
+            db.close()

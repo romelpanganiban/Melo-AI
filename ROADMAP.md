@@ -280,8 +280,8 @@ Status: Planned
 
 The next milestone is security hardening rather than another AI feature. Work should be completed in this order:
 
-1. [ ] Replace `ADMIN_EMAIL` privilege with database roles
-2. [ ] Define private/shared workspace document policy
+1. [x] Replace `ADMIN_EMAIL` privilege with database roles
+2. [x] Define private/shared workspace document policy
 3. [ ] Centralize authorization
 4. [ ] Apply identical authorization policy to PostgreSQL + Qdrant
 5. [ ] Create real per-workspace filesystem roots
