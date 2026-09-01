@@ -46,7 +46,7 @@ engine = create_engine(
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-REQUIRED_MIGRATION_REVISION = "0007_add_platform_role"
+REQUIRED_MIGRATION_REVISION = "0008_revoked_tokens"
 
 
 def validate_migration_state(database_engine) -> None:
