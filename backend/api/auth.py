@@ -1,6 +1,6 @@
 """Authentication endpoints."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
@@ -67,6 +67,11 @@ def me(user=Depends(get_current_user)):
 
 
 @router.post("/auth/logout")
-def logout(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme), user=Depends(get_current_user)):
-    revoke_access_token(credentials.credentials)
+def logout(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    user=Depends(get_current_user),
+):
+    if credentials is None or not credentials.credentials or not credentials.credentials.strip():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    revoke_access_token(credentials.credentials.strip())
     return {"logged_out": True}

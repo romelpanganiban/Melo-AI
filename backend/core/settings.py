@@ -45,9 +45,12 @@ class Settings:
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "").strip().lower()
     MONTHLY_TOKEN_LIMIT: int = int(os.getenv("MONTHLY_TOKEN_LIMIT", "100000"))
     CORS_ORIGINS: list[str] = [
-        origin.strip() 
+        origin.strip()
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+        if origin and origin.strip() and origin.strip() != "*"
     ]
+    if not CORS_ORIGINS:
+        CORS_ORIGINS = ["http://localhost:3000"]
     
     # Ollama Configuration
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")

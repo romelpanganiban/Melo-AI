@@ -23,7 +23,10 @@ def get_current_user(
 ) -> User:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-    user_id = verify_access_token(credentials.credentials)
+    token = credentials.credentials.strip() if credentials.credentials else ""
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    user_id = verify_access_token(token)
     user = db.query(User).filter(User.id == user_id).first() if user_id else None
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")

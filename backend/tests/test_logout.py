@@ -1,3 +1,10 @@
+def test_logout_without_token_is_rejected(client):
+    client.headers.pop("Authorization", None)
+    response = client.post("/auth/logout")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Authentication required"
+
+
 def test_logout_revokes_current_token(client):
     response = client.post(
         "/auth/register",
