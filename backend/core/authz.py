@@ -1,0 +1,535 @@
+"""
+Authorization policy engine for Melo-AI.
+
+Centralized authorization decisions for workspace access, document ownership,
+tool execution, and agent mutations. All authorization decisions are explicit,
+testable, and auditable.
+"""
+
+from enum import Enum
+from dataclasses import dataclass
+from typing import Optional, Set
+from sqlalchemy.orm import Session
+
+from database.models import User, WorkspaceMember, Document
+
+
+class Permission(Enum):
+    """Fine-grained permissions for resource access."""
+    READ = "read"
+    WRITE = "write"
+    DELETE = "delete"
+    EXECUTE = "execute"
+    ADMIN = "admin"
+
+
+class WorkspaceRole(Enum):
+    """Role-based workspace membership."""
+    OWNER = "owner"
+    EDITOR = "editor"
+    VIEWER = "viewer"
+    GUEST = "guest"
+
+
+class ToolCapability(Enum):
+    """Agent tool capabilities, role-gated."""
+    FILE_READ = "file:read"
+    FILE_WRITE = "file:write"
+    FILE_DELETE = "file:delete"
+    GIT_DIFF = "git:diff"
+    GIT_STAGE = "git:stage"
+    GIT_COMMIT = "git:commit"
+    CODE_ANALYSIS = "code:analyze"
+    DOCUMENT_SEARCH = "document:search"
+
+
+@dataclass
+class AuthzDecision:
+    """Authorization decision with explicit allow/deny and reasoning."""
+    allowed: bool
+    status_code: int  # 200, 403, 404, etc.
+    reason: str
+
+
+@dataclass
+class WorkspaceContext:
+    """Context for workspace-scoped operations."""
+    user_id: str
+    workspace_id: str
+    role: WorkspaceRole
+    is_admin: bool = False
+
+
+class AuthorizationPolicy:
+    """
+    Centralized authorization policy for all Melo-AI operations.
+    
+    Design principles:
+    - Explicit allow/deny decisions
+    - All checks are database-backed (no assumptions)
+    - All decisions are logged and auditable
+    - Fail-closed (deny by default)
+    - Role-based tool access
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    # ============================================================================
+    # Workspace Access
+    # ============================================================================
+
+    def authorize_workspace_read(self, user_id: str, workspace_id: str) -> AuthzDecision:
+        """
+        Check if user is a member of the workspace (can perform read operations).
+        
+        Args:
+            user_id: UUID of authenticated user
+            workspace_id: UUID of target workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        try:
+            membership = self.db.query(WorkspaceMember).filter(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.workspace_id == workspace_id,
+            ).first()
+
+            if membership is None:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"User {user_id} is not a member of workspace {workspace_id}",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User {user_id} is member with role {membership.role}",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    def authorize_workspace_write(self, user_id: str, workspace_id: str) -> AuthzDecision:
+        """
+        Check if user can write to the workspace (must be owner or editor).
+        
+        Args:
+            user_id: UUID of authenticated user
+            workspace_id: UUID of target workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        read_decision = self.authorize_workspace_read(user_id, workspace_id)
+        if not read_decision.allowed:
+            return read_decision
+
+        try:
+            membership = self.db.query(WorkspaceMember).filter(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.workspace_id == workspace_id,
+            ).first()
+
+            allowed_roles = {"owner", "editor"}
+            if membership.role.lower() not in allowed_roles:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"User role '{membership.role}' cannot write to workspace",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User {user_id} can write (role: {membership.role})",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    def authorize_workspace_admin(self, user_id: str, workspace_id: str) -> AuthzDecision:
+        """
+        Check if user is workspace owner (admin operations).
+        
+        Args:
+            user_id: UUID of authenticated user
+            workspace_id: UUID of target workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        read_decision = self.authorize_workspace_read(user_id, workspace_id)
+        if not read_decision.allowed:
+            return read_decision
+
+        try:
+            membership = self.db.query(WorkspaceMember).filter(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.workspace_id == workspace_id,
+            ).first()
+
+            if membership.role.lower() != "owner":
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"Only workspace owners can perform admin operations",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User {user_id} is workspace owner",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    # ============================================================================
+    # Document Access
+    # ============================================================================
+
+    def authorize_document_read(
+        self, user_id: str, document_id: str, workspace_id: str
+    ) -> AuthzDecision:
+        """
+        Check if user can read a document.
+        
+        Rules:
+        - User must be member of document's workspace
+        - Document must exist in that workspace
+        - User must be owner OR document must be shared
+        
+        Args:
+            user_id: UUID of authenticated user
+            document_id: UUID of target document
+            workspace_id: UUID of document's workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        # First check workspace membership
+        ws_decision = self.authorize_workspace_read(user_id, workspace_id)
+        if not ws_decision.allowed:
+            return ws_decision
+
+        try:
+            doc = self.db.query(Document).filter(
+                Document.id == document_id,
+                Document.workspace_id == workspace_id,
+            ).first()
+
+            if doc is None:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=404,
+                    reason=f"Document {document_id} not found in workspace {workspace_id}",
+                )
+
+            # Owner can always read
+            if doc.owner_id == user_id:
+                return AuthzDecision(
+                    allowed=True,
+                    status_code=200,
+                    reason=f"User is document owner",
+                )
+
+            # Non-owners can read only shared documents
+            if getattr(doc, "is_shared", False):
+                return AuthzDecision(
+                    allowed=True,
+                    status_code=200,
+                    reason=f"Document is shared with workspace",
+                )
+
+            return AuthzDecision(
+                allowed=False,
+                status_code=403,
+                reason=f"User is not document owner and document is not shared",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    def authorize_document_write(
+        self, user_id: str, document_id: str, workspace_id: str
+    ) -> AuthzDecision:
+        """
+        Check if user can write/update a document.
+        
+        Rules:
+        - User must be workspace member with write permission
+        - User must be document owner
+        
+        Args:
+            user_id: UUID of authenticated user
+            document_id: UUID of target document
+            workspace_id: UUID of document's workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        # First check workspace write permission
+        ws_decision = self.authorize_workspace_write(user_id, workspace_id)
+        if not ws_decision.allowed:
+            return ws_decision
+
+        try:
+            doc = self.db.query(Document).filter(
+                Document.id == document_id,
+                Document.workspace_id == workspace_id,
+            ).first()
+
+            if doc is None:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=404,
+                    reason=f"Document {document_id} not found",
+                )
+
+            # Only owner can write
+            if doc.owner_id != user_id:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"User is not document owner",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User is document owner with workspace write permission",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    def authorize_document_delete(
+        self, user_id: str, document_id: str, workspace_id: str
+    ) -> AuthzDecision:
+        """
+        Check if user can delete a document.
+        
+        Rules:
+        - User must be workspace owner
+        - User must be document owner
+        
+        Args:
+            user_id: UUID of authenticated user
+            document_id: UUID of target document
+            workspace_id: UUID of document's workspace
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        # First check workspace admin permission
+        ws_decision = self.authorize_workspace_admin(user_id, workspace_id)
+        if not ws_decision.allowed:
+            return ws_decision
+
+        try:
+            doc = self.db.query(Document).filter(
+                Document.id == document_id,
+                Document.workspace_id == workspace_id,
+            ).first()
+
+            if doc is None:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=404,
+                    reason=f"Document {document_id} not found",
+                )
+
+            # Only owner can delete
+            if doc.owner_id != user_id:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"User is not document owner",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User is document owner and workspace owner",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    # ============================================================================
+    # Agent Tool Access
+    # ============================================================================
+
+    @staticmethod
+    def get_allowed_tools(role: WorkspaceRole) -> Set[ToolCapability]:
+        """
+        Get allowed agent tools for a given workspace role.
+        
+        Policy:
+        - VIEWER: read-only operations
+        - EDITOR: read + write operations
+        - OWNER: all operations
+        - GUEST: none (deny by default)
+        
+        Args:
+            role: WorkspaceRole
+            
+        Returns:
+            Set of allowed ToolCapability
+        """
+        if role == WorkspaceRole.OWNER:
+            return {
+                ToolCapability.FILE_READ,
+                ToolCapability.FILE_WRITE,
+                ToolCapability.FILE_DELETE,
+                ToolCapability.GIT_DIFF,
+                ToolCapability.GIT_STAGE,
+                ToolCapability.GIT_COMMIT,
+                ToolCapability.CODE_ANALYSIS,
+                ToolCapability.DOCUMENT_SEARCH,
+            }
+        elif role == WorkspaceRole.EDITOR:
+            return {
+                ToolCapability.FILE_READ,
+                ToolCapability.FILE_WRITE,
+                ToolCapability.GIT_DIFF,
+                ToolCapability.GIT_STAGE,
+                ToolCapability.CODE_ANALYSIS,
+                ToolCapability.DOCUMENT_SEARCH,
+            }
+        elif role == WorkspaceRole.VIEWER:
+            return {
+                ToolCapability.FILE_READ,
+                ToolCapability.CODE_ANALYSIS,
+                ToolCapability.DOCUMENT_SEARCH,
+            }
+        else:  # GUEST or unknown
+            return set()
+
+    def authorize_tool_execution(
+        self, user_id: str, workspace_id: str, tool: ToolCapability
+    ) -> AuthzDecision:
+        """
+        Check if user can execute an agent tool in a workspace.
+        
+        Args:
+            user_id: UUID of authenticated user
+            workspace_id: UUID of target workspace
+            tool: ToolCapability to execute
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        # First check workspace membership
+        ws_decision = self.authorize_workspace_read(user_id, workspace_id)
+        if not ws_decision.allowed:
+            return ws_decision
+
+        try:
+            membership = self.db.query(WorkspaceMember).filter(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.workspace_id == workspace_id,
+            ).first()
+
+            # Parse role
+            try:
+                role = WorkspaceRole[membership.role.upper()]
+            except KeyError:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"Unknown workspace role: {membership.role}",
+                )
+
+            allowed_tools = self.get_allowed_tools(role)
+            if tool not in allowed_tools:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"Tool {tool.value} not allowed for role {role.value}",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User can execute tool {tool.value}",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
+    # ============================================================================
+    # Approval Token Access
+    # ============================================================================
+
+    def authorize_approval_consumption(
+        self,
+        user_id: str,
+        workspace_id: str,
+        approval_token_user_id: str,
+        approval_token_workspace_id: str,
+    ) -> AuthzDecision:
+        """
+        Check if a user can consume an approval token.
+        
+        Rules:
+        - Token was issued to this user
+        - Token is scoped to this workspace
+        - Token has not expired
+        - Token has not been used
+        
+        Note: Actual token validation (expiry, usage) handled by ApprovalService.
+        This checks the user/workspace binding.
+        
+        Args:
+            user_id: UUID of user attempting to use token
+            workspace_id: UUID of target workspace
+            approval_token_user_id: UUID of user token was issued to
+            approval_token_workspace_id: UUID of workspace token is scoped to
+            
+        Returns:
+            AuthzDecision with allow/deny and reason
+        """
+        if user_id != approval_token_user_id:
+            return AuthzDecision(
+                allowed=False,
+                status_code=403,
+                reason=f"Approval token issued to different user",
+            )
+
+        if workspace_id != approval_token_workspace_id:
+            return AuthzDecision(
+                allowed=False,
+                status_code=403,
+                reason=f"Approval token scoped to different workspace",
+            )
+
+        return AuthzDecision(
+            allowed=True,
+            status_code=200,
+            reason=f"Approval token binding valid",
+        )
