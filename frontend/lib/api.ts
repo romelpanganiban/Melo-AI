@@ -115,7 +115,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   return response.json();
-}}}
+}
+
 export type AppSettings = {
   model: string;
   provider: string;

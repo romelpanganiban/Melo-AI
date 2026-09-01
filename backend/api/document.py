@@ -120,8 +120,22 @@ def upload_document_file(
     except DocumentNotFoundError:
         raise
     except Exception as e:
-        logger.error(f"Document file upload error: {str(e)}")
-        raise ChatServiceError("Failed to extract and upload document")
+        import traceback
+        error_detail = str(e)
+        error_type = type(e).__name__
+        logger.error(
+            f"Document file upload error: {error_type}: {error_detail}",
+            extra={"traceback": traceback.format_exc()}
+        )
+        # Provide more informative error to frontend
+        if "decode" in error_detail.lower() or "encoding" in error_detail.lower():
+            raise ChatServiceError("File encoding error. Please ensure the file is UTF-8 encoded text.")
+        elif "pdf" in error_detail.lower():
+            raise ChatServiceError("PDF parsing failed. The file may be corrupted or encrypted.")
+        elif "docx" in error_detail.lower():
+            raise ChatServiceError("DOCX parsing failed. The file may be corrupted.")
+        else:
+            raise ChatServiceError(f"Failed to process file: {error_detail[:100]}")
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -185,7 +199,11 @@ def upload_document(
         else:
             user_friendly_msg = "Failed to upload document. Please check your file and try again."
         
-        logger.error(f"Document upload error: {str(e)}")
+        import traceback
+        logger.error(
+            f"Document upload error: {str(e)}",
+            extra={"traceback": traceback.format_exc()}
+        )
         raise ChatServiceError(user_friendly_msg)
 
 
