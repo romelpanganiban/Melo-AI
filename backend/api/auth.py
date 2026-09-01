@@ -70,8 +70,9 @@ def me(user=Depends(get_current_user)):
 def logout(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     if credentials is None or not credentials.credentials or not credentials.credentials.strip():
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-    revoke_access_token(credentials.credentials.strip())
+    revoke_access_token(credentials.credentials.strip(), db)
     return {"logged_out": True}

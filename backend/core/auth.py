@@ -48,7 +48,7 @@ def get_current_user(
     token = credentials.credentials.strip() if credentials.credentials else ""
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-    user_id = verify_access_token(token)
+    user_id = verify_access_token(token, db)
     user = db.query(User).filter(User.id == user_id).first() if user_id else None
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
@@ -207,12 +207,29 @@ def require_workspace_access_from_header():
 
 
 def require_workspace_role(*allowed_roles: str):
-    def dependency(membership: WorkspaceMember = Depends(get_current_membership)) -> WorkspaceMember:
+    def dependency(
+        current_user: User = Depends(get_current_user),
+        workspace_id: str | None = Header(default=None, alias="X-Workspace-ID"),
+        db: Session = Depends(get_db),
+    ) -> WorkspaceMember:
         if not settings.ENABLE_WORKSPACE_TOOLS:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
-        if membership.role not in allowed_roles:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient workspace role")
+        if not workspace_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Workspace-ID header is required")
+
+        policy = AuthorizationPolicy(db)
+        decision = policy.authorize_workspace_role(current_user.id, workspace_id, set(allowed_roles))
+        if not decision.allowed:
+            raise HTTPException(status_code=decision.status_code, detail=decision.reason)
+
+        membership = db.query(WorkspaceMember).filter(
+            WorkspaceMember.user_id == current_user.id,
+            WorkspaceMember.workspace_id == workspace_id,
+        ).first()
+        if membership is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership not found")
         return membership
+
     return dependency
 
 
@@ -220,13 +237,3 @@ def require_workspace_tools(membership: WorkspaceMember = Depends(get_current_me
     if not settings.ENABLE_WORKSPACE_TOOLS:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
     return membership
-
-
-def require_workspace_role(*allowed_roles: str):
-    def dependency(membership: WorkspaceMember = Depends(get_current_membership)) -> WorkspaceMember:
-        if not settings.ENABLE_WORKSPACE_TOOLS:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
-        if membership.role not in allowed_roles:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient workspace role")
-        return membership
-    return dependency

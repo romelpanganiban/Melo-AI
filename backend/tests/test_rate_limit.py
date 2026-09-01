@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 
 from core import rate_limit
-from core.rate_limit import enforce_request_rate_limit
+from core.rate_limit import MemoryRateLimitStore, RedisRateLimitStore, enforce_request_rate_limit, get_rate_limit_store
 from core.settings import settings
 
 
@@ -48,3 +48,48 @@ def test_registered_owner_is_limited_with_429():
         settings.RATE_LIMIT_REQUESTS = original_limit
         settings.RATE_LIMIT_WINDOW_SECONDS = original_window
         rate_limit._requests.pop(key, None)
+
+
+def test_memory_rate_limit_store_enforces_windowed_limit():
+    store = MemoryRateLimitStore()
+    key = "workspace:limit:user:limit:/chat"
+
+    assert store.allow(key, 1, 60) is True
+    assert store.allow(key, 1, 60) is False
+
+
+def test_get_rate_limit_store_uses_redis_when_configured(monkeypatch):
+    class FakeRedisClient:
+        @staticmethod
+        def from_url(*args, **kwargs):
+            return FakeRedisClient()
+
+        def ping(self):
+            return True
+
+        def eval(self, *args, **kwargs):
+            return 1
+
+        def pipeline(self):
+            return self
+
+    monkeypatch.setattr(settings, "RATE_LIMIT_BACKEND", "redis")
+    monkeypatch.setattr(settings, "REDIS_URL", "redis://localhost:6379/0")
+    monkeypatch.setattr(
+        rate_limit,
+        "redis",
+        SimpleNamespace(Redis=SimpleNamespace(from_url=FakeRedisClient.from_url)),
+    )
+
+    store = get_rate_limit_store()
+    assert isinstance(store, RedisRateLimitStore)
+
+
+def test_get_rate_limit_store_falls_back_to_memory():
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(settings, "RATE_LIMIT_BACKEND", "memory")
+    try:
+        store = get_rate_limit_store()
+        assert isinstance(store, MemoryRateLimitStore)
+    finally:
+        monkeypatch.undo()

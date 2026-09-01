@@ -127,9 +127,13 @@ The local `backend/.env` supplies `DATABASE_URL` and is ignored by Git.
 
 ### Current Validation
 
-- Backend: 192 tests passing
-- Frontend: 34 tests passing, lint passing, production build passing
-- Known warnings: deprecated Starlette status constants, deprecated TestClient/httpx compatibility, and optional CUDA/Qdrant availability warnings
+Verified in the current Windows environment using a project-local pytest temp directory:
+
+- `python -m pytest tests/test_rate_limit.py -q --basetemp=tmp_pytest` → 5 passed
+- `python -m pytest tests/test_chat_service_quality.py -q --basetemp=tmp_pytest` → 12 passed
+- `python -m pytest tests/test_document_service_authz.py -q --basetemp=tmp_pytest` → 12 passed
+
+Known warnings: deprecated TestClient/httpx compatibility and optional CUDA/Qdrant availability warnings.
 
 See [SYSTEM_AUDIT.md](SYSTEM_AUDIT.md) for the system-wide findings and prioritized improvements.
 

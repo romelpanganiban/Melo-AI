@@ -14,6 +14,7 @@ from core.validation import validate_uuid
 from core.logging import logger
 from core.auth import require_workspace_access_from_header, WorkspaceContext
 from core.rate_limit import enforce_request_rate_limit
+from core.settings import settings
 
 router = APIRouter()
 
@@ -25,7 +26,7 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 class UploadDocumentRequest(BaseModel):
     filename: str = Field(..., min_length=1, max_length=255, description="Document filename")
     file_type: str = Field(..., description="File type: pdf, docx, or txt")
-    content: str = Field(..., min_length=1, max_length=2_000_000, description="Document content")
+    content: str = Field(..., min_length=1, max_length=settings.MAX_DOCUMENT_CONTENT_LENGTH, description="Document content")
     session_id: Optional[str] = Field(None, description="Optional session ID to associate document with")
     collection_id: Optional[str] = Field(None, description="Optional knowledge collection ID")
 

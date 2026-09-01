@@ -56,6 +56,17 @@ class UsageLedger(Base):
     __table_args__ = (Index("ix_usage_ledger_workspace_user_period", "workspace_id", "user_id", "period_start", unique=True),)
 
 
+class RevokedToken(Base):
+    """Persistently revoked bearer tokens that remain invalid until expiry."""
+    __tablename__ = "revoked_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token_hash = Column(String(128), nullable=False, unique=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    revoked_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    expires_at = Column(DateTime, nullable=True, index=True)
+
+
 class Session(Base):
     """Chat session model"""
     __tablename__ = "sessions"

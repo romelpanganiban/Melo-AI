@@ -17,6 +17,8 @@ from core.authz import AuthorizationPolicy
 class DocumentService:
     """Service for handling document operations"""
 
+    MAX_CHUNKS_PER_DOCUMENT = 1000
+
     def chunk_text(
         self,
         content: str,
@@ -87,6 +89,18 @@ class DocumentService:
             
             if not content or not content.strip():
                 raise ValidationError("content is required")
+            if len(content) > settings.MAX_DOCUMENT_CONTENT_LENGTH:
+                raise ValidationError(
+                    f"Document content exceeds the {settings.MAX_DOCUMENT_CONTENT_LENGTH} character limit",
+                    field="content",
+                )
+
+            chunks = self.chunk_text(content)
+            if len(chunks) > self.MAX_CHUNKS_PER_DOCUMENT:
+                raise ValidationError(
+                    f"Document produces too many chunks for processing ({len(chunks)} > {self.MAX_CHUNKS_PER_DOCUMENT})",
+                    field="content",
+                )
 
             if session_id and not SessionRepository(db).get_by_id(session_id, owner_id=owner_id, workspace_id=workspace_id):
                 raise ValidationError("session was not found", field="session_id")
@@ -105,8 +119,6 @@ class DocumentService:
                 owner_id=owner_id,
                 workspace_id=workspace_id,
             )
-
-            chunks = self.chunk_text(content)
             chunk_payload = [
                 {
                     "chunk_index": index,
@@ -308,11 +320,19 @@ class DocumentService:
         """Search the session's indexed knowledge without generating a chat response."""
         if not query or not query.strip():
             raise ValidationError("query is required", field="query")
+        if user_id and not workspace_id:
+            raise ValidationError("workspace_id is required when searching as a user", field="workspace_id")
         if not settings.QDRANT_ENABLED:
             return {"query": query.strip(), "results": [], "available": False}
 
         db = get_db_session()
         try:
+            if user_id and workspace_id:
+                policy = AuthorizationPolicy(db)
+                decision = policy.authorize_document_search(user_id, workspace_id)
+                if not decision.allowed:
+                    raise ChatServiceError(decision.reason)
+
             if session_id and not SessionRepository(db).get_by_id(session_id, owner_id=owner_id, workspace_id=workspace_id):
                 raise ValidationError("session was not found", field="session_id")
             qdrant_client = get_qdrant_client()
@@ -320,42 +340,49 @@ class DocumentService:
                 return {"query": query.strip(), "results": [], "available": False}
 
             embedding = get_embedding_service().embed_query(query.strip())
-            filters = {"session_id": session_id} if session_id else None
-            if owner_id and not workspace_id:
-                filters = {**(filters or {}), "owner_id": owner_id}
+            filters = {}
+            if session_id:
+                filters["session_id"] = session_id
             if workspace_id:
-                filters = {**(filters or {}), "workspace_id": workspace_id}
+                filters["workspace_id"] = workspace_id
+            elif owner_id:
+                filters["owner_id"] = owner_id
             if collection_id:
-                filters = {**(filters or {}), "collection_id": collection_id}
-            
+                filters["collection_id"] = collection_id
+
             matches = qdrant_client.search(
                 query_embedding=embedding,
                 limit=top_k,
                 score_threshold=settings.QDRANT_SCORE_THRESHOLD,
-                filters=filters,
+                filters=filters or None,
             )
-            
+
             results = []
             for match in matches:
                 payload = match.get("payload") or match.get("metadata", {})
-                
+
                 # Authorization check: if user_id provided, enforce access control
                 if user_id:
                     doc_owner_id = payload.get("owner_id")
+                    doc_workspace_id = payload.get("workspace_id")
                     is_shared = payload.get("is_shared", False)
-                    
-                    # Allow if user is owner or document is shared
+
+                    if doc_workspace_id and doc_workspace_id != workspace_id:
+                        continue
+
                     if user_id != doc_owner_id and not is_shared:
-                        continue  # Skip documents user doesn't have access to
-                
+                        continue
+
                 results.append({
                     "filename": payload.get("filename", "Unknown"),
                     "content": match.get("content") or payload.get("content", ""),
                     "relevance": round(match.get("score", match.get("similarity_score", 0)) * 100, 1),
                     "chunk_index": payload.get("chunk_index"),
                 })
-            
+
             return {"query": query.strip(), "results": results, "available": True}
+        except ValidationError:
+            raise
         except Exception as e:
             logger.error("Document search failed", extra={"query_len": len(query)})
             raise ChatServiceError("Failed to search documents") from e

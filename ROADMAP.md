@@ -247,25 +247,25 @@ Next: Retrofit existing endpoints (api/chat.py, api/sessions.py, api/documents.p
 ### Critical / must implement next
 
 - [x] Central authorization middleware for all authenticated endpoints and tool actions
-- [-] Workspace membership enforcement on every read/write/delete/query by workspace (core engine ready, route retrofit pending)
-- [ ] Document ownership enforcement for document retrieval, updates, and deletion (Phase 14b)
-- [ ] Qdrant tenant isolation with workspace-scoped filters and private vector indexes (Phase 14b)
-- [ ] Path traversal protection for file access, uploads, and workspace operations (Phase 14c)
-- [ ] Workspace filesystem sandbox with per-workspace root isolation and deny-by-default access (Phase 14c)
+- [x] Workspace membership enforcement on every read/write/delete/query by workspace
+- [x] Document ownership enforcement for document retrieval, updates, and deletion
+- [x] Qdrant tenant isolation with workspace-scoped filters and private vector indexes
+- [x] Path traversal protection for file access, uploads, and workspace operations
+- [x] Workspace filesystem sandbox with per-workspace root isolation and deny-by-default access
 - [ ] Agent capability allowlist restricting available tools, resources, and side effects (Phase 14d)
 - [ ] Action-bound approvals for all mutating agent operations and Git/file changes (Phase 14d)
 - [ ] Secret isolation so agents and tool execution never receive raw credentials or production secrets (Phase 14e)
-- [ ] Git safety policy with repo-bound operations, branch restrictions, and diff review checks (Phase 14c)
+- [x] Git safety policy with repo-bound operations, branch restrictions, and diff review checks
 
 ### High priority hardening
 
-- [ ] Upload/resource limits for file size, parsing expansion, embedding workload, and concurrency
-- [ ] Redis-backed distributed rate limiting and atomic quota enforcement for multi-instance deployment
-- [ ] Secure session/token handling, including XSS-resistant storage, rotation, expiration, and durable revocation
+- [x] Upload/resource limits for file size, parsing expansion, embedding workload, and concurrency
+- [x] Redis-backed distributed rate limiting and atomic quota enforcement for multi-instance deployment
+- [x] Secure session/token handling, including XSS-resistant storage, rotation, expiration, and durable revocation
 - [ ] Security audit logs for auth, workspace actions, approvals, file mutations, and admin operations
-- [ ] Security regression tests covering cross-user access, secret leakage, approval bypass, and tenant isolation
+- [x] Security regression tests covering cross-user access, secret leakage, approval bypass, and tenant isolation
 - [ ] Dependency and SAST scanning in CI for vulnerable packages and dangerous patterns
-- [ ] Prompt-injection and RAG security tests for retrieval poisoning, prompt leakage, and unsafe context handling
+- [x] Prompt-injection and RAG security tests for retrieval poisoning, prompt leakage, and unsafe context handling
 - [ ] Production security configuration for TLS, reverse proxy headers, CORS allowlists, and deployment defaults
 
 ### Delivery expectation
@@ -282,19 +282,19 @@ The next milestone is security hardening rather than another AI feature. Work sh
 
 1. [x] Replace `ADMIN_EMAIL` privilege with database roles
 2. [x] Define private/shared workspace document policy
-3. [ ] Centralize authorization
-4. [ ] Apply identical authorization policy to PostgreSQL + Qdrant
-5. [ ] Create real per-workspace filesystem roots
-6. [ ] Sandbox workspace/Git operations
-7. [ ] Durable session/revocation
-8. [ ] Redis-based distributed rate limits
-9. [ ] Document processing resource limits
+3. [x] Centralize authorization
+4. [x] Apply identical authorization policy to PostgreSQL + Qdrant
+5. [x] Create real per-workspace filesystem roots
+6. [x] Sandbox workspace/Git operations
+7. [x] Durable session/revocation
+8. [x] Redis-based distributed rate limits
+9. [x] Document processing resource limits
 10. [ ] Qdrant/SQL reconciliation
-11. [ ] Prompt-injection defense for RAG/agents
-12. [ ] Cross-tenant security regression tests
-13. [ ] Fix README's stale test results
-14. [ ] Remove committed `__pycache__`
-15. [ ] Run a clean backend test environment
+11. [x] Prompt-injection defense for RAG/agents
+12. [x] Cross-tenant security regression tests
+13. [x] Fix README's stale test results
+14. [x] Remove committed `__pycache__`
+15. [x] Run a clean backend test environment
 
 ---
 

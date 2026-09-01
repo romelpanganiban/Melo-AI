@@ -1,6 +1,8 @@
 """Integration tests for DocumentService authorization enforcement"""
 
 import uuid
+from unittest.mock import MagicMock, patch
+
 import pytest
 from sqlalchemy.orm import Session
 
@@ -341,3 +343,105 @@ class TestDocumentServiceCrossWorkspaceDenial:
                 workspace_id=workspaces['workspace_b'].id,
                 user_id=users['user_b'].id
             )
+
+    def test_search_requires_workspace_scope_for_user_queries(self, service, test_db, users, workspaces, memberships):
+        """Document searches must be required to specify the workspace for user-scoped queries."""
+        session = DBSession(
+            id=str(uuid.uuid4()),
+            workspace_id=workspaces['workspace_a'].id,
+            owner_id=users['owner_a'].id,
+            title="Scope Test"
+        )
+        test_db.add(session)
+        test_db.commit()
+
+        with patch('services.document_service.get_db_session', return_value=test_db), \
+             patch('services.document_service.get_qdrant_client') as mock_qdrant_factory, \
+             patch('services.document_service.get_embedding_service') as mock_embedding_factory:
+            mock_client = MagicMock()
+            mock_client.is_available.return_value = True
+            mock_client.search.return_value = [{
+                "document_id": str(uuid.uuid4()),
+                "chunk_index": 0,
+                "content": "tenant leak",
+                "score": 0.99,
+                "payload": {
+                    "document_id": str(uuid.uuid4()),
+                    "chunk_index": 0,
+                    "content": "tenant leak",
+                    "owner_id": users['owner_a'].id,
+                    "workspace_id": workspaces['workspace_a'].id,
+                    "is_shared": False,
+                    "filename": "leak.txt",
+                },
+            }]
+            mock_qdrant_factory.return_value = mock_client
+            mock_embedding_factory.return_value.embed_query.return_value = [0.1, 0.2, 0.3]
+
+            with pytest.raises(ValidationError, match="workspace_id"):
+                service.search_documents(
+                    "leaked content",
+                    session.id,
+                    top_k=5,
+                    owner_id=users['owner_a'].id,
+                    user_id=users['user_b'].id,
+                )
+
+    def test_search_documents_filters_out_results_from_other_workspaces(self, service, test_db, users, workspaces, memberships):
+        """A workspace-scoped search must exclude records belonging to a different workspace."""
+        session = DBSession(
+            id=str(uuid.uuid4()),
+            workspace_id=workspaces['workspace_a'].id,
+            owner_id=users['owner_a'].id,
+            title="Tenant Scope Test"
+        )
+        test_db.add(session)
+        test_db.commit()
+
+        with patch('services.document_service.get_db_session', return_value=test_db), \
+             patch('services.document_service.get_qdrant_client') as mock_qdrant_factory, \
+             patch('services.document_service.get_embedding_service') as mock_embedding_factory:
+            mock_client = MagicMock()
+            mock_client.is_available.return_value = True
+            mock_client.search.return_value = [{
+                "document_id": str(uuid.uuid4()),
+                "chunk_index": 0,
+                "content": "tenant leak",
+                "score": 0.99,
+                "payload": {
+                    "document_id": str(uuid.uuid4()),
+                    "chunk_index": 0,
+                    "content": "tenant leak",
+                    "owner_id": users['owner_a'].id,
+                    "workspace_id": workspaces['workspace_b'].id,
+                    "is_shared": False,
+                    "filename": "leak.txt",
+                },
+            }]
+            mock_qdrant_factory.return_value = mock_client
+            mock_embedding_factory.return_value.embed_query.return_value = [0.1, 0.2, 0.3]
+
+            result = service.search_documents(
+                "leaked content",
+                session.id,
+                top_k=5,
+                owner_id=users['owner_a'].id,
+                workspace_id=workspaces['workspace_a'].id,
+                user_id=users['user_b'].id,
+            )
+
+            assert result["results"] == []
+
+    def test_user_cannot_retrieve_session_from_other_workspace(self, service, test_db, users, workspaces, memberships):
+        """Session lookup must fail when the session is attached to a different workspace."""
+        session = DBSession(
+            id=str(uuid.uuid4()),
+            workspace_id=workspaces['workspace_b'].id,
+            owner_id=users['owner_a'].id,
+            title="Other Workspace Session"
+        )
+        test_db.add(session)
+        test_db.commit()
+
+        found = test_db.query(DBSession).filter(DBSession.id == session.id, DBSession.workspace_id == workspaces['workspace_a'].id).first()
+        assert found is None

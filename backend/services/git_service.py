@@ -14,8 +14,14 @@ class GitService:
 
     COMMAND_TIMEOUT = 10
 
-    def __init__(self, workspace: Path | None = None):
-        self.workspace = (workspace or Path(settings.BASE_DIR)).resolve()
+    def __init__(self, workspace: Path | None = None, workspace_id: str | None = None):
+        if workspace is not None:
+            self.workspace = workspace.resolve()
+        elif workspace_id:
+            self.workspace = (Path(settings.BASE_DIR).resolve() / "workspaces" / workspace_id).resolve()
+        else:
+            self.workspace = Path(settings.BASE_DIR).resolve()
+        self.workspace.mkdir(parents=True, exist_ok=True)
 
     def status(self) -> dict:
         output = self._run("status", "--short", "--branch")

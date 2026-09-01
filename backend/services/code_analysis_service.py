@@ -10,6 +10,7 @@ from pathlib import Path
 
 from core.errors import ChatServiceError, ValidationError
 from core.settings import settings
+from core.workspace_fs import WorkspaceFilesystem
 
 
 class CodeAnalysisService:
@@ -20,10 +21,17 @@ class CodeAnalysisService:
         ".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".md", ".css", ".html"
     }
 
-    def analyze_file(self, relative_path: str) -> dict:
-        requested = self._resolve_file(relative_path)
+    def __init__(self, workspace_id: str | None = None):
+        self.workspace_id = workspace_id
+        self.workspace_root = self._workspace_root(workspace_id)
+
+    def with_workspace(self, workspace_id: str | None) -> "CodeAnalysisService":
+        return CodeAnalysisService(workspace_id=workspace_id)
+
+    def analyze_file(self, relative_path: str, workspace_id: str | None = None) -> dict:
+        requested = self._resolve_file(relative_path, workspace_id)
         content = self._read_text(requested)
-        workspace = Path(settings.BASE_DIR).resolve()
+        workspace = self._workspace_root(workspace_id or self.workspace_id)
 
         analysis = {
             "path": requested.relative_to(workspace).as_posix(),
@@ -49,11 +57,11 @@ class CodeAnalysisService:
 
         return analysis
 
-    def read_file(self, relative_path: str) -> dict:
+    def read_file(self, relative_path: str, workspace_id: str | None = None) -> dict:
         """Read a supported workspace file without modifying it."""
-        requested = self._resolve_file(relative_path)
+        requested = self._resolve_file(relative_path, workspace_id)
         content = self._read_text(requested)
-        workspace = Path(settings.BASE_DIR).resolve()
+        workspace = self._workspace_root(workspace_id or self.workspace_id)
         return {
             "path": requested.relative_to(workspace).as_posix(),
             "size_bytes": requested.stat().st_size,
@@ -61,7 +69,7 @@ class CodeAnalysisService:
             "content": content,
         }
 
-    def write_file(self, relative_path: str, content: str, confirm: bool) -> dict:
+    def write_file(self, relative_path: str, content: str, confirm: bool, workspace_id: str | None = None) -> dict:
         """Write a UTF-8 workspace file using an atomic replacement."""
         if not confirm:
             raise ValidationError("confirm must be true before writing a file", field="confirm")
@@ -70,12 +78,10 @@ class CodeAnalysisService:
         if len(content.encode("utf-8")) > self.MAX_FILE_SIZE:
             raise ValidationError("content exceeds the 1 MB write limit", field="content")
 
-        workspace = Path(settings.BASE_DIR).resolve()
+        workspace = self._workspace_root(workspace_id or self.workspace_id)
         if not relative_path or not relative_path.strip():
             raise ValidationError("path is required", field="path")
-        requested = (workspace / relative_path).resolve()
-        if requested != workspace and workspace not in requested.parents:
-            raise ValidationError("path must stay inside the workspace", field="path")
+        requested = self._resolve_write_target(relative_path, workspace_id)
         if requested.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
             raise ValidationError("file type is not supported", field="path")
         if requested.name.startswith(".") or any(part in {".git", ".venv", "node_modules"} for part in requested.parts):
@@ -108,12 +114,12 @@ class CodeAnalysisService:
             "created": not existed,
         }
 
-    def delete_file(self, relative_path: str, confirm: bool) -> dict:
+    def delete_file(self, relative_path: str, confirm: bool, workspace_id: str | None = None) -> dict:
         """Delete one supported workspace file after explicit confirmation."""
         if not confirm:
             raise ValidationError("confirm must be true before deleting a file", field="confirm")
 
-        requested = self._resolve_file(relative_path)
+        requested = self._resolve_file(relative_path, workspace_id)
         if requested.name.startswith(".") or any(
             part in {".git", ".venv", "node_modules"} for part in requested.parts
         ):
@@ -124,26 +130,48 @@ class CodeAnalysisService:
         except OSError as exc:
             raise ChatServiceError("failed to delete file") from exc
 
-        workspace = Path(settings.BASE_DIR).resolve()
+        workspace = self._workspace_root(workspace_id or self.workspace_id)
         return {
             "path": requested.relative_to(workspace).as_posix(),
             "deleted": True,
         }
 
-    def _resolve_file(self, relative_path: str) -> Path:
+    def _resolve_file(self, relative_path: str, workspace_id: str | None = None) -> Path:
         if not relative_path or not relative_path.strip():
             raise ValidationError("path is required", field="path")
 
-        workspace = Path(settings.BASE_DIR).resolve()
-        requested = (workspace / relative_path).resolve()
-        if requested != workspace and workspace not in requested.parents:
-            raise ValidationError("path must stay inside the workspace", field="path")
+        workspace = self._workspace_root(workspace_id or self.workspace_id)
+        requested = self._resolve_workspace_path(relative_path, workspace)
         if not requested.is_file():
             raise ValidationError("file was not found", field="path")
         if requested.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
             raise ValidationError("file type is not supported", field="path")
         if requested.stat().st_size > self.MAX_FILE_SIZE:
             raise ValidationError("file exceeds the 1 MB analysis limit", field="path")
+        return requested
+
+    def _resolve_write_target(self, relative_path: str, workspace_id: str | None = None) -> Path:
+        if not relative_path or not relative_path.strip():
+            raise ValidationError("path is required", field="path")
+
+        workspace = self._workspace_root(workspace_id or self.workspace_id)
+        requested = self._resolve_workspace_path(relative_path, workspace)
+        if requested.exists() and requested.is_dir():
+            raise ValidationError("path must point to a file", field="path")
+        return requested
+
+    @staticmethod
+    def _workspace_root(workspace_id: str | None) -> Path:
+        base_root = Path(settings.BASE_DIR).resolve()
+        if workspace_id:
+            return (base_root / "workspaces" / workspace_id).resolve()
+        return base_root
+
+    @staticmethod
+    def _resolve_workspace_path(relative_path: str, workspace: Path) -> Path:
+        requested = (workspace / relative_path).resolve()
+        if requested != workspace and workspace not in requested.parents:
+            raise ValidationError("path must stay inside the workspace", field="path")
         return requested
 
     @staticmethod

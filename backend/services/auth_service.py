@@ -9,16 +9,29 @@ import os
 import secrets
 import time
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from core.settings import settings
-from database.models import User, Workspace, WorkspaceMember
+from database.models import RevokedToken, User, Workspace, WorkspaceMember
 
 
 TOKEN_TTL_SECONDS = 60 * 60 * 24
 _SALT_BYTES = 16
 _revoked_tokens: set[str] = set()
+
+
+def _token_fingerprint(token: str) -> str:
+    return hashlib.sha256(token.strip().encode()).hexdigest()
+
+
+def _decode_token_payload(token: str) -> dict:
+    encoded, _ = token.split(".", 1)
+    payload = json.loads(base64.urlsafe_b64decode((encoded + "===").encode()))
+    if not isinstance(payload, dict):
+        raise ValueError("token payload is invalid")
+    return payload
 
 
 def _token_secret() -> bytes:
@@ -54,17 +67,24 @@ def create_access_token(user_id: str) -> str:
     return f"{encoded}.{base64.urlsafe_b64encode(signature).decode().rstrip('=')}"
 
 
-def verify_access_token(token: str) -> str | None:
+def verify_access_token(token: str, db: Session | None = None) -> str | None:
     try:
-        token_fingerprint = hashlib.sha256(token.encode()).hexdigest()
+        token_fingerprint = _token_fingerprint(token)
         if token_fingerprint in _revoked_tokens:
             return None
+        if db is not None:
+            revoked = db.query(RevokedToken).filter(RevokedToken.token_hash == token_fingerprint).first()
+            if revoked is not None:
+                expires_at = revoked.expires_at
+                if expires_at is None or expires_at > datetime.now(timezone.utc):
+                    return None
+
         encoded, signature = token.split(".", 1)
         expected = hmac.new(_token_secret(), encoded.encode(), hashlib.sha256).digest()
         supplied = base64.urlsafe_b64decode((signature + "===").encode())
         if not hmac.compare_digest(expected, supplied):
             return None
-        payload = json.loads(base64.urlsafe_b64decode((encoded + "===").encode()))
+        payload = _decode_token_payload(token)
         if payload.get("exp", 0) < time.time():
             return None
         return str(uuid.UUID(payload["sub"]))
@@ -72,9 +92,29 @@ def verify_access_token(token: str) -> str | None:
         return None
 
 
-def revoke_access_token(token: str) -> None:
-    """Revoke a token until process restart or its natural expiry."""
-    _revoked_tokens.add(hashlib.sha256(token.encode()).hexdigest())
+def revoke_access_token(token: str, db: Session | None = None) -> None:
+    """Persistently revoke a token so it is rejected even after a fresh DB session."""
+    token_fingerprint = _token_fingerprint(token)
+    _revoked_tokens.add(token_fingerprint)
+    if db is None:
+        return
+
+    try:
+        payload = _decode_token_payload(token)
+        expires_at = datetime.fromtimestamp(int(payload.get("exp", time.time() + TOKEN_TTL_SECONDS)), tz=timezone.utc)
+        user_id = str(uuid.UUID(payload["sub"])) if payload.get("sub") else None
+    except (ValueError, TypeError, KeyError):
+        payload = {}
+        expires_at = None
+        user_id = None
+
+    revoked = db.query(RevokedToken).filter(RevokedToken.token_hash == token_fingerprint).first()
+    if revoked is None:
+        db.add(RevokedToken(token_hash=token_fingerprint, user_id=user_id, expires_at=expires_at))
+    else:
+        revoked.user_id = user_id
+        revoked.expires_at = expires_at
+    db.commit()
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:

@@ -8,6 +8,7 @@ import database.connection as db_connection
 from database.models import Base
 from database.repositories import DocumentRepository, ChunkRepository
 from core.errors import ValidationError
+from core.settings import settings
 from services import document_service as document_service_module
 from services.document_service import DocumentService
 
@@ -54,6 +55,21 @@ def test_chunk_text_rejects_invalid_overlap():
 
     with pytest.raises(ValidationError):
         service.chunk_text("hello world", chunk_size=10, chunk_overlap=10)
+
+
+def test_upload_document_rejects_overlong_content(file_db, monkeypatch):
+    session_factory, _engine = file_db
+    monkeypatch.setattr(document_service_module, "get_db_session", session_factory)
+
+    service = DocumentService()
+    oversized = "x" * (settings.MAX_DOCUMENT_CONTENT_LENGTH + 1)
+
+    with pytest.raises(ValidationError, match="size|limit"):
+        service.upload_document(
+            filename="oversized.txt",
+            file_type="txt",
+            content=oversized,
+        )
 
 
 def test_upload_document_stores_document_and_chunks(file_db, monkeypatch):

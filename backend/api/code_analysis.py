@@ -15,7 +15,6 @@ from core.rate_limit import enforce_request_rate_limit
 router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 service = get_code_analysis_service()
 assistant_service = CodeAssistantService()
-git_service = GitService()
 approval_service = get_approval_service()
 
 
@@ -61,7 +60,7 @@ def delete_workspace_file(request: FileDeleteRequest, membership=Depends(require
     try:
         if request.confirm:
             require_approval(request.approval_id, "delete_file", request.path, membership)
-        return service.delete_file(request.path, request.confirm)
+        return service.with_workspace(membership.workspace_id).delete_file(request.path, request.confirm)
     except ValidationError:
         raise
     except Exception as exc:
@@ -75,7 +74,7 @@ def write_workspace_file(request: FileWriteRequest, membership=Depends(require_w
     try:
         if request.confirm:
             require_approval(request.approval_id, "write_file", request.path, membership)
-        return service.write_file(request.path, request.content, request.confirm)
+        return service.with_workspace(membership.workspace_id).write_file(request.path, request.content, request.confirm)
     except ValidationError:
         raise
     except Exception as exc:
@@ -87,7 +86,7 @@ def write_workspace_file(request: FileWriteRequest, membership=Depends(require_w
 def read_workspace_file(request: CodeAnalysisRequest, membership=Depends(require_workspace_tools)):
     """Read a UTF-8 text file inside the workspace without modifying it."""
     try:
-        return service.read_file(request.path)
+        return service.with_workspace(membership.workspace_id).read_file(request.path)
     except ValidationError:
         raise
     except Exception as exc:
@@ -99,7 +98,7 @@ def read_workspace_file(request: CodeAnalysisRequest, membership=Depends(require
 def analyze_code(request: CodeAnalysisRequest, membership=Depends(require_workspace_tools)):
     """Analyze a workspace source file without changing it."""
     try:
-        return service.analyze_file(request.path)
+        return service.with_workspace(membership.workspace_id).analyze_file(request.path)
     except ValidationError:
         raise
     except Exception as exc:
@@ -135,7 +134,7 @@ def generate_code(request: CodeAssistantRequest, membership=Depends(require_work
 def git_status(membership=Depends(require_workspace_tools)):
     """Return the current branch and changed workspace files."""
     try:
-        return git_service.status()
+        return GitService(workspace_id=membership.workspace_id).status()
     except Exception as exc:
         logger.error("Git status failed")
         raise ChatServiceError("Failed to read Git status") from exc
@@ -145,7 +144,7 @@ def git_status(membership=Depends(require_workspace_tools)):
 def git_diff(path: str | None = None, membership=Depends(require_workspace_tools)):
     """Return the working-tree diff, optionally limited to one workspace path."""
     try:
-        return git_service.diff(path)
+        return GitService(workspace_id=membership.workspace_id).diff(path)
     except ValidationError:
         raise
     except Exception as exc:
@@ -159,7 +158,7 @@ def git_stage(request: GitStageRequest, membership=Depends(require_workspace_rol
     try:
         if request.confirm:
             require_approval(request.approval_id, "git_stage", "\n".join(request.paths), membership)
-        return git_service.stage(request.paths, request.confirm)
+        return GitService(workspace_id=membership.workspace_id).stage(request.paths, request.confirm)
     except ValidationError:
         raise
     except Exception as exc:
@@ -173,7 +172,7 @@ def git_commit(request: GitCommitRequest, membership=Depends(require_workspace_r
     try:
         if request.confirm:
             require_approval(request.approval_id, "git_commit", request.message.strip(), membership)
-        return git_service.commit(request.message, request.confirm)
+        return GitService(workspace_id=membership.workspace_id).commit(request.message, request.confirm)
     except ValidationError:
         raise
     except Exception as exc:

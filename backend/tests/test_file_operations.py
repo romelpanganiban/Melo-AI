@@ -4,6 +4,7 @@ import pytest
 
 from core.errors import ValidationError
 from core.settings import settings
+from core.workspace_fs import WorkspaceFilesystem
 from services.code_analysis_service import CodeAnalysisService
 
 
@@ -54,3 +55,20 @@ def test_delete_file_requires_confirmation_and_removes_file(tmp_path, monkeypatc
 
     assert result == {"path": "delete-me.py", "deleted": True}
     assert not target.exists()
+
+
+def test_workspace_filesystem_isolates_workspaces(tmp_path):
+    root = tmp_path / "workspaces"
+    ws_a = WorkspaceFilesystem("workspace-a", base_root=root)
+    ws_b = WorkspaceFilesystem("workspace-b", base_root=root)
+
+    ws_a.write_file("notes.py", "print('A')\n")
+    assert (root / "workspace-a" / "notes.py").read_text(encoding="utf-8") == "print('A')\n"
+
+    with pytest.raises(ValueError):
+        ws_a.resolve_safe_path("../workspace-b/secret.txt")
+
+    with pytest.raises(ValueError):
+        ws_b.resolve_safe_path("../../etc/passwd")
+
+    assert ws_b.read_file("notes.py") is None

@@ -40,6 +40,8 @@ class Settings:
     RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
     RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "60"))
     RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+    RATE_LIMIT_BACKEND: str = os.getenv("RATE_LIMIT_BACKEND", "memory").strip().lower()
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     AUTH_RATE_LIMIT_REQUESTS: int = int(os.getenv("AUTH_RATE_LIMIT_REQUESTS", "10"))
     AUTH_RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("AUTH_RATE_LIMIT_WINDOW_SECONDS", "300"))
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "").strip().lower()

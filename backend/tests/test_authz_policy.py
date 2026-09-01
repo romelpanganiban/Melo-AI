@@ -205,6 +205,29 @@ def test_workspace_write_access_editor_allowed(
     assert decision.status_code == 200
 
 
+def test_workspace_role_gate_allows_only_selected_roles(
+    policy: AuthorizationPolicy,
+    user_a: User,
+    user_b: User,
+    workspace_a: Workspace,
+    membership_a_owner,
+    membership_a_editor,
+):
+    """Role checks should be centralized through the policy engine and fail closed."""
+    owner_decision = policy.authorize_workspace_role(user_a.id, workspace_a.id, {"owner"})
+    assert owner_decision.allowed is True
+    assert owner_decision.status_code == 200
+
+    editor_decision = policy.authorize_workspace_role(user_b.id, workspace_a.id, {"owner"})
+    assert editor_decision.allowed is False
+    assert editor_decision.status_code == 403
+    assert "owner" in editor_decision.reason.lower()
+
+    allowed_decision = policy.authorize_workspace_role(user_b.id, workspace_a.id, {"owner", "editor"})
+    assert allowed_decision.allowed is True
+    assert allowed_decision.status_code == 200
+
+
 def test_workspace_write_access_viewer_denied(
     policy: AuthorizationPolicy,
     user_b: User,

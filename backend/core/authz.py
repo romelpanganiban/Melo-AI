@@ -145,6 +145,62 @@ class AuthorizationPolicy:
                 reason=f"Authorization check failed: {str(e)}",
             )
 
+    def authorize_workspace_role(
+        self,
+        user_id: str,
+        workspace_id: str,
+        allowed_roles: set[str] | set[WorkspaceRole] | None = None,
+    ) -> AuthzDecision:
+        """Check whether the user has one of the allowed workspace roles."""
+        read_decision = self.authorize_workspace_read(user_id, workspace_id)
+        if not read_decision.allowed:
+            return read_decision
+
+        try:
+            membership = self.db.query(WorkspaceMember).filter(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.workspace_id == workspace_id,
+            ).first()
+
+            if membership is None:
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"User {user_id} is not a member of workspace {workspace_id}",
+                )
+
+            normalized_role = (membership.role or "").lower()
+            if allowed_roles is None:
+                return AuthzDecision(
+                    allowed=True,
+                    status_code=200,
+                    reason=f"User {user_id} has workspace role '{membership.role}'",
+                )
+
+            allowed_values = {
+                role.lower() if isinstance(role, str) else role.value.lower()
+                for role in allowed_roles
+            }
+            if normalized_role not in allowed_values:
+                required = ", ".join(sorted(allowed_values))
+                return AuthzDecision(
+                    allowed=False,
+                    status_code=403,
+                    reason=f"User role '{membership.role}' is not allowed; requires one of: {required}",
+                )
+
+            return AuthzDecision(
+                allowed=True,
+                status_code=200,
+                reason=f"User {user_id} has role '{membership.role}' and is allowed",
+            )
+        except Exception as e:
+            return AuthzDecision(
+                allowed=False,
+                status_code=500,
+                reason=f"Authorization check failed: {str(e)}",
+            )
+
     def authorize_workspace_write(self, user_id: str, workspace_id: str) -> AuthzDecision:
         """
         Check if user can write to the workspace (must be owner or editor).
@@ -156,35 +212,7 @@ class AuthorizationPolicy:
         Returns:
             AuthzDecision with allow/deny and reason
         """
-        read_decision = self.authorize_workspace_read(user_id, workspace_id)
-        if not read_decision.allowed:
-            return read_decision
-
-        try:
-            membership = self.db.query(WorkspaceMember).filter(
-                WorkspaceMember.user_id == user_id,
-                WorkspaceMember.workspace_id == workspace_id,
-            ).first()
-
-            allowed_roles = {"owner", "admin", "editor"}
-            if membership.role.lower() not in allowed_roles:
-                return AuthzDecision(
-                    allowed=False,
-                    status_code=403,
-                    reason=f"User role '{membership.role}' cannot write to workspace",
-                )
-
-            return AuthzDecision(
-                allowed=True,
-                status_code=200,
-                reason=f"User {user_id} can write (role: {membership.role})",
-            )
-        except Exception as e:
-            return AuthzDecision(
-                allowed=False,
-                status_code=500,
-                reason=f"Authorization check failed: {str(e)}",
-            )
+        return self.authorize_workspace_role(user_id, workspace_id, {"owner", "admin", "editor"})
 
     def authorize_workspace_admin(self, user_id: str, workspace_id: str) -> AuthzDecision:
         """
@@ -197,34 +225,14 @@ class AuthorizationPolicy:
         Returns:
             AuthzDecision with allow/deny and reason
         """
-        read_decision = self.authorize_workspace_read(user_id, workspace_id)
-        if not read_decision.allowed:
-            return read_decision
-
-        try:
-            membership = self.db.query(WorkspaceMember).filter(
-                WorkspaceMember.user_id == user_id,
-                WorkspaceMember.workspace_id == workspace_id,
-            ).first()
-
-            if membership.role.lower() not in {"owner", "admin"}:
-                return AuthzDecision(
-                    allowed=False,
-                    status_code=403,
-                    reason=f"Only workspace owners can perform admin operations",
-                )
-
-            return AuthzDecision(
-                allowed=True,
-                status_code=200,
-                reason=f"User {user_id} is workspace owner",
-            )
-        except Exception as e:
+        decision = self.authorize_workspace_role(user_id, workspace_id, {"owner", "admin"})
+        if not decision.allowed:
             return AuthzDecision(
                 allowed=False,
-                status_code=500,
-                reason=f"Authorization check failed: {str(e)}",
+                status_code=403,
+                reason="Only workspace owners can perform admin operations",
             )
+        return decision
 
     # ============================================================================
     # Document Access
