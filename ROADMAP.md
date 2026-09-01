@@ -222,20 +222,40 @@ Hosted Melo-AI Platform
 
 ## Phase 14 - Production Security Hardening
 
-Status: Required before shared or internet-facing deployment
+Status: In Progress (Phase 14a Complete)
 
-### Critical / must implement first
+### Phase 14a - Central Authorization Middleware ✅ (Commit: f2ec20b)
 
-- [ ] Central authorization middleware for all authenticated endpoints and tool actions
-- [ ] Workspace membership enforcement on every read/write/delete/query by workspace
-- [ ] Document ownership enforcement for document retrieval, updates, and deletion
-- [ ] Qdrant tenant isolation with workspace-scoped filters and private vector indexes
-- [ ] Path traversal protection for file access, uploads, and workspace operations
-- [ ] Workspace filesystem sandbox with per-workspace root isolation and deny-by-default access
-- [ ] Agent capability allowlist restricting available tools, resources, and side effects
-- [ ] Action-bound approvals for all mutating agent operations and Git/file changes
-- [ ] Secret isolation so agents and tool execution never receive raw credentials or production secrets
-- [ ] Git safety policy with repo-bound operations, branch restrictions, and diff review checks
+Completed:
+- [x] AuthorizationPolicy engine (core/authz.py) with centralized decision logic
+- [x] WorkspaceContext and require_workspace_access middleware (core/auth.py)
+- [x] Comprehensive test suite (28 tests) for policy validation
+- [x] Workspace membership enforcement (read/write/admin)
+- [x] Document ownership and sharing policy
+- [x] Tool capability role-gating (owner/editor/viewer/guest)
+- [x] Approval token binding validation
+- [x] Database-backed authorization checks
+
+Deliverables:
+- backend/core/authz.py (~550 lines): Centralized authorization policy
+- backend/core/auth.py (enhanced): Middleware for workspace-scoped requests
+- backend/tests/test_authz_policy.py (~650 lines): Full test coverage
+- Documentation: SECURITY_ARCHITECTURE_IMPLEMENTATION.md (6-phase hardening roadmap)
+
+Next: Retrofit existing endpoints (api/chat.py, api/sessions.py, api/documents.py, etc.) to use require_workspace_access middleware.
+
+### Critical / must implement next
+
+- [x] Central authorization middleware for all authenticated endpoints and tool actions
+- [-] Workspace membership enforcement on every read/write/delete/query by workspace (core engine ready, route retrofit pending)
+- [ ] Document ownership enforcement for document retrieval, updates, and deletion (Phase 14b)
+- [ ] Qdrant tenant isolation with workspace-scoped filters and private vector indexes (Phase 14b)
+- [ ] Path traversal protection for file access, uploads, and workspace operations (Phase 14c)
+- [ ] Workspace filesystem sandbox with per-workspace root isolation and deny-by-default access (Phase 14c)
+- [ ] Agent capability allowlist restricting available tools, resources, and side effects (Phase 14d)
+- [ ] Action-bound approvals for all mutating agent operations and Git/file changes (Phase 14d)
+- [ ] Secret isolation so agents and tool execution never receive raw credentials or production secrets (Phase 14e)
+- [ ] Git safety policy with repo-bound operations, branch restrictions, and diff review checks (Phase 14c)
 
 ### High priority hardening
 
