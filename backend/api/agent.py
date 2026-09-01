@@ -2,7 +2,7 @@
 
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from core.errors import ChatServiceError, ValidationError
@@ -10,7 +10,7 @@ from core.validation import validate_uuid
 from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
 from services.approval_service import get_approval_service
-from core.auth import get_current_membership, require_workspace_role, require_workspace_tools
+from core.auth import require_workspace_access_from_header, WorkspaceContext
 from core.rate_limit import enforce_request_rate_limit
 
 router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
@@ -37,13 +37,22 @@ class ApprovalRequest(BaseModel):
 
 
 @router.post("/agent/approvals", status_code=status.HTTP_201_CREATED)
-def create_approval(request: ApprovalRequest, membership=Depends(require_workspace_role("owner", "admin"))):
+def create_approval(
+    request: ApprovalRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     """Issue a short-lived approval token for a specific side-effecting action."""
-    return approval_service.create(request.action, request.target, owner_id=membership.user_id, workspace_id=membership.workspace_id)
+    # Only owners and admins can create approval tokens
+    if workspace_ctx.role.name not in ("OWNER", "ADMIN"):
+        raise HTTPException(status_code=403, detail="Insufficient workspace role")
+    return approval_service.create(request.action, request.target, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
 
 
 @router.post("/agent/run", status_code=status.HTTP_200_OK)
-def run_read_only_agent(request: AgentRunRequest, membership=Depends(require_workspace_tools)):
+def run_read_only_agent(
+    request: AgentRunRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     """Execute bounded read-only actions; side-effecting actions are unsupported."""
     results = []
     try:
@@ -66,8 +75,8 @@ def run_read_only_agent(request: AgentRunRequest, membership=Depends(require_wor
                         action.query,
                         session_id,
                         action.collection_id,
-                        owner_id=membership.user_id,
-                        workspace_id=membership.workspace_id,
+                        owner_id=workspace_ctx.user.id,
+                        workspace_id=workspace_ctx.workspace_id,
                     ),
                 })
         return {"results": results, "executed": len(results), "side_effects": False}

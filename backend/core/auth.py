@@ -132,6 +132,75 @@ def require_workspace_access(workspace_id: str):
     return _require_workspace_access
 
 
+def require_workspace_access_from_header():
+    """
+    Dependency factory for workspace authorization using X-Workspace-ID header.
+    
+    This middleware enforces that:
+    1. User is authenticated
+    2. X-Workspace-ID header is provided
+    3. User is a member of the specified workspace
+    4. Membership and role are validated via AuthorizationPolicy
+    
+    Usage:
+        @router.get("/sessions")
+        async def list_sessions(
+            workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+        ):
+            # workspace_ctx.user is authenticated and authorized
+            # workspace_ctx.workspace_id from X-Workspace-ID header (validated)
+            # workspace_ctx.role is user's role in the workspace
+            pass
+    
+    Returns:
+        Dependency function that returns WorkspaceContext
+    """
+    async def _require_workspace_access_from_header(
+        current_user: User = Depends(get_current_user),
+        workspace_id: str | None = Header(default=None, alias="X-Workspace-ID"),
+        db: Session = Depends(get_db),
+    ) -> WorkspaceContext:
+        if not workspace_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="X-Workspace-ID header is required"
+            )
+        
+        policy = AuthorizationPolicy(db)
+        decision = policy.authorize_workspace_read(current_user.id, workspace_id)
+        
+        if not decision.allowed:
+            raise HTTPException(status_code=decision.status_code, detail=decision.reason)
+        
+        membership = db.query(WorkspaceMember).filter(
+            WorkspaceMember.user_id == current_user.id,
+            WorkspaceMember.workspace_id == workspace_id,
+        ).first()
+        
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Workspace membership not found"
+            )
+        
+        try:
+            role = WorkspaceRole[membership.role.upper()]
+        except KeyError:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Unknown workspace role: {membership.role}"
+            )
+        
+        return WorkspaceContext(
+            user=current_user,
+            workspace_id=workspace_id,
+            role=role,
+            membership=membership,
+        )
+    
+    return _require_workspace_access_from_header
+
+
 def require_workspace_role(*allowed_roles: str):
     def dependency(membership: WorkspaceMember = Depends(get_current_membership)) -> WorkspaceMember:
         if not settings.ENABLE_WORKSPACE_TOOLS:
@@ -156,9 +225,3 @@ def require_workspace_role(*allowed_roles: str):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient workspace role")
         return membership
     return dependency
-
-
-def require_workspace_tools(membership: WorkspaceMember = Depends(get_current_membership)) -> WorkspaceMember:
-    if not settings.ENABLE_WORKSPACE_TOOLS:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace tools are disabled")
-    return membership

@@ -18,7 +18,7 @@ from core.validation import validate_message, validate_uuid
 from core.logging import logger
 from core.settings import settings
 from database.connection import get_db
-from core.auth import get_current_membership
+from core.auth import require_workspace_access_from_header, WorkspaceContext
 from core.rate_limit import enforce_request_rate_limit
 from services.usage_service import enforce_credit_limit
 
@@ -73,12 +73,15 @@ def markdown_to_pdf_markup(line: str) -> tuple[str, str]:
     return markup, "bullet" if stripped.startswith("• ") else "body"
 
 
-def enforce_chat_credits(db: Session = Depends(get_db), membership=Depends(get_current_membership)):
-    enforce_credit_limit(db, membership.user, membership.workspace_id)
+def enforce_chat_credits(db: Session = Depends(get_db), workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header())):
+    enforce_credit_limit(db, workspace_ctx.user, workspace_ctx.workspace_id)
 
 
 @router.post("/chat/export/pdf", status_code=status.HTTP_200_OK)
-def export_response_pdf(request: PdfExportRequest, membership=Depends(get_current_membership)):
+def export_response_pdf(
+    request: PdfExportRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     """Render an assistant response as a downloadable PDF."""
     filename = request.filename.replace("/", "_").replace("\\", "_")
     if not filename.lower().endswith(".pdf"):
@@ -115,7 +118,13 @@ def export_response_pdf(request: PdfExportRequest, membership=Depends(get_curren
 
 
 @router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit), __: None = Depends(enforce_chat_credits)):
+def chat(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+    __: None = Depends(enforce_chat_credits),
+):
     """Process a chat message for a session
     
     Args:
@@ -141,13 +150,14 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends
             f"Processing chat message",
             extra={
                 "session_id": session_id,
-                "message_length": len(message)
+                "message_length": len(message),
+                "workspace_id": workspace_ctx.workspace_id,
             }
         )
         
         # Process message with injected database session
-        service = ChatService(workspace_id=membership.workspace_id)
-        result = service.process_message(session_id, message, db, mode=request.mode, owner_id=membership.user_id, workspace_id=membership.workspace_id, collection_id=collection_id, document_id=document_id)
+        service = ChatService(workspace_id=workspace_ctx.workspace_id)
+        result = service.process_message(session_id, message, db, mode=request.mode, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id, collection_id=collection_id, document_id=document_id)
         
         return result
         
@@ -164,7 +174,13 @@ def chat(request: ChatRequest, db: Session = Depends(get_db), membership=Depends
 
 
 @router.post("/chat/stream", status_code=status.HTTP_200_OK)
-def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit), __: None = Depends(enforce_chat_credits)):
+def chat_stream(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+    __: None = Depends(enforce_chat_credits),
+):
     """Process a chat message and stream assistant response chunks.
 
     Response format is newline-delimited JSON (NDJSON) with events:
@@ -182,12 +198,13 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=
             "Processing streaming chat message",
             extra={
                 "session_id": session_id,
-                "message_length": len(message)
+                "message_length": len(message),
+                "workspace_id": workspace_ctx.workspace_id,
             }
         )
 
-        service = ChatService(workspace_id=membership.workspace_id)
-        stream = service.process_message_stream(session_id, message, db, mode=request.mode, owner_id=membership.user_id, workspace_id=membership.workspace_id, collection_id=collection_id, document_id=document_id)
+        service = ChatService(workspace_id=workspace_ctx.workspace_id)
+        stream = service.process_message_stream(session_id, message, db, mode=request.mode, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id, collection_id=collection_id, document_id=document_id)
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     except ValidationError:
@@ -203,7 +220,12 @@ def chat_stream(request: ChatRequest, db: Session = Depends(get_db), membership=
 
 
 @router.get("/history/{session_id}", status_code=status.HTTP_200_OK)
-def history(session_id: str, db: Session = Depends(get_db), membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def history(
+    session_id: str,
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Get chat history for a session
     
     Args:
@@ -223,11 +245,11 @@ def history(session_id: str, db: Session = Depends(get_db), membership=Depends(g
         
         logger.info(
             f"Retrieving chat history",
-            extra={"session_id": session_id}
+            extra={"session_id": session_id, "workspace_id": workspace_ctx.workspace_id}
         )
         
         service = ChatService()
-        history = service.get_history(session_id, db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
+        history = service.get_history(session_id, db, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
         
         return {
             "session_id": session_id,

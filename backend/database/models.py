@@ -1,6 +1,6 @@
 """Database models for Melo-AI"""
 
-from sqlalchemy import Column, String, DateTime, Text, Integer, Float, ForeignKey, Index
+from sqlalchemy import Column, String, DateTime, Text, Integer, Float, ForeignKey, Index, Boolean
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime, timezone
 import uuid
@@ -156,6 +156,7 @@ class Document(Base):
     file_type = Column(String(20), nullable=False)  # "pdf", "docx", "txt"
     content = Column(Text, nullable=False)
     chunk_count = Column(Integer, default=0, nullable=False)
+    is_shared = Column(Boolean, default=False, nullable=False, index=True)  # Document sharing policy: owner always has access, non-owners only if is_shared=True
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     

@@ -10,7 +10,7 @@ from services.document_parser import get_document_parser
 from core.errors import ChatServiceError, DocumentNotFoundError, ValidationError
 from core.validation import validate_uuid
 from core.logging import logger
-from core.auth import get_current_membership
+from core.auth import require_workspace_access_from_header, WorkspaceContext
 from core.rate_limit import enforce_request_rate_limit
 
 router = APIRouter()
@@ -63,19 +63,26 @@ class CollectionRequest(BaseModel):
 
 
 @router.get("/collections", status_code=status.HTTP_200_OK)
-def get_collections(membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def get_collections(
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """List named private knowledge collections."""
-    return {"collections": service.get_collections(workspace_id=membership.workspace_id)}
+    return {"collections": service.get_collections(workspace_id=workspace_ctx.workspace_id)}
 
 
 @router.post("/collections", status_code=status.HTTP_201_CREATED)
-def create_collection(request: CollectionRequest, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def create_collection(
+    request: CollectionRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Create a named private knowledge collection."""
     return service.create_collection(
         request.name,
         request.description,
-        owner_id=membership.user_id,
-        workspace_id=membership.workspace_id,
+        owner_id=workspace_ctx.user.id,
+        workspace_id=workspace_ctx.workspace_id,
     )
 
 
@@ -84,7 +91,7 @@ def upload_document_file(
     file: UploadFile = File(...),
     session_id: Optional[str] = Form(None),
     collection_id: Optional[str] = Form(None),
-    membership=Depends(get_current_membership),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
     _: None = Depends(enforce_request_rate_limit),
 ):
     """Extract and store a TXT, PDF, or DOCX upload."""
@@ -105,8 +112,8 @@ def upload_document_file(
             content=content,
             session_id=session_id,
             collection_id=collection_id,
-            owner_id=membership.user_id,
-            workspace_id=membership.workspace_id,
+            owner_id=workspace_ctx.user.id,
+            workspace_id=workspace_ctx.workspace_id,
         )
     except ValidationError:
         raise
@@ -118,7 +125,11 @@ def upload_document_file(
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-def upload_document(request: UploadDocumentRequest, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def upload_document(
+    request: UploadDocumentRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Upload a new document
     
     Args:
@@ -143,7 +154,8 @@ def upload_document(request: UploadDocumentRequest, membership=Depends(get_curre
             extra={
                 "doc_filename": request.filename,
                 "file_type": request.file_type,
-                "session_id": request.session_id
+                "session_id": request.session_id,
+                "workspace_id": workspace_ctx.workspace_id,
             }
         )
         
@@ -153,8 +165,8 @@ def upload_document(request: UploadDocumentRequest, membership=Depends(get_curre
             content=request.content,
             session_id=request.session_id,
             collection_id=request.collection_id,
-            owner_id=membership.user_id,
-            workspace_id=membership.workspace_id,
+            owner_id=workspace_ctx.user.id,
+            workspace_id=workspace_ctx.workspace_id,
         )
         
         return document
@@ -178,7 +190,11 @@ def upload_document(request: UploadDocumentRequest, membership=Depends(get_curre
 
 
 @router.get("/documents/{document_id}", response_model=DocumentDetailResponse, status_code=status.HTTP_200_OK)
-def get_document(document_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def get_document(
+    document_id: str,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Get document details including content
     
     Args:
@@ -197,10 +213,10 @@ def get_document(document_id: str, membership=Depends(get_current_membership), _
         
         logger.info(
             f"Retrieving document",
-            extra={"doc_id": document_id}
+            extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
         )
         
-        document = service.get_document(document_id, workspace_id=membership.workspace_id)
+        document = service.get_document(document_id, workspace_id=workspace_ctx.workspace_id)
         return document
         
     except ValidationError:
@@ -216,7 +232,11 @@ def get_document(document_id: str, membership=Depends(get_current_membership), _
 
 
 @router.get("/sessions/{session_id}/documents", status_code=status.HTTP_200_OK)
-def get_session_documents(session_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def get_session_documents(
+    session_id: str,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Get all documents for a session
     
     Args:
@@ -235,10 +255,10 @@ def get_session_documents(session_id: str, membership=Depends(get_current_member
         
         logger.info(
             f"Retrieving session documents",
-            extra={"session_id": session_id}
+            extra={"session_id": session_id, "workspace_id": workspace_ctx.workspace_id}
         )
         
-        documents = service.get_session_documents(session_id, workspace_id=membership.workspace_id)
+        documents = service.get_session_documents(session_id, workspace_id=workspace_ctx.workspace_id)
         
         return {
             "session_id": session_id,
@@ -257,7 +277,11 @@ def get_session_documents(session_id: str, membership=Depends(get_current_member
 
 
 @router.get("/documents/{document_id}/chunks", status_code=status.HTTP_200_OK)
-def get_document_chunks(document_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def get_document_chunks(
+    document_id: str,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Get stored chunks for a document.
 
     This works offline with the current text-based chunking pipeline.
@@ -267,10 +291,10 @@ def get_document_chunks(document_id: str, membership=Depends(get_current_members
 
         logger.info(
             "Retrieving document chunks",
-            extra={"doc_id": document_id}
+            extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
         )
 
-        chunks = service.get_document_chunks(document_id, workspace_id=membership.workspace_id)
+        chunks = service.get_document_chunks(document_id, workspace_id=workspace_ctx.workspace_id)
 
         return {
             "document_id": document_id,
@@ -291,12 +315,16 @@ def get_document_chunks(document_id: str, membership=Depends(get_current_members
 
 
 @router.post("/documents/search", status_code=status.HTTP_200_OK)
-def search_documents(request: DocumentSearchRequest, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def search_documents(
+    request: DocumentSearchRequest,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Search indexed documents in a session without asking the language model."""
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")
         collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
-        return service.search_documents(request.query, session_id, collection_id, request.top_k, workspace_id=membership.workspace_id)
+        return service.search_documents(request.query, session_id, collection_id, request.top_k, workspace_id=workspace_ctx.workspace_id)
     except ValidationError:
         raise
     except Exception as e:
@@ -305,7 +333,11 @@ def search_documents(request: DocumentSearchRequest, membership=Depends(get_curr
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(document_id: str, membership=Depends(get_current_membership), _: None = Depends(enforce_request_rate_limit)):
+def delete_document(
+    document_id: str,
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    _: None = Depends(enforce_request_rate_limit),
+):
     """Delete a document
     
     Args:
@@ -321,10 +353,10 @@ def delete_document(document_id: str, membership=Depends(get_current_membership)
         
         logger.info(
             f"Deleting document",
-            extra={"doc_id": document_id}
+            extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
         )
         
-        service.delete_document(document_id, workspace_id=membership.workspace_id)
+        service.delete_document(document_id, workspace_id=workspace_ctx.workspace_id)
         
     except ValidationError:
         raise

@@ -186,9 +186,77 @@ def get_session(session_id: str, workspace_id: str) -> Session:
 
 ---
 
+### Task 1a.5: Route Retrofitting (Final Completion)
+
+**Objective**: Apply the authorization middleware to all existing API endpoints
+
+**Implementation**:
+
+1. **Middleware Addition** - `backend/core/auth.py` (enhanced)
+   - Added `require_workspace_access_from_header()` - header-based workspace context factory
+   - Works with existing X-Workspace-ID header pattern
+   - Returns `WorkspaceContext` with validated user, workspace, role, membership
+
+2. **API Endpoint Retrofitting**:
+   
+   - `backend/api/session.py` ✅
+     - POST /sessions (create)
+     - GET /sessions (list)
+     - PUT /sessions/{session_id} (rename)
+     - DELETE /sessions/{session_id} (delete)
+   
+   - `backend/api/chat.py` ✅
+     - POST /chat/export/pdf
+     - POST /chat
+     - POST /chat/stream
+     - GET /history/{session_id}
+   
+   - `backend/api/document.py` ✅
+     - GET /collections
+     - POST /collections
+     - POST /documents/upload
+     - POST /documents
+     - GET /documents/{document_id}
+     - GET /sessions/{session_id}/documents
+     - GET /documents/{document_id}/chunks
+     - POST /documents/search
+     - DELETE /documents/{document_id}
+   
+   - `backend/api/study.py` ✅
+     - GET /study/progress/{session_id}
+     - PUT /study/progress/{session_id}
+   
+   - `backend/api/agent.py` ✅
+     - POST /agent/approvals
+     - POST /agent/run
+
+3. **Pattern Applied**:
+   ```python
+   # Before (per-endpoint membership extraction)
+   def endpoint(..., membership=Depends(get_current_membership)):
+       workspace_id = membership.workspace_id
+       user_id = membership.user_id
+   
+   # After (centralized authorization)
+   def endpoint(..., workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header())):
+       workspace_id = workspace_ctx.workspace_id
+       user_id = workspace_ctx.user.id
+       role = workspace_ctx.role  # Available for policy checks
+   ```
+
+**Acceptance Criteria** ✅:
+- All 28 authorization policy tests passing
+- All modified API modules import successfully
+- No syntax errors in any modified files
+- All endpoints use centralized WorkspaceContext
+- All endpoints enforce X-Workspace-ID header validation
+- Database queries consistently use workspace_id from WorkspaceContext
+
+---
+
 ### Testing for Phase 14a
 
-**Test File**: `backend/tests/test_authz_middleware.py`
+**Test File**: `backend/tests/test_authz_policy.py`
 
 ```python
 def test_user_cannot_access_other_workspace():
@@ -204,6 +272,14 @@ def test_user_can_access_owned_workspace():
 def test_workspace_membership_enforced_on_all_routes():
     # For each route, test cross-workspace denial
     # Expected: all return 403 for non-members
+```
+
+**Validation Results**:
+```
+✅ 28/28 tests passing
+✅ All API modules import successfully
+✅ No syntax errors detected
+✅ Authorization middleware active on all workspace-scoped endpoints
 ```
 
 ---

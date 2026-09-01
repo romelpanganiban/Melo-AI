@@ -7,7 +7,7 @@ from core.errors import ValidationError, SessionNotFoundError
 from core.validation import validate_uuid, validate_session_title
 from core.logging import logger
 from database.connection import get_db
-from core.auth import get_current_membership
+from core.auth import require_workspace_access_from_header, WorkspaceContext
 from core.rate_limit import enforce_request_rate_limit
 
 router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
@@ -23,16 +23,19 @@ class SessionResponse(BaseModel):
 
 
 @router.post("/sessions", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
-def create_session(db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def create_session(
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     """Create a new chat session
     
     Returns:
         SessionResponse with session id and title
     """
     try:
-        logger.info("Creating new session")
+        logger.info("Creating new session", extra={"workspace_id": workspace_ctx.workspace_id})
         service = SessionService()
-        session = service.create_session(db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
+        session = service.create_session(db, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
         return session
         
     except Exception as e:
@@ -41,16 +44,19 @@ def create_session(db: Session = Depends(get_db), membership=Depends(get_current
 
 
 @router.get("/sessions", status_code=status.HTTP_200_OK)
-def get_sessions(db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def get_sessions(
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     """Get all sessions
     
     Returns:
         List of sessions with id and title
     """
     try:
-        logger.info("Retrieving all sessions")
+        logger.info("Retrieving all sessions", extra={"workspace_id": workspace_ctx.workspace_id})
         service = SessionService()
-        sessions = service.get_sessions(db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
+        sessions = service.get_sessions(db, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
         return {
             "sessions": sessions,
             "count": len(sessions)
@@ -66,7 +72,7 @@ def rename_session(
     session_id: str,
     request: RenameSessionRequest,
     db: Session = Depends(get_db),
-    membership=Depends(get_current_membership),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
 ):
     """Rename an existing session
     
@@ -89,11 +95,11 @@ def rename_session(
         
         logger.info(
             f"Renaming session",
-            extra={"session_id": session_id, "new_title": title}
+            extra={"session_id": session_id, "new_title": title, "workspace_id": workspace_ctx.workspace_id}
         )
         
         service = SessionService()
-        session = service.rename_session(session_id, title, db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
+        session = service.rename_session(session_id, title, db, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
         return session
         
     except ValidationError:
@@ -109,7 +115,11 @@ def rename_session(
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_session(session_id: str, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def delete_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     """Delete an existing session
     
     Args:
@@ -126,11 +136,11 @@ def delete_session(session_id: str, db: Session = Depends(get_db), membership=De
         
         logger.info(
             f"Deleting session",
-            extra={"session_id": session_id}
+            extra={"session_id": session_id, "workspace_id": workspace_ctx.workspace_id}
         )
         
         service = SessionService()
-        service.delete_session(session_id, db, owner_id=membership.user_id, workspace_id=membership.workspace_id)
+        service.delete_session(session_id, db, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
         
     except ValidationError:
         raise

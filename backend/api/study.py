@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from core.errors import ValidationError
-from core.auth import get_current_membership
+from core.auth import require_workspace_access_from_header, WorkspaceContext
 from core.validation import validate_uuid
 from database.connection import get_db
 from database.models import KnowledgeCollection, Session as SessionModel, StudyProgress
@@ -36,23 +36,28 @@ def _serialize(progress: StudyProgress) -> dict:
 
 
 @router.get("/study/progress/{session_id}", status_code=status.HTTP_200_OK)
-def get_study_progress(session_id: str, collection_id: Optional[str] = None, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def get_study_progress(
+    session_id: str,
+    collection_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     session_id = validate_uuid(session_id, field_name="session_id")
     session = db.query(SessionModel).filter(
         SessionModel.id == session_id,
-        SessionModel.workspace_id == membership.workspace_id,
+        SessionModel.workspace_id == workspace_ctx.workspace_id,
     ).first()
     if not session:
         raise ValidationError("session was not found", field="session_id")
     query = db.query(StudyProgress).filter(
         StudyProgress.session_id == session_id,
-        StudyProgress.workspace_id == membership.workspace_id,
+        StudyProgress.workspace_id == workspace_ctx.workspace_id,
     )
     if collection_id:
         collection_id = validate_uuid(collection_id, field_name="collection_id")
         collection = db.query(KnowledgeCollection).filter(
             KnowledgeCollection.id == collection_id,
-            KnowledgeCollection.workspace_id == membership.workspace_id,
+            KnowledgeCollection.workspace_id == workspace_ctx.workspace_id,
         ).first()
         if not collection:
             raise ValidationError("collection was not found", field="collection_id")
@@ -61,28 +66,33 @@ def get_study_progress(session_id: str, collection_id: Optional[str] = None, db:
 
 
 @router.put("/study/progress/{session_id}", status_code=status.HTTP_200_OK)
-def save_study_progress(session_id: str, request: StudyProgressRequest, db: Session = Depends(get_db), membership=Depends(get_current_membership)):
+def save_study_progress(
+    session_id: str,
+    request: StudyProgressRequest,
+    db: Session = Depends(get_db),
+    workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+):
     session_id = validate_uuid(session_id, field_name="session_id")
     session = db.query(SessionModel).filter(
         SessionModel.id == session_id,
-        SessionModel.workspace_id == membership.workspace_id,
+        SessionModel.workspace_id == workspace_ctx.workspace_id,
     ).first()
     if not session:
         raise ValidationError("session was not found", field="session_id")
     collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
     if collection_id and not db.query(KnowledgeCollection).filter(
         KnowledgeCollection.id == collection_id,
-        KnowledgeCollection.workspace_id == membership.workspace_id,
+        KnowledgeCollection.workspace_id == workspace_ctx.workspace_id,
     ).first():
         raise ValidationError("collection was not found", field="collection_id")
     progress = db.query(StudyProgress).filter(
         StudyProgress.session_id == session_id,
-        StudyProgress.workspace_id == membership.workspace_id,
+        StudyProgress.workspace_id == workspace_ctx.workspace_id,
         StudyProgress.collection_id == collection_id,
         StudyProgress.topic == request.topic.strip(),
     ).first()
     if not progress:
-        progress = StudyProgress(session_id=session_id, workspace_id=membership.workspace_id, collection_id=collection_id, topic=request.topic.strip())
+        progress = StudyProgress(session_id=session_id, workspace_id=workspace_ctx.workspace_id, collection_id=collection_id, topic=request.topic.strip())
         db.add(progress)
     progress.completed_cards = request.completed_cards
     progress.quiz_score = request.quiz_score

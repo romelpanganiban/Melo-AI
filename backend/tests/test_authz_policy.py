@@ -209,7 +209,7 @@ def test_workspace_write_access_viewer_denied(
     policy: AuthorizationPolicy,
     user_b: User,
     workspace_a: Workspace,
-    db: Session,
+    test_db: Session,
 ):
     """User with viewer role cannot write."""
     member = WorkspaceMember(
@@ -217,8 +217,8 @@ def test_workspace_write_access_viewer_denied(
         workspace_id=workspace_a.id,
         role="viewer",
     )
-    db.add(member)
-    db.commit()
+    test_db.add(member)
+    test_db.commit()
     
     decision = policy.authorize_workspace_write(user_b.id, workspace_a.id)
     assert not decision.allowed
@@ -276,18 +276,21 @@ def test_document_read_access_owner_allowed(
     user_a: User,
     workspace_a: Workspace,
     membership_a_owner,
-    db: Session,
+    test_db: Session,
 ):
     """Document owner can read their document."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_read(user_a.id, doc.id, workspace_a.id)
     assert decision.allowed
@@ -301,18 +304,21 @@ def test_document_read_access_non_owner_private_denied(
     workspace_a: Workspace,
     membership_a_owner,
     membership_a_editor,
-    db: Session,
+    test_db: Session,
 ):
     """Non-owner cannot read private document."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_read(user_b.id, doc.id, workspace_a.id)
     assert not decision.allowed
@@ -327,18 +333,21 @@ def test_document_read_access_non_owner_shared_allowed(
     workspace_a: Workspace,
     membership_a_owner,
     membership_a_editor,
-    db: Session,
+    test_db: Session,
 ):
     """Non-owner can read shared document."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=True,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_read(user_b.id, doc.id, workspace_a.id)
     assert decision.allowed
@@ -352,18 +361,21 @@ def test_document_read_access_wrong_workspace_denied(
     workspace_b: Workspace,
     membership_a_owner,
     membership_b_owner,
-    db: Session,
+    test_db: Session,
 ):
     """Cannot read document from different workspace."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_read(user_a.id, doc.id, workspace_b.id)
     assert not decision.allowed
@@ -380,18 +392,21 @@ def test_document_write_access_owner_allowed(
     user_a: User,
     workspace_a: Workspace,
     membership_a_owner,
-    db: Session,
+    test_db: Session,
 ):
     """Document owner can write to their document."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_write(user_a.id, doc.id, workspace_a.id)
     assert decision.allowed
@@ -405,18 +420,21 @@ def test_document_write_access_non_owner_denied(
     workspace_a: Workspace,
     membership_a_owner,
     membership_a_editor,
-    db: Session,
+    test_db: Session,
 ):
     """Non-owner cannot write to document."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=True,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_write(user_b.id, doc.id, workspace_a.id)
     assert not decision.allowed
@@ -428,7 +446,7 @@ def test_document_write_access_viewer_denied(
     user_a: User,
     user_b: User,
     workspace_a: Workspace,
-    db: Session,
+    test_db: Session,
 ):
     """Viewer cannot write even if they are owner."""
     member = WorkspaceMember(
@@ -436,18 +454,21 @@ def test_document_write_access_viewer_denied(
         workspace_id=workspace_a.id,
         role="viewer",
     )
-    db.add(member)
-    db.commit()
+    test_db.add(member)
+    test_db.commit()
     
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_b.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_write(user_b.id, doc.id, workspace_a.id)
     assert not decision.allowed
@@ -464,18 +485,21 @@ def test_document_delete_access_owner_allowed(
     user_a: User,
     workspace_a: Workspace,
     membership_a_owner,
-    db: Session,
+    test_db: Session,
 ):
     """Workspace owner who owns document can delete it."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_delete(user_a.id, doc.id, workspace_a.id)
     assert decision.allowed
@@ -489,18 +513,21 @@ def test_document_delete_access_non_owner_denied(
     workspace_a: Workspace,
     membership_a_owner,
     membership_a_editor,
-    db: Session,
+    test_db: Session,
 ):
     """Non-owner cannot delete document."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_a.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_delete(user_b.id, doc.id, workspace_a.id)
     assert not decision.allowed
@@ -514,18 +541,21 @@ def test_document_delete_access_editor_denied(
     workspace_a: Workspace,
     membership_a_owner,
     membership_a_editor,
-    db: Session,
+    test_db: Session,
 ):
     """Editor (not owner) cannot delete even if they own it."""
     doc = Document(
-        id="doc-1",
+        id=f"doc-{uuid.uuid4()}",
         workspace_id=workspace_a.id,
         owner_id=user_b.id,
         collection_id="collection-1",
+        filename="test.pdf",
+        file_type="pdf",
+        content="test content",
         is_shared=False,
     )
-    db.add(doc)
-    db.commit()
+    test_db.add(doc)
+    test_db.commit()
     
     decision = policy.authorize_document_delete(user_b.id, doc.id, workspace_a.id)
     assert not decision.allowed
@@ -599,7 +629,7 @@ def test_tool_execution_viewer_denied(
     policy: AuthorizationPolicy,
     user_b: User,
     workspace_a: Workspace,
-    db: Session,
+    test_db: Session,
 ):
     """Viewer cannot execute write tools."""
     member = WorkspaceMember(
@@ -607,8 +637,8 @@ def test_tool_execution_viewer_denied(
         workspace_id=workspace_a.id,
         role="viewer",
     )
-    db.add(member)
-    db.commit()
+    test_db.add(member)
+    test_db.commit()
     
     decision = policy.authorize_tool_execution(
         user_b.id, workspace_a.id, ToolCapability.FILE_WRITE

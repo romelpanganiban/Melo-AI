@@ -44,13 +44,15 @@ multi-process rate limiting, token exposure, and production CORS configuration.
 
 The following items are now tracked as the next production security milestone:
 
-1. ✅ Central authorization middleware (Phase 14a - Commit: f2ec20b)
+1. ✅ Central authorization middleware (Phase 14a - Complete)
    - AuthorizationPolicy engine (core/authz.py)
    - require_workspace_access middleware (core/auth.py)
    - Comprehensive test suite (28 tests)
-   - Next: Retrofit existing endpoints to use middleware
+   - ✅ Route retrofitting complete (all workspace endpoints updated)
+   - All API endpoints now use centralized WorkspaceContext
+   - Next: Phase 14b - Document ownership enforcement
 
-2. ⏳ Workspace membership enforcement (core engine ready, route retrofit pending)
+2. ⏳ Document ownership enforcement and access control (Phase 14b)
 3. [ ] Document ownership enforcement
 4. Qdrant tenant filters
 5. Path traversal protection
