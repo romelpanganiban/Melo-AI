@@ -40,6 +40,31 @@ Security test gaps include same-workspace cross-user document access, admin
 registration hijacking, concurrent usage-limit enforcement, upload expansion,
 multi-process rate limiting, token exposure, and production CORS configuration.
 
+## Security Hardening Backlog
+
+The following items are now tracked as the next production security milestone:
+
+1. Central authorization middleware
+2. Workspace membership enforcement
+3. Document ownership enforcement
+4. Qdrant tenant filters
+5. Path traversal protection
+6. Workspace filesystem sandbox
+7. Agent capability allowlist
+8. Action-bound approvals
+9. Secret isolation
+10. Git safety policy
+11. Upload/resource limits
+12. Redis rate limiting
+13. Secure session/token handling
+14. Security audit logs
+15. Security regression tests
+16. Dependency/SAST scanning
+17. Prompt-injection/RAG security tests
+18. Production security configuration
+
+These items align to the current risk register and should be treated as required before shared or internet-facing deployment.
+
 ## Verified Changes
 
 - Dataset creation now supports output directories outside the repository, including temporary and external deployment directories.
