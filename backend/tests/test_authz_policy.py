@@ -503,7 +503,7 @@ def test_document_delete_access_owner_allowed(
     
     decision = policy.authorize_document_delete(user_a.id, doc.id, workspace_a.id)
     assert decision.allowed
-    assert decision.status_code == 200
+    assert decision.status_code == 204
 
 
 def test_document_delete_access_non_owner_denied(

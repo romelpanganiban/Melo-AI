@@ -367,7 +367,7 @@ class AuthorizationPolicy:
 
             return AuthzDecision(
                 allowed=True,
-                status_code=200,
+                status_code=204,
                 reason=f"User is document owner and workspace owner",
             )
         except Exception as e:
