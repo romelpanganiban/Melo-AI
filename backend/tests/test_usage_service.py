@@ -41,7 +41,7 @@ def test_credit_limit_rejects_exhausted_user(test_db, test_user):
 
 def test_platform_admin_is_unlimited(test_db, test_user):
     workspace_id = test_user.memberships[0].workspace_id
-    admin = SimpleNamespace(id="admin-id", email=settings.ADMIN_EMAIL)
+    admin = SimpleNamespace(id="admin-id", email=settings.ADMIN_EMAIL, platform_role="admin")
     original_limit = settings.MONTHLY_TOKEN_LIMIT
     try:
         settings.MONTHLY_TOKEN_LIMIT = 1

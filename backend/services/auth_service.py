@@ -82,14 +82,15 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 
 
 def register_user(db: Session, email: str, password: str) -> User:
-    user = User(email=email.lower(), password_hash=hash_password(password))
+    platform_role = "admin" if email.lower() == settings.ADMIN_EMAIL else "user"
+    user = User(email=email.lower(), password_hash=hash_password(password), platform_role=platform_role)
     db.add(user)
     db.flush()
     workspace = Workspace(name=f"{email.split('@')[0]}'s Workspace")
     db.add(workspace)
     db.flush()
-    role = "admin" if user.email == settings.ADMIN_EMAIL else "owner"
-    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=role))
+    workspace_role = "admin" if platform_role == "admin" else "owner"
+    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=workspace_role))
     db.commit()
     db.refresh(user)
     return user
@@ -98,15 +99,12 @@ def register_user(db: Session, email: str, password: str) -> User:
 def ensure_default_workspace(db: Session, user: User) -> WorkspaceMember:
     membership = db.query(WorkspaceMember).filter(WorkspaceMember.user_id == user.id).first()
     if membership:
-        if user.email == settings.ADMIN_EMAIL and membership.role != "admin":
-            membership.role = "admin"
-            db.commit()
-            db.refresh(membership)
         return membership
     workspace = Workspace(name=f"{user.email.split('@')[0]}'s Workspace")
     db.add(workspace)
     db.flush()
-    membership = WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role="owner")
+    workspace_role = "admin" if user.platform_role == "admin" else "owner"
+    membership = WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=workspace_role)
     db.add(membership)
     db.commit()
     db.refresh(membership)

@@ -15,6 +15,7 @@ class User(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
+    platform_role = Column(String(20), nullable=False, default="user", index=True)  # "user" or "admin"
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     memberships = relationship("WorkspaceMember", back_populates="user", cascade="all, delete-orphan")
 

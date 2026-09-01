@@ -9,7 +9,7 @@ from core.settings import settings
 
 
 def test_admin_is_exempt_from_request_limit():
-    admin = SimpleNamespace(email=settings.ADMIN_EMAIL)
+    admin = SimpleNamespace(email=settings.ADMIN_EMAIL, platform_role="admin")
     membership = SimpleNamespace(role="admin", workspace_id="workspace-1", user_id="user-1", user=admin)
     request = SimpleNamespace(url=SimpleNamespace(path="/chat"))
 
@@ -26,7 +26,7 @@ def test_admin_is_exempt_from_request_limit():
 
 
 def test_registered_owner_is_limited_with_429():
-    user = SimpleNamespace(email="owner@example.com")
+    user = SimpleNamespace(email="owner@example.com", platform_role="user")
     membership = SimpleNamespace(role="owner", workspace_id="workspace-limit", user_id="user-limit", user=user)
     request = SimpleNamespace(url=SimpleNamespace(path="/chat"))
     key = "request:workspace-limit:user-limit:/chat"

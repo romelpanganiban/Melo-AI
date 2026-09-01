@@ -33,7 +33,7 @@ def test_readiness_rejects_outdated_revision(monkeypatch):
 
 
 def test_readiness_accepts_current_revision(monkeypatch):
-    engine, inspector = _engine_with_revision("0006_phase_14a_document_sharing")
+    engine, inspector = _engine_with_revision("0007_add_platform_role")
     monkeypatch.setattr("database.connection.inspect", lambda _: inspector)
 
     validate_migration_state(engine)

@@ -36,7 +36,7 @@ class WorkspaceContext:
 
 
 def is_platform_admin(user: User) -> bool:
-    return user.email.strip().lower() == settings.ADMIN_EMAIL
+    return user.platform_role == "admin"
 
 
 def get_current_user(
