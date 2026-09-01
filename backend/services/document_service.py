@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from services.document_parser import sanitize_filename
 from database import DocumentRepository, ChunkRepository, KnowledgeCollectionRepository, SessionRepository, get_db_session
 from services.embedding_service import get_embedding_service
 from services.qdrant_client import get_qdrant_client
@@ -77,9 +78,10 @@ class DocumentService:
         db = get_db_session()
         try:
             # Validate inputs
-            if not filename or not filename.strip():
+            normalized_filename = sanitize_filename(filename)
+            if not normalized_filename or not normalized_filename.strip():
                 raise ValidationError("filename is required")
-            
+
             if file_type not in ["pdf", "docx", "txt"]:
                 raise ValidationError("file_type must be 'pdf', 'docx', or 'txt'")
             
@@ -95,7 +97,7 @@ class DocumentService:
             repo = DocumentRepository(db)
             chunk_repo = ChunkRepository(db)
             document = repo.create(
-                filename=filename,
+                filename=normalized_filename,
                 file_type=file_type,
                 content=content,
                 session_id=session_id,

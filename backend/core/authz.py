@@ -9,6 +9,7 @@ testable, and auditable.
 from enum import Enum
 from dataclasses import dataclass
 from typing import Optional, Set
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from database.models import User, WorkspaceMember, Document
@@ -26,6 +27,7 @@ class Permission(Enum):
 class WorkspaceRole(Enum):
     """Role-based workspace membership."""
     OWNER = "owner"
+    ADMIN = "admin"
     EDITOR = "editor"
     VIEWER = "viewer"
     GUEST = "guest"
@@ -74,6 +76,34 @@ class AuthorizationPolicy:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _has_document_column(self, column_name: str) -> bool:
+        try:
+            bind = self.db.bind
+            if bind is None:
+                return False
+            return any(
+                column["name"] == column_name
+                for column in inspect(bind).get_columns("documents")
+            )
+        except Exception:
+            return False
+
+    def _get_document_row(self, document_id: str, workspace_id: str | None = None) -> Optional[dict]:
+        if self._has_document_column("workspace_id") and self._has_document_column("is_shared"):
+            doc = self.db.query(Document).filter(
+                Document.id == document_id,
+                Document.workspace_id == workspace_id,
+            ).first()
+            return doc.__dict__ if doc is not None else None
+
+        sql = "SELECT id, owner_id, workspace_id FROM documents WHERE id = :document_id"
+        params = {"document_id": document_id}
+        if workspace_id is not None and self._has_document_column("workspace_id"):
+            sql += " AND workspace_id = :workspace_id"
+            params["workspace_id"] = workspace_id
+        row = self.db.execute(text(sql), params).mappings().first()
+        return dict(row) if row is not None else None
 
     # ============================================================================
     # Workspace Access
@@ -136,7 +166,7 @@ class AuthorizationPolicy:
                 WorkspaceMember.workspace_id == workspace_id,
             ).first()
 
-            allowed_roles = {"owner", "editor"}
+            allowed_roles = {"owner", "admin", "editor"}
             if membership.role.lower() not in allowed_roles:
                 return AuthzDecision(
                     allowed=False,
@@ -177,7 +207,7 @@ class AuthorizationPolicy:
                 WorkspaceMember.workspace_id == workspace_id,
             ).first()
 
-            if membership.role.lower() != "owner":
+            if membership.role.lower() not in {"owner", "admin"}:
                 return AuthzDecision(
                     allowed=False,
                     status_code=403,
@@ -225,10 +255,7 @@ class AuthorizationPolicy:
             return ws_decision
 
         try:
-            doc = self.db.query(Document).filter(
-                Document.id == document_id,
-                Document.workspace_id == workspace_id,
-            ).first()
+            doc = self._get_document_row(document_id, workspace_id)
 
             if doc is None:
                 return AuthzDecision(
@@ -237,8 +264,11 @@ class AuthorizationPolicy:
                     reason=f"Document {document_id} not found in workspace {workspace_id}",
                 )
 
+            owner_id = doc.get("owner_id")
+            is_shared = bool(doc.get("is_shared", False))
+
             # Owner can always read
-            if doc.owner_id == user_id:
+            if owner_id == user_id:
                 return AuthzDecision(
                     allowed=True,
                     status_code=200,
@@ -246,7 +276,7 @@ class AuthorizationPolicy:
                 )
 
             # Non-owners can read only shared documents
-            if getattr(doc, "is_shared", False):
+            if is_shared:
                 return AuthzDecision(
                     allowed=True,
                     status_code=200,
@@ -289,10 +319,7 @@ class AuthorizationPolicy:
             return ws_decision
 
         try:
-            doc = self.db.query(Document).filter(
-                Document.id == document_id,
-                Document.workspace_id == workspace_id,
-            ).first()
+            doc = self._get_document_row(document_id, workspace_id)
 
             if doc is None:
                 return AuthzDecision(
@@ -302,7 +329,7 @@ class AuthorizationPolicy:
                 )
 
             # Only owner can write
-            if doc.owner_id != user_id:
+            if doc.get("owner_id") != user_id:
                 return AuthzDecision(
                     allowed=False,
                     status_code=403,
@@ -345,10 +372,7 @@ class AuthorizationPolicy:
             return ws_decision
 
         try:
-            doc = self.db.query(Document).filter(
-                Document.id == document_id,
-                Document.workspace_id == workspace_id,
-            ).first()
+            doc = self._get_document_row(document_id, workspace_id)
 
             if doc is None:
                 return AuthzDecision(
@@ -358,7 +382,7 @@ class AuthorizationPolicy:
                 )
 
             # Only owner can delete
-            if doc.owner_id != user_id:
+            if doc.get("owner_id") != user_id:
                 return AuthzDecision(
                     allowed=False,
                     status_code=403,
@@ -398,7 +422,7 @@ class AuthorizationPolicy:
         Returns:
             Set of allowed ToolCapability
         """
-        if role == WorkspaceRole.OWNER:
+        if role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN):
             return {
                 ToolCapability.FILE_READ,
                 ToolCapability.FILE_WRITE,

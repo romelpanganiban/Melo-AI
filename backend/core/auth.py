@@ -59,12 +59,17 @@ def get_current_membership(
     user: User = Depends(get_current_user),
     workspace_id: str | None = Header(default=None, alias="X-Workspace-ID"),
 ) -> WorkspaceMember:
-    memberships = user.memberships
-    membership = next((item for item in memberships if item.workspace_id == workspace_id), None) if workspace_id else (memberships[0] if memberships else None)
-    if membership is None:
-        detail = "Workspace membership not found" if workspace_id else "No workspace membership"
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
-    return membership
+    memberships = user.memberships or []
+    if workspace_id:
+        membership = next((item for item in memberships if item.workspace_id == workspace_id), None)
+        if membership is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership not found")
+        return membership
+
+    if memberships:
+        return memberships[0]
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No workspace membership")
 
 
 def require_workspace_access(workspace_id: str):

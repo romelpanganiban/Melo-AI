@@ -47,6 +47,10 @@ export function setWorkspaceId(workspaceId: string): void {
   window.localStorage.setItem(WORKSPACE_ID_KEY, workspaceId);
 }
 
+export function clearWorkspaceId(): void {
+  window.localStorage.removeItem(WORKSPACE_ID_KEY);
+}
+
 export function getUserEmail(): string | null {
   return typeof window === 'undefined' ? null : window.localStorage.getItem(USER_EMAIL_KEY);
 }
@@ -61,10 +65,14 @@ async function fetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  const workspaceId = getWorkspaceId();
+
+  const workspaceId = getWorkspaceId()?.trim();
   if (workspaceId) {
     headers.set('X-Workspace-ID', workspaceId);
+  } else {
+    headers.delete('X-Workspace-ID');
   }
+
   return globalThis.fetch(input, { ...init, headers });
 }
 
@@ -77,6 +85,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     if (response.status === 401) {
       clearAccessToken();
     }
+    
     let errorData;
     try {
       errorData = await response.json();
@@ -86,6 +95,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
         message: `HTTP ${response.status}: ${response.statusText}`,
         details: {}
       };
+    }
+    
+    // Only clear workspace on explicit workspace auth errors, not on general document processing errors
+    const errorMessage = errorData.detail || errorData.message || '';
+    if (
+      (response.status === 403 && errorMessage.includes('membership')) ||
+      (response.status === 400 && errorMessage.includes('Workspace-ID'))
+    ) {
+      clearWorkspaceId();
     }
 
     throw new APIError(
@@ -97,7 +115,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   return response.json();
-}
+}}}
 export type AppSettings = {
   model: string;
   provider: string;
@@ -343,6 +361,11 @@ export async function createCollection(name: string): Promise<KnowledgeCollectio
  */
 export async function getSessions(): Promise<SessionsResponse> {
   try {
+    const workspaceId = getWorkspaceId()?.trim();
+    if (!workspaceId) {
+      throw new APIError(400, 'WORKSPACE_REQUIRED', 'No active workspace. Please log in again.');
+    }
+
     const response = await fetch(`${API_URL}/sessions`, {
       method: 'GET',
       headers: {
@@ -366,6 +389,11 @@ export async function getSessions(): Promise<SessionsResponse> {
  */
 export async function createSession(): Promise<SessionSummary> {
   try {
+    const workspaceId = getWorkspaceId()?.trim();
+    if (!workspaceId) {
+      throw new APIError(400, 'WORKSPACE_REQUIRED', 'No active workspace. Please log in again.');
+    }
+
     const response = await fetch(`${API_URL}/sessions`, {
       method: 'POST',
       headers: {

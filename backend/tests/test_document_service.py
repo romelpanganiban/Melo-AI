@@ -1,7 +1,7 @@
 """Tests for document service and document chunk persistence."""
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import database.connection as db_connection
@@ -106,3 +106,49 @@ def test_delete_document_removes_chunks(file_db, monkeypatch):
         assert chunk_repo.get_by_document(created["id"]) == []
     finally:
         inspect_session.close()
+
+
+def test_get_by_session_ignores_legacy_workspace_filter_when_schema_lacks_workspace_id(file_db):
+    session_factory, _engine = file_db
+
+    with session_factory() as session:
+        session.execute(text("DROP TABLE IF EXISTS documents"))
+        session.execute(text("""
+            CREATE TABLE documents (
+                id VARCHAR(36) PRIMARY KEY,
+                owner_id VARCHAR(36),
+                session_id VARCHAR(36),
+                collection_id VARCHAR(36),
+                filename VARCHAR(255) NOT NULL,
+                file_type VARCHAR(20) NOT NULL,
+                content TEXT NOT NULL,
+                chunk_count INTEGER NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL
+            )
+        """))
+        session.execute(
+            text(
+                "INSERT INTO documents (id, owner_id, session_id, collection_id, filename, file_type, content, chunk_count, created_at, updated_at) "
+                "VALUES (:id, :owner_id, :session_id, :collection_id, :filename, :file_type, :content, :chunk_count, :created_at, :updated_at)"
+            ),
+            {
+                "id": "doc-legacy-1",
+                "owner_id": "user-1",
+                "session_id": "session-legacy-1",
+                "collection_id": None,
+                "filename": "legacy.txt",
+                "file_type": "txt",
+                "content": "Legacy content",
+                "chunk_count": 1,
+                "created_at": "2024-01-01T00:00:00+00:00",
+                "updated_at": "2024-01-01T00:00:00+00:00",
+            },
+        )
+        session.commit()
+
+    with session_factory() as session:
+        documents = DocumentRepository(session).get_by_session("session-legacy-1", workspace_id="workspace-legacy")
+
+    assert len(documents) == 1
+    assert documents[0].filename == "legacy.txt"

@@ -46,6 +46,20 @@ def test_parse_docx():
     assert text == "Document text"
 
 
+def test_parse_sanitizes_path_like_names():
+    file_type, text = DocumentParser().parse("C:/fakepath/notes with spaces.txt", b"Hello\nworld")
+
+    assert file_type == "txt"
+    assert text == "Hello\nworld"
+
+
+def test_parse_txt_utf16():
+    file_type, text = DocumentParser().parse("notes.txt", "Hello from UTF-16".encode("utf-16"))
+
+    assert file_type == "txt"
+    assert text == "Hello from UTF-16"
+
+
 def test_parse_rejects_unsupported_type():
     with pytest.raises(ValidationError):
         DocumentParser().parse("notes.rtf", b"text")

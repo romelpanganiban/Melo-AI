@@ -81,12 +81,16 @@ def client(test_db, test_user):
         yield test_db
 
     rate_limit._requests.clear()
+    workspace_id = test_user.memberships[0].workspace_id
 
     app.dependency_overrides[get_db] = override_get_db
     try:
         yield TestClient(
             app,
-            headers={"Authorization": f"Bearer {create_access_token(test_user.id)}"},
+            headers={
+                "Authorization": f"Bearer {create_access_token(test_user.id)}",
+                "X-Workspace-ID": workspace_id,
+            },
         )
     finally:
         app.dependency_overrides.clear()

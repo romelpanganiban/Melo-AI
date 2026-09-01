@@ -181,6 +181,9 @@ def test_user_cannot_read_another_users_document(client, test_session_id):
 
     response = client.get(
         f"/documents/{document_id}",
-        headers={"Authorization": f"Bearer {login_response.json()['access_token']}"},
+        headers={
+            "Authorization": f"Bearer {login_response.json()['access_token']}",
+            "X-Workspace-ID": login_response.json()["workspace_id"],
+        },
     )
     assert response.status_code == 404

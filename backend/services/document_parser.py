@@ -2,11 +2,31 @@
 
 from __future__ import annotations
 
+import re
 from io import BytesIO
 from pathlib import Path
 
 from core.errors import ChatServiceError, ValidationError
 from core.settings import settings
+
+
+def sanitize_filename(filename: str) -> str:
+    """Normalize a user-provided filename into a safe, database-friendly value."""
+    if not filename:
+        raise ValidationError("filename is required")
+
+    normalized = filename.strip().replace("\\", "/")
+    normalized = normalized.split("/")[-1]
+    normalized = normalized.strip(". ")
+    normalized = normalized.replace("\x00", "")
+    normalized = re.sub(r"[<>:\"|?*\r\n\t]", "_", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+    normalized = normalized.strip()
+
+    if not normalized or normalized in {".", ".."}:
+        raise ValidationError("The filename format is invalid. Please use a valid filename.")
+
+    return normalized
 
 
 class DocumentParser:
@@ -15,17 +35,16 @@ class DocumentParser:
     SUPPORTED_TYPES = {"txt", "pdf", "docx"}
 
     def parse(self, filename: str, content: bytes) -> tuple[str, str]:
-        if not filename:
-            raise ValidationError("filename is required")
+        safe_name = sanitize_filename(filename)
         if not content:
             raise ValidationError("file is empty")
 
-        file_type = Path(filename).suffix.lower().lstrip(".")
+        file_type = Path(safe_name).suffix.lower().lstrip(".")
         if file_type not in self.SUPPORTED_TYPES:
             raise ValidationError("Only .txt, .pdf, and .docx files are supported")
 
         if file_type == "txt":
-            text = content.decode("utf-8-sig")
+            text = self._decode_text_file(content)
         elif file_type == "pdf":
             text = self._parse_pdf(content)
         else:
@@ -37,6 +56,14 @@ class DocumentParser:
             raise ValidationError("Extracted document text exceeds the 2 MB limit", field="content")
 
         return file_type, text
+
+    def _decode_text_file(self, content: bytes) -> str:
+        for encoding in ("utf-8-sig", "utf-16", "utf-16-le", "utf-16-be", "cp1252", "latin-1"):
+            try:
+                return content.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        raise ValidationError("The text file could not be decoded. Please save it as UTF-8 or UTF-16 text and try again.")
 
     def _parse_pdf(self, content: bytes) -> str:
         try:
