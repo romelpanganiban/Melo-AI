@@ -216,7 +216,11 @@ def get_document(
             extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
         )
         
-        document = service.get_document(document_id, workspace_id=workspace_ctx.workspace_id)
+        document = service.get_document(
+            document_id,
+            workspace_id=workspace_ctx.workspace_id,
+            user_id=workspace_ctx.user.id
+        )
         return document
         
     except ValidationError:
@@ -324,7 +328,14 @@ def search_documents(
     try:
         session_id = validate_uuid(request.session_id, field_name="session_id")
         collection_id = validate_uuid(request.collection_id, field_name="collection_id") if request.collection_id else None
-        return service.search_documents(request.query, session_id, collection_id, request.top_k, workspace_id=workspace_ctx.workspace_id)
+        return service.search_documents(
+            request.query,
+            session_id,
+            collection_id,
+            request.top_k,
+            workspace_id=workspace_ctx.workspace_id,
+            user_id=workspace_ctx.user.id
+        )
     except ValidationError:
         raise
     except Exception as e:
@@ -356,7 +367,11 @@ def delete_document(
             extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
         )
         
-        service.delete_document(document_id, workspace_id=workspace_ctx.workspace_id)
+        service.delete_document(
+            document_id,
+            workspace_id=workspace_ctx.workspace_id,
+            user_id=workspace_ctx.user.id
+        )
         
     except ValidationError:
         raise

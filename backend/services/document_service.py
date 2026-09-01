@@ -10,6 +10,7 @@ from services.qdrant_client import get_qdrant_client
 from core.logging import logger
 from core.errors import ChatServiceError, DocumentNotFoundError, SessionNotFoundError, ValidationError
 from core.settings import settings
+from core.authz import AuthorizationPolicy
 
 
 class DocumentService:
@@ -145,6 +146,7 @@ class DocumentService:
                                     "session_id": session_id,
                                     "owner_id": owner_id,
                                     "workspace_id": workspace_id,
+                                    "is_shared": document.is_shared if hasattr(document, 'is_shared') else False,
                                     "chunk_index": chunk_index,
                                     "tokens": len(chunk_text.split())
                                 }
@@ -204,11 +206,12 @@ class DocumentService:
         finally:
             db.close()
 
-    def get_document(self, document_id: str, owner_id: str = None, workspace_id: str = None) -> dict:
+    def get_document(self, document_id: str, owner_id: str = None, workspace_id: str = None, user_id: str = None) -> dict:
         """Get a document by ID
         
         Args:
             document_id: Document identifier
+            user_id: Authenticated user ID for authorization checks
             
         Returns:
             Dictionary with document details
@@ -223,6 +226,17 @@ class DocumentService:
             
             if not document:
                 raise DocumentNotFoundError(document_id)
+            
+            # Perform authorization check if user_id provided
+            if user_id and workspace_id:
+                policy = AuthorizationPolicy(db)
+                decision = policy.authorize_document_read(user_id, document_id, workspace_id)
+                if not decision.allowed:
+                    logger.warning(
+                        f"Document read denied: {decision.reason}",
+                        extra={"user_id": user_id, "document_id": document_id}
+                    )
+                    raise ChatServiceError(decision.reason, status_code=decision.status_code)
             
             logger.info(
                 f"Document retrieved",
@@ -286,7 +300,7 @@ class DocumentService:
         finally:
             db.close()
 
-    def search_documents(self, query: str, session_id: str, collection_id: str = None, top_k: int = 5, owner_id: str = None, workspace_id: str = None) -> dict:
+    def search_documents(self, query: str, session_id: str, collection_id: str = None, top_k: int = 5, owner_id: str = None, workspace_id: str = None, user_id: str = None) -> dict:
         """Search the session's indexed knowledge without generating a chat response."""
         if not query or not query.strip():
             raise ValidationError("query is required", field="query")
@@ -309,21 +323,34 @@ class DocumentService:
                 filters = {**(filters or {}), "workspace_id": workspace_id}
             if collection_id:
                 filters = {**(filters or {}), "collection_id": collection_id}
+            
             matches = qdrant_client.search(
                 query_embedding=embedding,
                 limit=top_k,
                 score_threshold=settings.QDRANT_SCORE_THRESHOLD,
                 filters=filters,
             )
+            
             results = []
             for match in matches:
                 payload = match.get("payload") or match.get("metadata", {})
+                
+                # Authorization check: if user_id provided, enforce access control
+                if user_id:
+                    doc_owner_id = payload.get("owner_id")
+                    is_shared = payload.get("is_shared", False)
+                    
+                    # Allow if user is owner or document is shared
+                    if user_id != doc_owner_id and not is_shared:
+                        continue  # Skip documents user doesn't have access to
+                
                 results.append({
                     "filename": payload.get("filename", "Unknown"),
                     "content": match.get("content") or payload.get("content", ""),
                     "relevance": round(match.get("score", match.get("similarity_score", 0)) * 100, 1),
                     "chunk_index": payload.get("chunk_index"),
                 })
+            
             return {"query": query.strip(), "results": results, "available": True}
         except Exception as e:
             logger.error("Document search failed", extra={"query_len": len(query)})
@@ -349,11 +376,12 @@ class DocumentService:
         finally:
             db.close()
 
-    def delete_document(self, document_id: str, owner_id: str = None, workspace_id: str = None) -> None:
+    def delete_document(self, document_id: str, owner_id: str = None, workspace_id: str = None, user_id: str = None) -> None:
         """Delete a document
         
         Args:
             document_id: Document identifier
+            user_id: Authenticated user ID for authorization checks
             
         Raises:
             ChatServiceError: If deletion fails
@@ -366,6 +394,17 @@ class DocumentService:
             
             if not document:
                 raise DocumentNotFoundError(document_id)
+            
+            # Perform authorization check if user_id provided
+            if user_id and workspace_id:
+                policy = AuthorizationPolicy(db)
+                decision = policy.authorize_document_delete(user_id, document_id, workspace_id)
+                if not decision.allowed:
+                    logger.warning(
+                        f"Document delete denied: {decision.reason}",
+                        extra={"user_id": user_id, "document_id": document_id}
+                    )
+                    raise ChatServiceError(decision.reason, status_code=decision.status_code)
 
             if settings.QDRANT_ENABLED:
                 try:
