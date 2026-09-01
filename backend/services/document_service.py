@@ -236,7 +236,7 @@ class DocumentService:
                         f"Document read denied: {decision.reason}",
                         extra={"user_id": user_id, "document_id": document_id}
                     )
-                    raise ChatServiceError(decision.reason, status_code=decision.status_code)
+                    raise ChatServiceError(decision.reason)
             
             logger.info(
                 f"Document retrieved",
@@ -404,7 +404,7 @@ class DocumentService:
                         f"Document delete denied: {decision.reason}",
                         extra={"user_id": user_id, "document_id": document_id}
                     )
-                    raise ChatServiceError(decision.reason, status_code=decision.status_code)
+                    raise ChatServiceError(decision.reason)
 
             if settings.QDRANT_ENABLED:
                 try:
