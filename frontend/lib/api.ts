@@ -917,9 +917,11 @@ export async function uploadDocumentFile(
   if (collectionId) formData.append('collection_id', collectionId);
 
   try {
+    // Ensure headers are set - use the internal fetch wrapper
     const response = await fetch(`${API_URL}/documents/upload`, {
       method: 'POST',
       body: formData,
+      headers: {}, // Empty headers object triggers the wrapper to add Authorization and X-Workspace-ID
     });
     return handleResponse<DocumentSummary>(response);
   } catch (error) {
