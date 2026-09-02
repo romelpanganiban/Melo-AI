@@ -79,7 +79,7 @@ export default function MessageInput({
   }
 
   return (
-    <div className="chat-composer border-t border-white/10 bg-black/20 p-3 text-slate-100 md:p-4">
+    <div className="chat-composer border-t border-slate-200 bg-white/70 p-3 text-slate-800 md:p-4">
       {error && (
         <div className="mb-3 rounded-xl border border-red-300/15 bg-red-950/40 p-3 text-red-200">
           <p className="text-sm">{error}</p>
@@ -87,7 +87,7 @@ export default function MessageInput({
       )}
 
       <div
-        className="composer-box flex flex-wrap items-end gap-2 rounded-2xl border border-white/15 bg-[#131a17]/95 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.3)] focus-within:border-teal-400/60 focus-within:shadow-[0_12px_30px_rgba(15,118,110,0.18)]"
+        className="composer-box flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_rgba(15,23,42,0.12)] focus-within:border-teal-500/60 focus-within:shadow-[0_12px_30px_rgba(15,118,110,0.18)]"
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
           event.preventDefault();
@@ -95,11 +95,11 @@ export default function MessageInput({
         }}
       >
         {attachedFile && (
-          <div className="order-first flex basis-full items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200">
+          <div className="order-first flex basis-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
             <FileText size={16} className="text-red-300" aria-hidden="true" />
             <span className="min-w-0 flex-1 truncate" title={attachedFile.name}>{attachedFile.name}</span>
-            <span className="text-slate-400">{attachedFile.name.split(".").pop()?.toUpperCase()}</span>
-            <button type="button" onClick={() => setAttachedFile(null)} aria-label="Remove attached file" className="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+            <span className="text-slate-500">{attachedFile.name.split(".").pop()?.toUpperCase()}</span>
+            <button type="button" onClick={() => setAttachedFile(null)} aria-label="Remove attached file" className="rounded p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-800">
               <X size={14} aria-hidden="true" />
             </button>
           </div>
@@ -114,7 +114,7 @@ export default function MessageInput({
           disabled={isSending || !sessionId}
           maxLength={maxMessageLength}
           rows={2}
-          className="max-h-44 min-h-11 min-w-[min(100%,14rem)] flex-[1_1_18rem] resize-y border-0 bg-transparent px-2 py-2 text-sm leading-6 text-slate-100 outline-none disabled:text-slate-100/35"
+          className="max-h-44 min-h-11 min-w-[min(100%,14rem)] flex-[1_1_18rem] resize-y border-0 bg-transparent px-2 py-2 text-sm leading-6 text-slate-800 placeholder:text-slate-500 outline-none disabled:text-slate-400"
           placeholder={
             sessionId ? "Message Melo..." : "Select a session to start"
           }
@@ -127,11 +127,11 @@ export default function MessageInput({
           className="hidden"
           onChange={(event) => selectFile(event.target.files?.[0])}
         />
-        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isSending || !sessionId} aria-label="Attach a document" className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-40">
+        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isSending || !sessionId} aria-label="Attach a document" className="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40">
           <Paperclip size={17} aria-hidden="true" />
         </button>
 
-        <label className="flex items-center gap-1 rounded-xl border border-white/15 bg-[#1a2823] px-2 text-xs text-slate-100">
+        <label className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2 text-xs text-slate-700">
           {mode === "ask" ? <Search size={14} aria-hidden="true" /> : mode === "study" ? <BookOpen size={14} aria-hidden="true" /> : mode === "plan" ? <ClipboardList size={14} aria-hidden="true" /> : mode === "agent" ? <Bot size={14} aria-hidden="true" /> : mode === "auto" ? <Sparkles size={14} aria-hidden="true" /> : <MessageCircle size={14} aria-hidden="true" />}
           <span className="sr-only">Choose response mode</span>
           <select
@@ -139,14 +139,14 @@ export default function MessageInput({
             onChange={(event) => onModeChange(event.target.value as ChatMode)}
             disabled={isSending}
             aria-label="Choose response mode"
-            className="max-w-20 bg-transparent py-2 text-xs text-slate-100 outline-none disabled:opacity-50"
+            className="max-w-20 bg-transparent py-2 text-xs text-slate-700 outline-none disabled:opacity-50"
           >
-            <option value="chat" className="bg-[#1a2823] text-slate-100">Chat</option>
-            <option value="ask" className="bg-[#1a2823] text-slate-100">Ask</option>
-            <option value="study" className="bg-[#1a2823] text-slate-100">Study</option>
-            <option value="plan" className="bg-[#1a2823] text-slate-100">Plan</option>
-            <option value="agent" className="bg-[#1a2823] text-slate-100">Agent</option>
-            <option value="auto" className="bg-[#1a2823] text-slate-100">Auto</option>
+            <option value="chat" className="bg-white text-slate-800">Chat</option>
+            <option value="ask" className="bg-white text-slate-800">Ask</option>
+            <option value="study" className="bg-white text-slate-800">Study</option>
+            <option value="plan" className="bg-white text-slate-800">Plan</option>
+            <option value="agent" className="bg-white text-slate-800">Agent</option>
+            <option value="auto" className="bg-white text-slate-800">Auto</option>
           </select>
         </label>
 
@@ -155,11 +155,11 @@ export default function MessageInput({
           onChange={(event) => onModelChange(event.target.value)}
           disabled={isSending}
           aria-label="Choose chat model"
-          className="min-w-0 max-w-40 flex-1 rounded-xl border border-white/15 bg-[#1a2823] px-2 py-2 text-xs text-slate-100 outline-none transition hover:bg-[#24362f] disabled:opacity-50 sm:flex-none"
+          className="min-w-0 max-w-40 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-700 outline-none transition hover:bg-slate-100 disabled:opacity-50 sm:flex-none"
         >
-          <option value="auto" className="bg-[#1a2823] text-slate-100">Auto</option>
+          <option value="auto" className="bg-white text-slate-800">Auto</option>
           {availableModels.map((model) => (
-            <option key={model.name} value={model.name} className="bg-[#1a2823] text-slate-100">
+            <option key={model.name} value={model.name} className="bg-white text-slate-800">
               {model.name}
             </option>
           ))}
@@ -183,7 +183,7 @@ export default function MessageInput({
       </div>
 
       {message.length > 0 && (
-        <p className="mt-2 px-2 text-xs text-slate-300/45">
+        <p className="mt-2 px-2 text-xs text-slate-600">
           {message.length} / {maxMessageLength}
         </p>
       )}

@@ -77,6 +77,7 @@ modes, coding tools, and bounded read-only agent actions.
 - Source Attribution
 - Source display in assistant messages
 - Batch Embedding Generation
+- SQL/Qdrant reconciliation audit and repair through the admin API and CLI
 
 #### Intelligence Modes
 
@@ -132,8 +133,14 @@ Verified in the current Windows environment using a project-local pytest temp di
 - `python -m pytest tests/test_rate_limit.py -q --basetemp=tmp_pytest` → 5 passed
 - `python -m pytest tests/test_chat_service_quality.py -q --basetemp=tmp_pytest` → 12 passed
 - `python -m pytest tests/test_document_service_authz.py -q --basetemp=tmp_pytest` → 12 passed
+- `python -m pytest tests/test_reconciliation_service.py -q` → 5 passed, 1 failed in the current environment
 
 Known warnings: deprecated TestClient/httpx compatibility and optional CUDA/Qdrant availability warnings.
+
+Reconciliation currently has known reliability gaps: auditing compares Qdrant presence
+at the document level rather than verifying every chunk, and repair initializes the
+embedding model even when there is nothing to repair. These are tracked in
+`SYSTEM_AUDIT.md` and should be resolved before calling reconciliation production-ready.
 
 See [SYSTEM_AUDIT.md](SYSTEM_AUDIT.md) for the system-wide findings and prioritized improvements.
 

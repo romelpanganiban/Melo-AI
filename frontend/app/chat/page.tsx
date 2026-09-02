@@ -470,7 +470,7 @@ export default function ChatPage() {
             />
 
             {documentUploadStatus && (
-              <p className="mx-4 mb-2 text-xs text-slate-300/70" role="status">
+              <p className="mx-4 mb-2 text-xs font-medium text-slate-700" role="status">
                 {documentUploadStatus}
               </p>
             )}

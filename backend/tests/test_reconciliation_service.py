@@ -8,6 +8,7 @@ from services.reconciliation_service import get_reconciliation_service
 from core.settings import settings
 import uuid
 import time
+from unittest.mock import Mock, patch
 
 
 @pytest.fixture
@@ -107,7 +108,9 @@ def test_reconciliation_repair_without_changes(test_db, test_user_and_workspace)
     user, workspace = test_user_and_workspace
     
     service = get_reconciliation_service()
-    report = service.repair(missing_embeddings=True, delete_orphaned=False)
+    with patch.object(service, "audit") as audit:
+        audit.return_value = service.report
+        report = service.repair(missing_embeddings=True, delete_orphaned=False)
     
     # No orphaned embeddings should be deleted
     assert report.deleted_count == 0
@@ -124,3 +127,75 @@ def test_reconciliation_audit_finds_missing_embeddings_in_report(test_db, test_u
         assert "filename" in missing
         assert "chunk_count" in missing
         assert "workspace_id" in missing
+
+
+def test_reconciliation_uses_qdrant_continuation_offset(test_db, test_user_and_workspace):
+    user, workspace = test_user_and_workspace
+    document = DocumentRepository(test_db).create(
+        filename="paged.txt",
+        file_type="txt",
+        content="content",
+        owner_id=user.id,
+        workspace_id=workspace.id,
+    )
+    ChunkRepository(test_db).create_many(document.id, [
+        {"chunk_index": 0, "content": "chunk one", "tokens": 2},
+        {"chunk_index": 1, "content": "chunk two", "tokens": 2},
+    ])
+
+    first_point = Mock(payload={"document_id": "other-document", "chunk_index": 0})
+    second_point = Mock(payload={"document_id": document.id, "chunk_index": 0})
+    third_point = Mock(payload={"document_id": document.id, "chunk_index": 1})
+    qdrant = Mock()
+    qdrant.collection_name = "melo_documents"
+    qdrant.get_collection_info.return_value = {"points_count": 2}
+    qdrant.client.scroll.side_effect = [([first_point], "cursor-1"), ([second_point, third_point], None)]
+
+    with patch("services.reconciliation_service.get_qdrant_client", return_value=qdrant), patch.object(settings, "QDRANT_ENABLED", True):
+        report = get_reconciliation_service().audit()
+
+    assert report.qdrant_vectors == 2
+    assert document.id not in {item["document_id"] for item in report.missing_embeddings}
+    assert qdrant.client.scroll.call_args_list[1].kwargs["offset"] == "cursor-1"
+
+
+def test_reconciliation_detects_partial_embeddings(test_db, test_user_and_workspace):
+    user, workspace = test_user_and_workspace
+    document = DocumentRepository(test_db).create(
+        filename="partial.txt",
+        file_type="txt",
+        content="content",
+        owner_id=user.id,
+        workspace_id=workspace.id,
+    )
+    ChunkRepository(test_db).create_many(document.id, [
+        {"chunk_index": 0, "content": "chunk one", "tokens": 2},
+        {"chunk_index": 1, "content": "chunk two", "tokens": 2},
+    ])
+
+    qdrant = Mock()
+    qdrant.collection_name = "melo_documents"
+    qdrant.get_collection_info.return_value = {"points_count": 1}
+    qdrant.client.scroll.return_value = (
+        [Mock(payload={"document_id": document.id, "chunk_index": 0})],
+        None,
+    )
+
+    with patch("services.reconciliation_service.get_qdrant_client", return_value=qdrant), patch.object(settings, "QDRANT_ENABLED", True):
+        report = get_reconciliation_service().audit()
+
+    missing_ids = {item["document_id"] for item in report.missing_embeddings}
+    assert document.id in missing_ids
+
+
+def test_reconciliation_does_not_repair_after_qdrant_scan_failure(test_db, test_user_and_workspace):
+    service = get_reconciliation_service()
+    with patch.object(service, "audit") as audit, patch.object(settings, "QDRANT_ENABLED", True), patch(
+        "services.reconciliation_service.get_qdrant_client"
+    ) as get_qdrant:
+        service.report.errors.append("Failed to scan Qdrant: unavailable")
+        audit.return_value = service.report
+        report = service.repair(missing_embeddings=True, delete_orphaned=True)
+
+    get_qdrant.assert_not_called()
+    assert report.deleted_count == 0

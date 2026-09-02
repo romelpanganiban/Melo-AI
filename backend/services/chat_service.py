@@ -285,8 +285,8 @@ class ChatService:
             # Get session history for context
             history = self._get_history_dicts(session_id, db)
             
-            # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id, document_id=document_id)
+            # Normal chat should not attach unrelated document sources.
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id, document_id=document_id) if mode != "chat" or document_id else {"sources": [], "context": ""}
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             # Generate response with document context
@@ -352,8 +352,8 @@ class ChatService:
             self._set_initial_session_title(session, message, session_repo)
             history = self._get_history_dicts(session_id, db)
             
-            # Search for relevant documents
-            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id, document_id=document_id)
+            # Normal chat should not attach unrelated document sources.
+            doc_search = self._search_documents(message, session_id=session_id, top_k=5, owner_id=owner_id, collection_id=collection_id, workspace_id=workspace_id, document_id=document_id) if mode != "chat" or document_id else {"sources": [], "context": ""}
             resolved_mode = self._resolve_mode(message, mode, bool(doc_search.get("context", "").strip()))
 
             chunks: list[str] = []

@@ -162,6 +162,15 @@ This is the recommended implementation order for the remaining engineering work.
 13. Document states
 14. Qdrant retry/reconciliation
 
+Reconciliation is implemented, but the current inspection identified follow-up work
+before it should be treated as production-ready:
+
+- Compare Qdrant vectors by `(document_id, chunk_index)` so partial and stale
+   embeddings are detected.
+- Do not infer that all embeddings are missing when a Qdrant scan fails.
+- Defer embedding-service initialization until at least one document needs repair.
+- Handle null or malformed Qdrant payloads without aborting the complete scan.
+
 ### Sprint 5 - Scale
 
 15. Redis

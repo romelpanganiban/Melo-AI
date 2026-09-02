@@ -1,5 +1,6 @@
 """Service for reconciling SQL documents with Qdrant vector embeddings."""
 
+from collections import defaultdict
 from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
@@ -21,6 +22,7 @@ class ReconciliationReport:
         self.qdrant_vectors = 0
         self.missing_embeddings = []  # Documents in SQL missing from Qdrant
         self.orphaned_embeddings = []  # Document IDs in Qdrant missing from SQL
+        self.stale_embeddings = []  # Unexpected chunk indexes for SQL documents
         self.repaired_count = 0
         self.deleted_count = 0
         self.errors = []
@@ -40,6 +42,7 @@ class ReconciliationReport:
             },
             "missing_embeddings": self.missing_embeddings,
             "orphaned_embeddings": self.orphaned_embeddings,
+            "stale_embeddings": self.stale_embeddings,
             "errors": self.errors,
         }
 
@@ -64,13 +67,17 @@ class ReconciliationService:
             db = get_db_session()
             try:
                 # Query all documents directly from the database
-                from database.models import Document
+                from database.models import Document, DocumentChunk
                 sql_documents = db.query(Document).all()
                 self.report.sql_documents = len(sql_documents)
                 logger.info(f"Found {len(sql_documents)} documents in SQL")
                 
-                # Get document IDs from SQL
+                # Build the exact chunk set expected in Qdrant.
                 sql_doc_ids = {doc.id for doc in sql_documents}
+                expected_chunks = defaultdict(set)
+                chunks = db.query(DocumentChunk).all()
+                for chunk in chunks:
+                    expected_chunks[chunk.document_id].add(chunk.chunk_index)
                 
                 # Get vectors from Qdrant
                 if not settings.QDRANT_ENABLED:
@@ -82,18 +89,19 @@ class ReconciliationService:
                 
                 # Retrieve all vectors to check consistency
                 # Using scroll with limit to avoid memory issues
-                vectors_scanned = set()
+                vectors_scanned = defaultdict(set)
                 batch_size = 100
+                scan_succeeded = True
                 
                 try:
                     # Get collection info to understand size
                     info = qdrant_client.get_collection_info()
-                    vector_count = info.get("count", 0) if isinstance(info, dict) else 0
+                    vector_count = info.get("points_count", 0) if isinstance(info, dict) else 0
                     self.report.qdrant_vectors = vector_count
                     logger.info(f"Found {vector_count} vectors in Qdrant")
                     
                     # Scroll through vectors to find orphaned ones
-                    points, _ = qdrant_client.client.scroll(
+                    points, next_offset = qdrant_client.client.scroll(
                         collection_name=qdrant_client.collection_name,
                         limit=batch_size,
                         with_payload=True,
@@ -102,17 +110,25 @@ class ReconciliationService:
                     
                     while points:
                         for point in points:
-                            doc_id = point.payload.get("document_id")
-                            if doc_id:
-                                vectors_scanned.add(doc_id)
-                                if doc_id not in sql_doc_ids:
-                                    self.report.orphaned_embeddings.append(doc_id)
-                        
+                            payload = point.payload if isinstance(point.payload, dict) else {}
+                            doc_id = payload.get("document_id")
+                            chunk_index = payload.get("chunk_index")
+                            if not doc_id or not isinstance(chunk_index, int):
+                                self.report.errors.append("Qdrant point has an invalid document_id or chunk_index")
+                                continue
+
+                            vectors_scanned[doc_id].add(chunk_index)
+                            if doc_id not in sql_doc_ids:
+                                self.report.orphaned_embeddings.append(doc_id)
+
+                        if next_offset is None:
+                            break
+
                         # Get next batch
-                        points, _ = qdrant_client.client.scroll(
+                        points, next_offset = qdrant_client.client.scroll(
                             collection_name=qdrant_client.collection_name,
                             limit=batch_size,
-                            offset=len(vectors_scanned),
+                            offset=next_offset,
                             with_payload=True,
                             with_vectors=False
                         )
@@ -120,19 +136,26 @@ class ReconciliationService:
                 except Exception as e:
                     logger.error(f"Failed to scan Qdrant vectors: {str(e)}")
                     self.report.errors.append(f"Failed to scan Qdrant: {str(e)}")
+                    scan_succeeded = False
                 
                 # Find documents missing embeddings
-                for doc in sql_documents:
-                    # A document is considered missing embeddings if:
-                    # 1. It has chunks but no corresponding vector was found in our scan
-                    # Note: We simplify by checking if doc_id appears in scanned vectors
-                    if doc.chunk_count > 0 and doc.id not in vectors_scanned:
-                        self.report.missing_embeddings.append({
-                            "document_id": doc.id,
-                            "filename": doc.filename,
-                            "chunk_count": doc.chunk_count,
-                            "workspace_id": doc.workspace_id,
-                        })
+                if scan_succeeded:
+                    for doc in sql_documents:
+                        expected = expected_chunks[doc.id]
+                        observed = vectors_scanned[doc.id]
+                        if expected - observed:
+                            self.report.missing_embeddings.append({
+                                "document_id": doc.id,
+                                "filename": doc.filename,
+                                "chunk_count": len(expected),
+                                "workspace_id": doc.workspace_id,
+                            })
+                        stale_chunks = observed - expected
+                        if stale_chunks:
+                            self.report.stale_embeddings.append({
+                                "document_id": doc.id,
+                                "chunk_indexes": sorted(stale_chunks),
+                            })
                 
                 # Remove duplicates from orphaned list
                 self.report.orphaned_embeddings = list(set(self.report.orphaned_embeddings))
@@ -164,14 +187,18 @@ class ReconciliationService:
         if not settings.QDRANT_ENABLED:
             logger.warning("Qdrant is disabled; cannot repair")
             return self.report
+
+        if self.report.errors:
+            logger.warning("Skipping repair because the audit reported errors")
+            return self.report
         
-        embedding_service = get_embedding_service()
         qdrant_client = get_qdrant_client()
         db = get_db_session()
         
         try:
             # Repair missing embeddings
             if missing_embeddings and self.report.missing_embeddings:
+                embedding_service = get_embedding_service()
                 logger.info(f"Re-embedding {len(self.report.missing_embeddings)} documents")
                 doc_repo = DocumentRepository(db)
                 chunk_repo = ChunkRepository(db)

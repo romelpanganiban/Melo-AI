@@ -408,14 +408,14 @@ export default function DocumentsPanel({ sessionId, onCollectionChange, refreshK
                   </div>
 
                   {chunkMap[doc.id] && (
-                    <div className="documents-list-scroll mt-3 max-h-[280px] min-w-0 max-w-full space-y-2 overflow-x-hidden overflow-y-auto rounded-md border border-slate-600 bg-slate-950 p-3 text-slate-100 shadow-inner">
-                      <p className="mb-2 text-xs font-semibold text-slate-300">
+                    <div className="documents-list-scroll mt-3 max-h-[280px] min-w-0 max-w-full space-y-2 overflow-x-hidden overflow-y-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-slate-800 shadow-inner">
+                      <p className="mb-2 text-xs font-semibold text-slate-700">
                         📑 Chunks ({chunkMap[doc.id].length})
                       </p>
                       {chunkMap[doc.id].map((chunk) => (
-                        <div key={chunk.id} className="min-w-0 max-w-full break-words rounded border-l-2 border-teal-400 bg-slate-900 px-3 py-2 text-xs text-slate-200 [overflow-wrap:anywhere]">
-                          <p className="font-semibold text-teal-300">Chunk {chunk.chunk_index + 1}</p>
-                          <p className="mt-1 whitespace-pre-wrap leading-5 text-slate-200">{chunk.content}</p>
+                        <div key={chunk.id} className="min-w-0 max-w-full break-words rounded border-l-2 border-teal-500 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm [overflow-wrap:anywhere]">
+                          <p className="font-semibold text-teal-700">Chunk {chunk.chunk_index + 1}</p>
+                          <p className="mt-1 whitespace-pre-wrap leading-5 text-slate-700">{chunk.content}</p>
                         </div>
                       ))}
                     </div>
