@@ -59,6 +59,18 @@ async def enforce_cookie_csrf(request: Request, call_next):
                 )
     return await call_next(request)
 
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    if settings.ENABLE_HSTS:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
 # Global error handler for MeloAIException
 @app.exception_handler(MeloAIException)
 async def melo_exception_handler(request: Request, exc: MeloAIException):
