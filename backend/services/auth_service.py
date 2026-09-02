@@ -122,15 +122,30 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 
 
 def register_user(db: Session, email: str, password: str) -> User:
-    platform_role = "admin" if email.lower() == settings.ADMIN_EMAIL else "user"
-    user = User(email=email.lower(), password_hash=hash_password(password), platform_role=platform_role)
+    user = User(email=email.lower(), password_hash=hash_password(password), platform_role="user")
     db.add(user)
     db.flush()
     workspace = Workspace(name=f"{email.split('@')[0]}'s Workspace")
     db.add(workspace)
     db.flush()
-    workspace_role = "admin" if platform_role == "admin" else "owner"
-    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=workspace_role))
+    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role="owner"))
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def promote_user_to_admin(db: Session, email: str) -> User | None:
+    """Promote an existing user through an explicit administrative action."""
+    user = get_user_by_email(db, email)
+    if user is None:
+        return None
+
+    user.platform_role = "admin"
+    membership = db.query(WorkspaceMember).filter(
+        WorkspaceMember.user_id == user.id,
+    ).order_by(WorkspaceMember.created_at).first()
+    if membership is not None:
+        membership.role = "admin"
     db.commit()
     db.refresh(user)
     return user
@@ -143,8 +158,7 @@ def ensure_default_workspace(db: Session, user: User) -> WorkspaceMember:
     workspace = Workspace(name=f"{user.email.split('@')[0]}'s Workspace")
     db.add(workspace)
     db.flush()
-    workspace_role = "admin" if user.platform_role == "admin" else "owner"
-    membership = WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=workspace_role)
+    membership = WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role="owner")
     db.add(membership)
     db.commit()
     db.refresh(membership)

@@ -1,8 +1,3 @@
-import uuid
-
-from core.settings import settings
-
-
 def test_registration_creates_default_workspace(client):
     response = client.post(
         "/auth/register",
@@ -25,11 +20,10 @@ def test_registration_creates_default_workspace(client):
     ]
 
 
-def test_designated_admin_registration_gets_admin_role(client):
-    settings.ADMIN_EMAIL = f"admin-{uuid.uuid4()}@example.com"
+def test_registration_never_grants_admin_role(client):
     response = client.post(
         "/auth/register",
-        json={"email": settings.ADMIN_EMAIL, "password": "correct horse battery staple"},
+        json={"email": "admin@example.com", "password": "correct horse battery staple"},
     )
     assert response.status_code == 201
     registration = response.json()
@@ -42,14 +36,13 @@ def test_designated_admin_registration_gets_admin_role(client):
         },
     )
     assert workspaces.status_code == 200
-    assert workspaces.json()["workspaces"][0]["role"] == "admin"
+    assert workspaces.json()["workspaces"][0]["role"] == "owner"
 
 
 def test_admin_can_access_session_routes(client):
-    settings.ADMIN_EMAIL = f"admin-{uuid.uuid4()}@example.com"
     response = client.post(
         "/auth/register",
-        json={"email": settings.ADMIN_EMAIL, "password": "correct horse battery staple"},
+        json={"email": "session-admin@example.com", "password": "correct horse battery staple"},
     )
     assert response.status_code == 201
     registration = response.json()
