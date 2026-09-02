@@ -70,6 +70,68 @@ HTTPS / Reverse Proxy (infrastructure, outside scope)
 
 ---
 
+## Recommended Security-First Delivery Order
+
+The current implementation plan should proceed in the following sequence:
+
+### Sprint 1 - Security
+
+1. Fix chunk authorization
+2. Make security context mandatory
+3. Audit all endpoints
+4. Add two-user tests
+
+### Sprint 2 - Identity
+
+5. Fix admin bootstrap
+6. Harden sessions
+7. Durable token revocation
+
+### Sprint 3 - AI Security
+
+8. Prompt injection handling
+9. Sensitive-file policy
+10. Agent authorization
+
+### Sprint 4 - Reliability
+
+11. Upload limits
+12. Processing queue
+13. Document states
+14. Qdrant retry/reconciliation
+
+### Sprint 5 - Scale
+
+15. Redis
+16. Per-operation rate limits
+17. Worker architecture
+18. Resource quotas
+
+### Sprint 6 - Production
+
+19. HTTPS
+20. Security headers
+21. Reverse proxy
+22. Trusted proxy configuration
+
+### Sprint 7 - Security Automation
+
+23. Security tests
+24. pip-audit
+25. npm audit
+26. Bandit/Semgrep
+27. CodeQL
+
+### Sprint 8 - Documentation
+
+28. Update SYSTEM_AUDIT.md
+29. Update SECURITY_ARCHITECTURE.md
+30. Document SaaS deployment requirements
+
+This order keeps the product secure before scaling, deployment hardening, and operational automation.
+
+---
+
 ## Phase 14a: Central Authorization Middleware (Weeks 1-2)
 
 ### Goals
