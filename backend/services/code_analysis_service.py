@@ -17,6 +17,8 @@ class CodeAnalysisService:
     """Analyze source files inside the Melo-AI workspace without modifying them."""
 
     MAX_FILE_SIZE = 1_000_000
+    SENSITIVE_FILENAMES = {".env", ".env.local", ".env.production", "id_rsa"}
+    SENSITIVE_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
     SUPPORTED_EXTENSIONS = {
         ".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".md", ".css", ".html"
     }
@@ -142,6 +144,8 @@ class CodeAnalysisService:
 
         workspace = self._workspace_root(workspace_id or self.workspace_id)
         requested = self._resolve_workspace_path(relative_path, workspace)
+        if self._is_sensitive_path(requested):
+            raise ValidationError("sensitive files cannot be accessed", field="path")
         if not requested.is_file():
             raise ValidationError("file was not found", field="path")
         if requested.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
@@ -149,6 +153,10 @@ class CodeAnalysisService:
         if requested.stat().st_size > self.MAX_FILE_SIZE:
             raise ValidationError("file exceeds the 1 MB analysis limit", field="path")
         return requested
+
+    @classmethod
+    def _is_sensitive_path(cls, requested: Path) -> bool:
+        return requested.name.lower() in cls.SENSITIVE_FILENAMES or requested.suffix.lower() in cls.SENSITIVE_SUFFIXES
 
     def _resolve_write_target(self, relative_path: str, workspace_id: str | None = None) -> Path:
         if not relative_path or not relative_path.strip():

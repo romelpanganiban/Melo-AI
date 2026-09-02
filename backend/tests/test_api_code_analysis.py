@@ -51,6 +51,26 @@ def test_write_workspace_file_rejects_protected_path(client):
     assert response.status_code == 422
 
 
+def test_read_workspace_file_rejects_sensitive_path(client):
+    response = client.post(
+        "/files/read",
+        json={"path": "backend/.env"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["details"]["field"] == "path"
+
+
+def test_analyze_code_rejects_sensitive_path(client):
+    response = client.post(
+        "/analysis/code",
+        json={"path": "backend/.env"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["details"]["field"] == "path"
+
+
 def test_delete_workspace_file_requires_confirmation(client):
     response = client.request(
         "DELETE",
