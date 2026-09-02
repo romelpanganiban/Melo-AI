@@ -124,6 +124,41 @@ def test_delete_document_removes_chunks(file_db, monkeypatch):
         inspect_session.close()
 
 
+def test_get_document_chunks_denies_non_owner_private_access(file_db, monkeypatch):
+    session_factory, _engine = file_db
+    monkeypatch.setattr(document_service_module, "get_db_session", session_factory)
+
+    service = DocumentService()
+    owner_id = "owner-user-123"
+    workspace_id = "workspace-123"
+    other_user_id = "reader-user-456"
+
+    with session_factory() as db:
+        from database.models import Workspace, WorkspaceMember, User, Document
+        db.add_all([
+            User(id=owner_id, email="owner@example.com", password_hash="hash"),
+            User(id=other_user_id, email="reader@example.com", password_hash="hash"),
+            Workspace(id=workspace_id, name="Shared workspace"),
+            WorkspaceMember(user_id=other_user_id, workspace_id=workspace_id, role="editor"),
+        ])
+        db.commit()
+
+    doc = service.upload_document(
+        filename="private.txt",
+        file_type="txt",
+        content="This is private content meant to stay with the owner.",
+        owner_id=owner_id,
+        workspace_id=workspace_id,
+    )
+
+    with pytest.raises(Exception, match="not.*owner|not.*shared|denied|permission"):
+        service.get_document_chunks(
+            document_id=doc["id"],
+            workspace_id=workspace_id,
+            user_id=other_user_id,
+        )
+
+
 def test_get_by_session_ignores_legacy_workspace_filter_when_schema_lacks_workspace_id(file_db):
     session_factory, _engine = file_db
 

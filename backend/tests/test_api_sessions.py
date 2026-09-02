@@ -84,10 +84,39 @@ def test_user_cannot_access_another_users_session(client, test_session_id):
         },
     )
     assert response.status_code == 201
-    token = response.json()["access_token"]
+    payload = response.json()
+    token = payload["access_token"]
+    other_workspace_id = payload["workspace_id"]
 
     response = client.get(
         "/history/" + test_session_id,
-        headers={"Authorization": f"Bearer {token}"},
+        headers={
+            "Authorization": f"Bearer {token}",
+            "X-Workspace-ID": other_workspace_id,
+        },
     )
+    assert response.status_code == 404
+
+
+def test_user_cannot_access_session_in_different_workspace_header(client, test_session_id):
+    response = client.post(
+        "/auth/register",
+        json={
+            "email": "third-owner@example.com",
+            "password": "another valid password",
+        },
+    )
+    assert response.status_code == 201
+    payload = response.json()
+    token = payload["access_token"]
+    other_workspace_id = payload["workspace_id"]
+
+    response = client.get(
+        "/history/" + test_session_id,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "X-Workspace-ID": other_workspace_id,
+        },
+    )
+
     assert response.status_code == 404

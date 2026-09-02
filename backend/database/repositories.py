@@ -323,6 +323,15 @@ class DocumentRepository:
             if not self._supports_workspace_filter() and workspace_id is not None:
                 workspace_id = None
 
+            if not self._supports_workspace_filter():
+                sql = "SELECT id, owner_id, session_id, collection_id, filename, file_type, content, chunk_count, created_at, updated_at FROM documents WHERE id = :document_id"
+                params = {"document_id": document_id}
+                if owner_id is not None:
+                    sql += " AND owner_id = :owner_id"
+                    params["owner_id"] = owner_id
+                row = self.db.execute(text(sql), params).mappings().first()
+                return self._row_to_document(row) if row is not None else None
+
             query = self.db.query(Document).filter(Document.id == document_id)
             if owner_id is not None:
                 query = query.filter(Document.owner_id == owner_id)
@@ -338,6 +347,16 @@ class DocumentRepository:
         try:
             if not self._supports_workspace_filter() and workspace_id is not None:
                 workspace_id = None
+
+            if not self._supports_workspace_filter():
+                sql = "SELECT id, owner_id, session_id, collection_id, filename, file_type, content, chunk_count, created_at, updated_at FROM documents WHERE session_id = :session_id"
+                params = {"session_id": session_id}
+                if owner_id is not None:
+                    sql += " AND owner_id = :owner_id"
+                    params["owner_id"] = owner_id
+                sql += " ORDER BY created_at DESC"
+                rows = self.db.execute(text(sql), params).mappings().all()
+                return [self._row_to_document(row) for row in rows]
 
             query = self.db.query(Document).filter(Document.session_id == session_id)
             if owner_id is not None:

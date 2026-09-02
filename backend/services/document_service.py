@@ -473,13 +473,24 @@ class DocumentService:
         finally:
             db.close()
 
-    def get_document_chunks(self, document_id: str, owner_id: str = None, workspace_id: str = None) -> list[dict]:
+    def get_document_chunks(self, document_id: str, owner_id: str = None, workspace_id: str = None, user_id: str = None) -> list[dict]:
         """Get stored chunks for a document."""
         db = get_db_session()
         try:
             document = DocumentRepository(db).get_by_id(document_id, owner_id=owner_id, workspace_id=workspace_id)
             if not document:
                 raise DocumentNotFoundError(document_id)
+
+            if user_id and workspace_id:
+                policy = AuthorizationPolicy(db)
+                decision = policy.authorize_document_read(user_id, document_id, workspace_id)
+                if not decision.allowed:
+                    logger.warning(
+                        f"Document chunk access denied: {decision.reason}",
+                        extra={"user_id": user_id, "document_id": document_id, "workspace_id": workspace_id},
+                    )
+                    raise ChatServiceError(decision.reason)
+
             repo = ChunkRepository(db)
             chunks = repo.get_by_document(document_id)
 
@@ -495,6 +506,8 @@ class DocumentService:
                 for chunk in chunks
             ]
 
+        except (ChatServiceError, DocumentNotFoundError):
+            raise
         except Exception as e:
             logger.error(f"Error getting document chunks: {str(e)}")
             raise ChatServiceError(f"Failed to get document chunks: {str(e)}")

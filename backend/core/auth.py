@@ -63,17 +63,34 @@ def get_current_membership(
     user: User = Depends(get_current_user),
     workspace_id: str | None = Header(default=None, alias="X-Workspace-ID"),
 ) -> WorkspaceMember:
+    if not workspace_id:
+        audit_log(
+            "authz.denied",
+            user_id=str(user.id),
+            workspace_id=None,
+            action="workspace_membership_lookup",
+            outcome="denied",
+            reason="missing_workspace_id_header",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Workspace-ID header is required",
+        )
+
     memberships = user.memberships or []
-    if workspace_id:
-        membership = next((item for item in memberships if item.workspace_id == workspace_id), None)
-        if membership is None:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership not found")
-        return membership
+    membership = next((item for item in memberships if item.workspace_id == workspace_id), None)
+    if membership is None:
+        audit_log(
+            "authz.denied",
+            user_id=str(user.id),
+            workspace_id=str(workspace_id),
+            action="workspace_membership_lookup",
+            outcome="denied",
+            reason="workspace_membership_not_found",
+        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership not found")
 
-    if memberships:
-        return memberships[0]
-
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No workspace membership")
+    return membership
 
 
 def require_workspace_access(workspace_id: str):

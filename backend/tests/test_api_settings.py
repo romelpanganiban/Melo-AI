@@ -3,8 +3,26 @@
 from fastapi.testclient import TestClient
 
 from main import app
+from services.auth_service import create_access_token
 
 # Note: client fixture is provided by conftest.py
+
+
+def test_settings_requires_workspace_header(test_db, test_user):
+    """Workspace-scoped requests must fail closed when no workspace context is supplied."""
+    app.dependency_overrides.clear()
+    app.dependency_overrides[__import__('database.connection', fromlist=['get_db']).get_db] = lambda: test_db
+
+    with TestClient(
+        app,
+        headers={
+            "Authorization": f"Bearer {create_access_token(test_user.id)}",
+        },
+    ) as no_workspace_client:
+        response = no_workspace_client.get("/settings")
+
+    assert response.status_code == 400
+    assert "X-Workspace-ID" in response.json()["detail"]
 
 
 def test_get_settings(client):

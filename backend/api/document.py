@@ -349,7 +349,11 @@ def get_document_chunks(
             extra={"doc_id": document_id, "workspace_id": workspace_ctx.workspace_id}
         )
 
-        chunks = service.get_document_chunks(document_id, workspace_id=workspace_ctx.workspace_id)
+        chunks = service.get_document_chunks(
+            document_id,
+            workspace_id=workspace_ctx.workspace_id,
+            user_id=workspace_ctx.user.id,
+        )
 
         return {
             "document_id": document_id,
