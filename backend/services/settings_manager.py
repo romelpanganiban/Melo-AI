@@ -22,6 +22,15 @@ class SettingsManager:
         "learning_level": "intermediate",
         "explanation_style": "clear",
         "quiz_difficulty": "medium",
+        "project_context": {
+            "project_name": "Current workspace",
+            "roadmap_summary": "Stay on the active project roadmap unless the user explicitly changes direction.",
+            "current_phase": "General",
+            "current_objective": "Keep the active context as the default working goal.",
+            "next_action": "Continue with the current roadmap unless the user overrides it.",
+            "status": "active",
+            "last_updated": None,
+        },
     }
 
     def __init__(self, file_path: Optional[Path] = None, workspace_id: Optional[str] = None):

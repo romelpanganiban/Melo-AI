@@ -18,6 +18,7 @@ class SettingsRequest(BaseModel):
     learning_level: Literal["beginner", "intermediate", "advanced"] = "intermediate"
     explanation_style: Literal["clear", "concise", "detailed"] = "clear"
     quiz_difficulty: Literal["easy", "medium", "hard"] = "medium"
+    project_context: dict | None = Field(default=None, description="Project roadmap and active context used by the assistant")
 
 
 class SettingsResponse(BaseModel):
@@ -28,6 +29,7 @@ class SettingsResponse(BaseModel):
     learning_level: Literal["beginner", "intermediate", "advanced"]
     explanation_style: Literal["clear", "concise", "detailed"]
     quiz_difficulty: Literal["easy", "medium", "hard"]
+    project_context: dict | None = None
 
 
 @router.get("/settings", response_model=SettingsResponse, status_code=status.HTTP_200_OK)
