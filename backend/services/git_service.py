@@ -19,7 +19,12 @@ class GitService:
         if workspace is not None:
             self.workspace = workspace.resolve()
         elif workspace_id:
-            self.workspace = (Path(settings.BASE_DIR).resolve() / "workspaces" / workspace_id).resolve()
+            configured_root = settings.WORKSPACE_TOOLS_ROOT
+            self.workspace = (
+                Path(configured_root).expanduser().resolve()
+                if configured_root
+                else (Path(settings.BASE_DIR).resolve() / "workspaces" / workspace_id).resolve()
+            )
         else:
             self.workspace = Path(settings.BASE_DIR).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)

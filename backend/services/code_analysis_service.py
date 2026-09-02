@@ -163,6 +163,8 @@ class CodeAnalysisService:
     @staticmethod
     def _workspace_root(workspace_id: str | None) -> Path:
         base_root = Path(settings.BASE_DIR).resolve()
+        if workspace_id and settings.WORKSPACE_TOOLS_ROOT:
+            return Path(settings.WORKSPACE_TOOLS_ROOT).expanduser().resolve()
         if workspace_id:
             return (base_root / "workspaces" / workspace_id).resolve()
         return base_root
