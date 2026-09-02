@@ -92,6 +92,16 @@ def test_agent_rejects_missing_read_only_action_input(client):
     assert response.status_code == 422
 
 
+def test_agent_read_action_uses_workspace_scope(client):
+    response = client.post(
+        "/agent/run",
+        json={"actions": [{"action": "read_file", "path": "backend/services/chat_service.py"}]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["result"]["path"] == "backend/services/chat_service.py"
+
+
 def test_agent_approval_is_bound_to_action_and_target(client):
     response = client.post(
         "/agent/approvals",

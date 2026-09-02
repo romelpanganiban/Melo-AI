@@ -11,7 +11,10 @@ from services.code_analysis_service import get_code_analysis_service
 from services.document_service import DocumentService
 from services.approval_service import get_approval_service
 from core.auth import require_workspace_access_from_header, WorkspaceContext
+from core.authz import AuthorizationPolicy, ToolCapability
 from core.rate_limit import enforce_request_rate_limit
+from database.connection import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter(dependencies=[Depends(enforce_request_rate_limit)])
 code_service = get_code_analysis_service()
@@ -52,19 +55,40 @@ def create_approval(
 def run_read_only_agent(
     request: AgentRunRequest,
     workspace_ctx: WorkspaceContext = Depends(require_workspace_access_from_header()),
+    db: Session = Depends(get_db),
 ):
     """Execute bounded read-only actions; side-effecting actions are unsupported."""
     results = []
     try:
+        policy = AuthorizationPolicy(db)
+        capability_by_action = {
+            "read_file": ToolCapability.FILE_READ,
+            "analyze_code": ToolCapability.CODE_ANALYSIS,
+            "search_documents": ToolCapability.DOCUMENT_SEARCH,
+        }
         for action in request.actions:
+            decision = policy.authorize_tool_execution(
+                workspace_ctx.user.id,
+                workspace_ctx.workspace_id,
+                capability_by_action[action.action],
+            )
+            if not decision.allowed:
+                raise HTTPException(status_code=decision.status_code, detail=decision.reason)
+
             if action.action == "read_file":
                 if not action.path:
                     raise ValidationError("path is required", field="path")
-                results.append({"action": action.action, "result": code_service.read_file(action.path)})
+                results.append({
+                    "action": action.action,
+                    "result": code_service.with_workspace(workspace_ctx.workspace_id).read_file(action.path),
+                })
             elif action.action == "analyze_code":
                 if not action.path:
                     raise ValidationError("path is required", field="path")
-                results.append({"action": action.action, "result": code_service.analyze_file(action.path)})
+                results.append({
+                    "action": action.action,
+                    "result": code_service.with_workspace(workspace_ctx.workspace_id).analyze_file(action.path),
+                })
             elif action.action == "search_documents":
                 if not action.query or not action.session_id:
                     raise ValidationError("query and session_id are required", field="action")
