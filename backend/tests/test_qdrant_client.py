@@ -142,6 +142,18 @@ class TestQdrantVectorClient:
                     embedding=[0.1, 0.2],
                     payload={"content": "test"}
                 )
+
+    def test_upsert_vector_retries_transient_failure(self):
+        with patch('services.qdrant_client.QdrantClient') as mock_qdrant:
+            mock_instance = MagicMock()
+            mock_instance.upsert.side_effect = [Exception("temporary"), None]
+            mock_qdrant.return_value = mock_instance
+
+            client = QdrantVectorClient()
+            client.client = mock_instance
+
+            assert client.upsert_vector("doc-123", 0, [0.1, 0.2], {"content": "test"}) is True
+            assert mock_instance.upsert.call_count == 2
     
     def test_search_success(self):
         """Test successful vector search"""

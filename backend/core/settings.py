@@ -89,6 +89,8 @@ class Settings:
     QDRANT_COLLECTION_NAME: str = os.getenv("QDRANT_COLLECTION_NAME", "melo_documents")
     QDRANT_VECTOR_SIZE: int = int(os.getenv("QDRANT_VECTOR_SIZE", "384"))  # sentence-transformers default
     QDRANT_TIMEOUT: int = int(os.getenv("QDRANT_TIMEOUT", "30"))
+    QDRANT_RETRY_ATTEMPTS: int = max(1, int(os.getenv("QDRANT_RETRY_ATTEMPTS", "3")))
+    QDRANT_RETRY_DELAY_SECONDS: float = max(0.0, float(os.getenv("QDRANT_RETRY_DELAY_SECONDS", "0.25")))
     QDRANT_ENABLED: bool = os.getenv("QDRANT_ENABLED", "true").lower() == "true"
     QDRANT_SCORE_THRESHOLD: float = float(os.getenv("QDRANT_SCORE_THRESHOLD", "0.25"))
     

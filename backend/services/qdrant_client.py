@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.exceptions import UnexpectedResponse
 import uuid
+import time
 
 from core.logging import logger
 from core.errors import ChatServiceError
@@ -54,6 +55,22 @@ class QdrantVectorClient:
         except Exception as e:
             logger.error(f"Failed to initialize Qdrant client: {str(e)}")
             raise ChatServiceError(f"Qdrant initialization failed: {str(e)}")
+
+    def _with_retries(self, operation, action: str):
+        last_error = None
+        for attempt in range(settings.QDRANT_RETRY_ATTEMPTS):
+            try:
+                return operation()
+            except Exception as exc:
+                last_error = exc
+                if attempt + 1 < settings.QDRANT_RETRY_ATTEMPTS:
+                    logger.warning(
+                        "Qdrant operation failed; retrying",
+                        extra={"action": action, "attempt": attempt + 1},
+                    )
+                    if settings.QDRANT_RETRY_DELAY_SECONDS:
+                        time.sleep(settings.QDRANT_RETRY_DELAY_SECONDS)
+        raise last_error
     
     def is_available(self) -> bool:
         """Check if Qdrant server is available
@@ -155,9 +172,12 @@ class QdrantVectorClient:
             )
             
             # Upsert to collection
-            self.client.upsert(
-                collection_name=self.collection_name,
-                points=[point]
+            self._with_retries(
+                lambda: self.client.upsert(
+                    collection_name=self.collection_name,
+                    points=[point]
+                ),
+                "upsert",
             )
             
             logger.debug(f"Vector upserted: {point_id}")
@@ -202,23 +222,25 @@ class QdrantVectorClient:
                 query_filter = models.Filter(must=conditions) if conditions else None
             
             # Search in collection
-            if hasattr(self.client, "query_points"):
-                query_response = self.client.query_points(
-                    collection_name=self.collection_name,
-                    query=query_embedding,
-                    limit=limit,
-                    score_threshold=score_threshold,
-                    query_filter=query_filter,
-                )
-                search_results = getattr(query_response, "points", query_response)
-            else:
-                search_results = self.client.search(
+            def run_search():
+                if hasattr(self.client, "query_points"):
+                    query_response = self.client.query_points(
+                        collection_name=self.collection_name,
+                        query=query_embedding,
+                        limit=limit,
+                        score_threshold=score_threshold,
+                        query_filter=query_filter,
+                    )
+                    return getattr(query_response, "points", query_response)
+                return self.client.search(
                     collection_name=self.collection_name,
                     query_vector=query_embedding,
                     limit=limit,
                     score_threshold=score_threshold,
                     query_filter=query_filter,
                 )
+
+            search_results = self._with_retries(run_search, "search")
             
             # Format results
             results = []
@@ -252,18 +274,21 @@ class QdrantVectorClient:
         """
         try:
             # Delete points by payload filter
-            self.client.delete(
-                collection_name=self.collection_name,
-                points_selector=models.FilterSelector(
-                    filter=models.Filter(
-                        must=[
-                            models.FieldCondition(
-                                key="document_id",
-                                match=models.MatchValue(value=document_id)
-                            )
-                        ]
+            self._with_retries(
+                lambda: self.client.delete(
+                    collection_name=self.collection_name,
+                    points_selector=models.FilterSelector(
+                        filter=models.Filter(
+                            must=[
+                                models.FieldCondition(
+                                    key="document_id",
+                                    match=models.MatchValue(value=document_id)
+                                )
+                            ]
+                        )
                     )
-                )
+                ),
+                "delete",
             )
             
             logger.info(f"Vectors deleted for document: {document_id}")
