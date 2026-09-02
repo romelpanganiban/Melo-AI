@@ -1,5 +1,7 @@
 """Authentication endpoints."""
 
+import secrets
+
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, field_validator
@@ -60,6 +62,13 @@ def register(request: AuthRequest, response: Response, db: Session = Depends(get
         secure=settings.AUTH_COOKIE_SECURE,
         samesite="lax",
     )
+    response.set_cookie(
+        key=settings.AUTH_CSRF_COOKIE_NAME,
+        value=secrets.token_urlsafe(32),
+        max_age=TOKEN_TTL_SECONDS,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite="lax",
+    )
     audit_log("auth.register", user_id=str(user.id), workspace_id=str(membership.workspace_id), email=request.email, outcome="success")
     return AuthResponse(access_token=token, user_id=user.id, workspace_id=membership.workspace_id)
 
@@ -77,6 +86,13 @@ def login(request: AuthRequest, response: Response, db: Session = Depends(get_db
         value=token,
         max_age=TOKEN_TTL_SECONDS,
         httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite="lax",
+    )
+    response.set_cookie(
+        key=settings.AUTH_CSRF_COOKIE_NAME,
+        value=secrets.token_urlsafe(32),
+        max_age=TOKEN_TTL_SECONDS,
         secure=settings.AUTH_COOKIE_SECURE,
         samesite="lax",
     )
@@ -103,4 +119,5 @@ def logout(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     revoke_access_token(token, db)
     response.delete_cookie(key=settings.AUTH_COOKIE_NAME)
+    response.delete_cookie(key=settings.AUTH_CSRF_COOKIE_NAME)
     return {"logged_out": True}

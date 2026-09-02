@@ -46,6 +46,8 @@ class Settings:
     AUTH_RATE_LIMIT_REQUESTS: int = int(os.getenv("AUTH_RATE_LIMIT_REQUESTS", "10"))
     AUTH_RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("AUTH_RATE_LIMIT_WINDOW_SECONDS", "300"))
     AUTH_COOKIE_NAME: str = os.getenv("AUTH_COOKIE_NAME", "melo_access_token")
+    AUTH_CSRF_COOKIE_NAME: str = os.getenv("AUTH_CSRF_COOKIE_NAME", "melo_csrf_token")
+    AUTH_CSRF_HEADER_NAME: str = os.getenv("AUTH_CSRF_HEADER_NAME", "X-CSRF-Token")
     AUTH_COOKIE_SECURE: bool = os.getenv("AUTH_COOKIE_SECURE", "false").lower() == "true"
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "").strip().lower()
     MONTHLY_TOKEN_LIMIT: int = int(os.getenv("MONTHLY_TOKEN_LIMIT", "100000"))

@@ -43,10 +43,25 @@ def test_logout_works_with_cookie_only(client):
     assert client.post("/auth/register", json=credentials).status_code == 201
 
     client.headers.pop("Authorization", None)
-    response = client.post("/auth/logout")
+    csrf_token = client.cookies.get("melo_csrf_token")
+    response = client.post("/auth/logout", headers={"X-CSRF-Token": csrf_token})
 
     assert response.status_code == 200
     assert client.get("/auth/me").status_code == 401
+
+
+def test_cookie_mutation_requires_csrf_token(client):
+    credentials = {
+        "email": "csrf-owner@example.com",
+        "password": "correct horse battery staple",
+    }
+    assert client.post("/auth/register", json=credentials).status_code == 201
+    client.headers.pop("Authorization", None)
+
+    response = client.post("/auth/logout")
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "CSRF_VALIDATION_FAILED"
 
 
 def test_revoked_token_is_rejected_by_database_backed_check(test_db):

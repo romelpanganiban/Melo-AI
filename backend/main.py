@@ -1,3 +1,4 @@
+import hmac
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -40,6 +41,23 @@ app = FastAPI(
     version="0.1.0",
     description="Local-first AI assistant with persistent memory"
 )
+
+
+@app.middleware("http")
+async def enforce_cookie_csrf(request: Request, call_next):
+    """Require a matching CSRF token when authentication relies on the auth cookie."""
+    if request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"}:
+        auth_cookie = request.cookies.get(settings.AUTH_COOKIE_NAME)
+        bearer_header = request.headers.get("Authorization", "")
+        if auth_cookie and not bearer_header.lower().startswith("bearer "):
+            csrf_cookie = request.cookies.get(settings.AUTH_CSRF_COOKIE_NAME, "")
+            csrf_header = request.headers.get(settings.AUTH_CSRF_HEADER_NAME, "")
+            if not csrf_cookie or not csrf_header or not hmac.compare_digest(csrf_cookie, csrf_header):
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content={"error": "CSRF_VALIDATION_FAILED", "message": "CSRF token validation failed", "details": {}},
+                )
+    return await call_next(request)
 
 # Global error handler for MeloAIException
 @app.exception_handler(MeloAIException)

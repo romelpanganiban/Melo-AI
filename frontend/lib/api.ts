@@ -73,6 +73,15 @@ async function fetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<
     headers.delete('X-Workspace-ID');
   }
 
+  if (typeof document !== 'undefined') {
+    const csrfCookie = document.cookie
+      .split('; ')
+      .find((cookie) => cookie.startsWith('melo_csrf_token='));
+    if (csrfCookie) {
+      headers.set('X-CSRF-Token', decodeURIComponent(csrfCookie.split('=').slice(1).join('=')));
+    }
+  }
+
   return globalThis.fetch(input, { ...init, headers, credentials: 'include' });
 }
 
