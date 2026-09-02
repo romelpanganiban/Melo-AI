@@ -4,6 +4,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import pytest
 
 from core.errors import ValidationError
+from core.settings import settings
 from services.document_parser import DocumentParser, sanitize_filename
 
 
@@ -68,3 +69,10 @@ def test_sanitize_filename_falls_back_for_extension_only_names():
 def test_parse_rejects_unsupported_type():
     with pytest.raises(ValidationError):
         DocumentParser().parse("notes.rtf", b"text")
+
+
+def test_extracted_text_limit_remains_validation_error(monkeypatch):
+    monkeypatch.setattr(settings, "MAX_DOCUMENT_CONTENT_LENGTH", 3)
+
+    with pytest.raises(ValidationError, match="exceeds"):
+        DocumentParser().parse("notes.txt", b"text")

@@ -33,11 +33,13 @@ def sanitize_filename(filename: str) -> str:
     basename = re.sub(r"\s+", " ", basename).strip()
     logger.info(f"[sanitize_filename] After regex replacements: {repr(basename)}")
 
+    extension_only = basename.startswith(".") and basename.count(".") == 1
+
     basename = basename.strip(". ")
     logger.info(f"[sanitize_filename] After strip dots/spaces: {repr(basename)}")
 
-    if not basename or basename in {".", ".."}:
-        suffix = Path(raw_name).suffix.lower()
+    if extension_only or not basename or basename in {".", ".."}:
+        suffix = f".{basename.lower()}" if extension_only else Path(raw_name.strip()).suffix.lower()
         safe_name = "uploaded-document"
         if suffix:
             safe_name = f"{safe_name}{suffix}"
@@ -98,6 +100,8 @@ class DocumentParser:
                     raise ValidationError("Extracted PDF text exceeds the 2 MB limit", field="content")
                 parts.append(page_text)
             return "\n".join(parts)
+        except ValidationError:
+            raise
         except Exception as exc:
             raise ChatServiceError(f"Failed to extract PDF text: {exc}") from exc
 
@@ -121,6 +125,8 @@ class DocumentParser:
                         raise ValidationError("Extracted DOCX text exceeds the 2 MB limit", field="content")
                     paragraphs.append(row_text)
             return "\n".join(paragraphs)
+        except ValidationError:
+            raise
         except Exception as exc:
             raise ChatServiceError(f"Failed to extract DOCX text: {exc}") from exc
 
