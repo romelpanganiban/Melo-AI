@@ -73,7 +73,7 @@ async function fetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<
     headers.delete('X-Workspace-ID');
   }
 
-  return globalThis.fetch(input, { ...init, headers });
+  return globalThis.fetch(input, { ...init, headers, credentials: 'include' });
 }
 
 /**

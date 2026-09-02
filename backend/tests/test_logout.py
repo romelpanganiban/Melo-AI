@@ -23,6 +23,32 @@ def test_logout_revokes_current_token(client):
     assert client.get("/auth/me", headers=headers).status_code == 401
 
 
+def test_login_sets_http_only_auth_cookie(client):
+    credentials = {
+        "email": "cookie-owner@example.com",
+        "password": "correct horse battery staple",
+    }
+    response = client.post("/auth/register", json=credentials)
+
+    assert response.status_code == 201
+    assert "httponly" in response.headers["set-cookie"].lower()
+    assert client.get("/auth/me").status_code == 200
+
+
+def test_logout_works_with_cookie_only(client):
+    credentials = {
+        "email": "cookie-logout@example.com",
+        "password": "correct horse battery staple",
+    }
+    assert client.post("/auth/register", json=credentials).status_code == 201
+
+    client.headers.pop("Authorization", None)
+    response = client.post("/auth/logout")
+
+    assert response.status_code == 200
+    assert client.get("/auth/me").status_code == 401
+
+
 def test_revoked_token_is_rejected_by_database_backed_check(test_db):
     from database.models import User, Workspace, WorkspaceMember
     from services.auth_service import create_access_token, revoke_access_token

@@ -1,7 +1,7 @@
 """FastAPI authentication and authorization dependencies."""
 
 from dataclasses import dataclass
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -42,14 +42,17 @@ def is_platform_admin(user: User) -> bool:
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    cookie_token: str | None = Cookie(default=None, alias=settings.AUTH_COOKIE_NAME),
     db: Session = Depends(get_db),
 ) -> User:
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        audit_log("auth.unauthorized", outcome="denied", reason="missing_bearer_token")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-    token = credentials.credentials.strip() if credentials.credentials else ""
+    token = ""
+    if credentials is not None and credentials.scheme.lower() == "bearer":
+        token = credentials.credentials.strip() if credentials.credentials else ""
+    elif cookie_token:
+        token = cookie_token.strip()
+
     if not token:
-        audit_log("auth.unauthorized", outcome="denied", reason="empty_token")
+        audit_log("auth.unauthorized", outcome="denied", reason="missing_bearer_token")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     user_id = verify_access_token(token, db)
     user = db.query(User).filter(User.id == user_id).first() if user_id else None
