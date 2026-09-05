@@ -109,6 +109,31 @@ logger = setup_logger("melo-ai", level=logging.INFO, format_type="text")
 audit_logger = setup_logger("melo-ai.audit", level=logging.INFO, format_type="json")
 
 
+_SENSITIVE_FIELD_MARKERS = (
+    "password",
+    "token",
+    "secret",
+    "authorization",
+    "cookie",
+    "header",
+    "api_key",
+    "private_key",
+    "credential",
+    "database_url",
+)
+
+
+def _redact_audit_value(key: str, value: Any) -> Any:
+    normalized = key.lower()
+    if any(marker in normalized for marker in _SENSITIVE_FIELD_MARKERS):
+        return "[REDACTED]"
+    if isinstance(value, dict):
+        return {str(child_key): _redact_audit_value(str(child_key), child_value) for child_key, child_value in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_redact_audit_value(key, child_value) for child_value in value]
+    return value
+
+
 def audit_log(event: str, **extra: Any) -> None:
     """Record a security-relevant event with structured metadata.
 
@@ -117,11 +142,7 @@ def audit_log(event: str, **extra: Any) -> None:
     """
     safe_extra = {"event": event}
     for key, value in extra.items():
-        normalized = key.lower()
-        if any(marker in normalized for marker in ("password", "token", "secret", "authorization", "cookie", "header")):
-            safe_extra[key] = "[REDACTED]"
-        else:
-            safe_extra[key] = value
+        safe_extra[key] = _redact_audit_value(key, value)
     audit_logger.info(event, extra=safe_extra)
 
 

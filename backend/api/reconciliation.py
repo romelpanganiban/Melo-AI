@@ -28,9 +28,14 @@ def audit_reconciliation(
     
     try:
         logger.info("Admin reconciliation audit initiated", extra={"user_id": current_user.id})
-        audit_log("admin.reconciliation.audit", user_id=str(current_user.id), outcome="success")
         service = get_reconciliation_service()
         report = service.audit()
+        audit_log(
+            "admin.reconciliation.audit",
+            user_id=str(current_user.id),
+            outcome="success" if not report.errors else "completed_with_errors",
+            error_count=len(report.errors),
+        )
         return report.to_dict()
     except Exception as e:
         logger.error(f"Reconciliation audit failed: {str(e)}", extra={"user_id": current_user.id})
@@ -77,17 +82,20 @@ def repair_reconciliation(
                 "delete_orphaned": delete_orphaned
             }
         )
+        service = get_reconciliation_service()
+        report = service.repair(
+            missing_embeddings=missing_embeddings,
+            delete_orphaned=delete_orphaned
+        )
         audit_log(
             "admin.reconciliation.repair",
             user_id=str(current_user.id),
             missing_embeddings=missing_embeddings,
             delete_orphaned=delete_orphaned,
-            outcome="success",
-        )
-        service = get_reconciliation_service()
-        report = service.repair(
-            missing_embeddings=missing_embeddings,
-            delete_orphaned=delete_orphaned
+            repaired_count=report.repaired_count,
+            deleted_count=report.deleted_count,
+            outcome="success" if not report.errors else "completed_with_errors",
+            error_count=len(report.errors),
         )
         return report.to_dict()
     except Exception as e:

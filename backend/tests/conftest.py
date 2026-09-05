@@ -81,6 +81,7 @@ def client(test_db, test_user):
         yield test_db
 
     rate_limit._requests.clear()
+    rate_limit._default_store._requests.clear()
     workspace_id = test_user.memberships[0].workspace_id
 
     app.dependency_overrides[get_db] = override_get_db

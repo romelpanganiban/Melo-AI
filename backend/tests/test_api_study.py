@@ -30,7 +30,7 @@ def test_study_progress_rejects_a_session_from_another_workspace(client, test_se
         f"/study/progress/{test_session_id}",
         headers={"Authorization": f"Bearer {registration.json()['access_token']}"},
     )
-    assert response.status_code == 422
+    assert response.status_code == 403
 
 
 def test_study_progress_rejects_a_collection_from_another_workspace(client, test_session_id):
@@ -42,7 +42,10 @@ def test_study_progress_rejects_a_collection_from_another_workspace(client, test
         },
     )
     assert registration.status_code == 201
-    other_client_headers = {"Authorization": f"Bearer {registration.json()['access_token']}"}
+    other_client_headers = {
+        "Authorization": f"Bearer {registration.json()['access_token']}",
+        "X-Workspace-ID": registration.json()["workspace_id"],
+    }
     collection = client.post(
         "/collections",
         json={"name": "Study Collection"},

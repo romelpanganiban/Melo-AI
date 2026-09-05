@@ -14,6 +14,16 @@ class GitService:
     """Inspect the workspace repository without changing Git state."""
 
     COMMAND_TIMEOUT = 10
+    SENSITIVE_FILENAMES = {
+        ".env",
+        ".env.local",
+        ".env.production",
+        "id_rsa",
+        "id_ed25519",
+        "credentials.json",
+        "service-account.json",
+    }
+    SENSITIVE_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
 
     def __init__(self, workspace: Path | None = None, workspace_id: str | None = None):
         if workspace is not None:
@@ -57,7 +67,7 @@ class GitService:
         if not paths:
             raise ValidationError("at least one path is required", field="paths")
 
-        validated_paths = [self._validate_path(path) for path in paths]
+        validated_paths = [self._validate_mutation_path(path) for path in paths]
         self._run("add", "--", *validated_paths)
         return {"staged": validated_paths, "count": len(validated_paths)}
 
@@ -67,8 +77,31 @@ class GitService:
         if not message or not message.strip():
             raise ValidationError("commit message is required", field="message")
 
+        sensitive_paths = self._staged_sensitive_paths()
+        if sensitive_paths:
+            raise ValidationError(
+                "commits containing sensitive files are blocked",
+                field="staged_files",
+            )
+
         output = self._run("commit", "-m", message.strip())
         return {"message": message.strip(), "output": output}
+
+    def _validate_mutation_path(self, relative_path: str) -> str:
+        validated_path = self._validate_path(relative_path)
+        path = Path(validated_path)
+        if self._is_sensitive_path(path):
+            raise ValidationError("sensitive files cannot be staged", field="paths")
+        return validated_path
+
+    def _staged_sensitive_paths(self) -> list[str]:
+        output = self._run("diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR")
+        paths = [path for path in output.split("\0") if path]
+        return [path for path in paths if self._is_sensitive_path(Path(path))]
+
+    @classmethod
+    def _is_sensitive_path(cls, path: Path) -> bool:
+        return path.name.lower() in cls.SENSITIVE_FILENAMES or path.suffix.lower() in cls.SENSITIVE_SUFFIXES
 
     def _validate_path(self, relative_path: str) -> str:
         if not relative_path.strip():

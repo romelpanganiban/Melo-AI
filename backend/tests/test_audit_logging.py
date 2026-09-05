@@ -49,3 +49,16 @@ def test_audit_log_redacts_sensitive_fields(caplog):
     log_record = next(record for record in caplog.records if getattr(record, "event", None) == "auth.token_refresh")
     assert getattr(log_record, "access_token", None) == "[REDACTED]"
     assert getattr(log_record, "refresh_token", None) == "[REDACTED]"
+
+
+def test_audit_log_redacts_api_keys_and_nested_secrets(caplog):
+    with caplog.at_level(logging.INFO, logger="melo-ai.audit"):
+        audit_log(
+            "security.config_check",
+            qdrant_api_key="qdrant-secret",
+            details={"database_url": "postgres-secret", "safe": "visible"},
+        )
+
+    log_record = next(record for record in caplog.records if getattr(record, "event", None) == "security.config_check")
+    assert getattr(log_record, "qdrant_api_key", None) == "[REDACTED]"
+    assert log_record.details == {"database_url": "[REDACTED]", "safe": "visible"}

@@ -532,7 +532,7 @@ class ChatService:
 
     def _build_project_context_block(self, current_message: str) -> str:
         """Build a compact project context block that keeps the roadmap active by default."""
-        project_context = self.project_context or {}
+        project_context = getattr(self, "project_context", None) or {}
         project_name = project_context.get("project_name") or "Current workspace"
         roadmap_summary = project_context.get("roadmap_summary") or "Stay on the active project roadmap unless the user explicitly changes direction."
         current_phase = project_context.get("current_phase") or "General"

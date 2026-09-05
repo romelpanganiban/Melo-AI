@@ -53,13 +53,34 @@ def test_commit_requires_message_and_confirmation(tmp_path: Path):
 
 
 def test_stage_and_commit_run_expected_commands(tmp_path: Path):
-    result = Mock(returncode=0, stdout="[main abc123] Initial commit\n", stderr="")
+    stage_result = Mock(returncode=0, stdout="", stderr="")
+    staged_files_result = Mock(returncode=0, stdout="", stderr="")
+    commit_result = Mock(returncode=0, stdout="[main abc123] Initial commit\n", stderr="")
 
-    with patch("services.git_service.subprocess.run", return_value=result) as run:
+    with patch(
+        "services.git_service.subprocess.run",
+        side_effect=[stage_result, staged_files_result, commit_result],
+    ) as run:
         staged = GitService(tmp_path).stage(["app.py"], confirm=True)
         committed = GitService(tmp_path).commit("Initial commit", confirm=True)
 
     assert staged == {"staged": ["app.py"], "count": 1}
     assert committed["message"] == "Initial commit"
     assert run.call_args_list[0].args[0][-3:] == ["add", "--", "app.py"]
-    assert run.call_args_list[1].args[0][-3:] == ["commit", "-m", "Initial commit"]
+    assert run.call_args_list[1].args[0][-5:] == ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"]
+    assert run.call_args_list[2].args[0][-3:] == ["commit", "-m", "Initial commit"]
+
+
+def test_stage_blocks_sensitive_paths(tmp_path: Path):
+    with pytest.raises(ValidationError, match="sensitive files"):
+        GitService(tmp_path).stage([".env"], confirm=True)
+
+
+def test_commit_blocks_sensitive_staged_files(tmp_path: Path):
+    result = Mock(returncode=0, stdout=".env\0notes.md\0", stderr="")
+
+    with patch("services.git_service.subprocess.run", return_value=result) as run:
+        with pytest.raises(ValidationError, match="sensitive files"):
+            GitService(tmp_path).commit("Initial commit", confirm=True)
+
+    assert run.call_args.args[0][-5:] == ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"]

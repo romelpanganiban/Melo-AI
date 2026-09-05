@@ -59,8 +59,24 @@ def create_approval(
     """Issue a short-lived approval token for a specific side-effecting action."""
     # Only owners and admins can create approval tokens
     if workspace_ctx.role.name not in ("OWNER", "ADMIN"):
+        audit_log(
+            "agent.approval.denied",
+            user_id=str(workspace_ctx.user.id),
+            workspace_id=workspace_ctx.workspace_id,
+            action=request.action,
+            outcome="denied",
+            reason="insufficient_workspace_role",
+        )
         raise HTTPException(status_code=403, detail="Insufficient workspace role")
-    return approval_service.create(request.action, request.target, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
+    approval = approval_service.create(request.action, request.target, owner_id=workspace_ctx.user.id, workspace_id=workspace_ctx.workspace_id)
+    audit_log(
+        "agent.approval.created",
+        user_id=str(workspace_ctx.user.id),
+        workspace_id=workspace_ctx.workspace_id,
+        action=request.action,
+        outcome="success",
+    )
+    return approval
 
 
 @router.post("/agent/run", status_code=status.HTTP_200_OK)
@@ -121,6 +137,13 @@ def run_read_only_agent(
                         workspace_id=workspace_ctx.workspace_id,
                     ),
                 })
+        audit_log(
+            "agent.read_only.executed",
+            user_id=str(workspace_ctx.user.id),
+            workspace_id=workspace_ctx.workspace_id,
+            action_count=len(results),
+            outcome="success",
+        )
         return {"results": results, "executed": len(results), "side_effects": False}
     except (HTTPException, ValidationError):
         raise
@@ -136,6 +159,14 @@ def run_agent_mutation(
 ):
     """Execute one explicitly approved, workspace-scoped mutation."""
     if not settings.ENABLE_WORKSPACE_TOOLS:
+        audit_log(
+            "agent.mutation.denied",
+            user_id=str(workspace_ctx.user.id),
+            workspace_id=workspace_ctx.workspace_id,
+            action=request.action,
+            outcome="denied",
+            reason="workspace_tools_disabled",
+        )
         raise HTTPException(status_code=503, detail="Workspace tools are disabled")
 
     capability_by_action = {
@@ -154,6 +185,15 @@ def run_agent_mutation(
     try:
         policy = AuthorizationPolicy(db)
         if capability.value not in settings.AGENT_ALLOWED_CAPABILITIES:
+            audit_log(
+                "agent.mutation.denied",
+                user_id=str(workspace_ctx.user.id),
+                workspace_id=workspace_ctx.workspace_id,
+                action=request.action,
+                capability=capability.value,
+                outcome="denied",
+                reason="capability_disabled",
+            )
             raise HTTPException(status_code=403, detail=f"Agent capability {capability.value} is disabled")
 
         decision = policy.authorize_tool_execution(
@@ -162,6 +202,15 @@ def run_agent_mutation(
             capability,
         )
         if not decision.allowed:
+            audit_log(
+                "agent.mutation.denied",
+                user_id=str(workspace_ctx.user.id),
+                workspace_id=workspace_ctx.workspace_id,
+                action=request.action,
+                capability=capability.value,
+                outcome="denied",
+                reason="role_not_allowed",
+            )
             raise HTTPException(status_code=decision.status_code, detail=decision.reason)
 
         if not approval_service.consume_for_request(
@@ -172,6 +221,15 @@ def run_agent_mutation(
             workspace_id=workspace_ctx.workspace_id,
             policy=policy,
         ):
+            audit_log(
+                "agent.mutation.denied",
+                user_id=str(workspace_ctx.user.id),
+                workspace_id=workspace_ctx.workspace_id,
+                action=request.action,
+                capability=capability.value,
+                outcome="denied",
+                reason="invalid_or_reused_approval",
+            )
             raise HTTPException(status_code=403, detail="Valid approval is required for this mutation")
 
         if request.action == "write_file":

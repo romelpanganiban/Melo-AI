@@ -318,7 +318,7 @@ Next: Retrofit existing endpoints (api/chat.py, api/sessions.py, api/documents.p
 - [x] Workspace filesystem sandbox with per-workspace root isolation and deny-by-default access
 - [x] Agent capability allowlist restricting available tools, resources, and side effects (Phase 14d)
 - [x] Action-bound approvals for all mutating agent operations and Git/file changes (Phase 14d)
-- [ ] Secret isolation so agents and tool execution never receive raw credentials or production secrets (Phase 14e)
+- [x] Secret isolation for agent/file/Git paths, audit metadata, and sensitive credential files (Phase 14e)
 - [x] Git safety policy with repo-bound operations, branch restrictions, and diff review checks
 
 ### High priority hardening
@@ -326,9 +326,9 @@ Next: Retrofit existing endpoints (api/chat.py, api/sessions.py, api/documents.p
 - [x] Upload/resource limits for file size, parsing expansion, embedding workload, and concurrency
 - [x] Redis-backed distributed rate limiting and atomic quota enforcement for multi-instance deployment
 - [x] Secure session/token handling, including XSS-resistant storage, rotation, expiration, and durable revocation
-- [ ] Security audit logs for auth, workspace actions, approvals, file mutations, and admin operations
+- [x] Security audit logs for auth, workspace actions, approvals, file mutations, and admin operations
 - [x] Security regression tests covering cross-user access, secret leakage, approval bypass, and tenant isolation
-- [ ] Dependency and SAST scanning in CI for vulnerable packages and dangerous patterns
+- [x] Dependency and SAST scanning in CI for vulnerable packages and dangerous patterns
 - [x] Prompt-injection and RAG security tests for retrieval poisoning, prompt leakage, and unsafe context handling
 - [ ] Production security configuration for TLS, reverse proxy headers, CORS allowlists, and deployment defaults
 
@@ -360,7 +360,7 @@ The next milestone is security hardening rather than another AI feature. Work sh
 14. [x] Remove committed `__pycache__`
 15. [x] Run a clean backend test environment
 
-**Status: Milestone 14.2 In Progress** - Agent capability and approval controls are complete; secret isolation, audit logging, and production security configuration remain.
+**Status: Milestone 14.2 In Progress** - Security controls, audit logging, dependency scanning, and agent safeguards are complete; production deployment configuration remains.
 
 ---
 
