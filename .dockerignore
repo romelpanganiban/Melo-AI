@@ -1,0 +1,15 @@
+.git
+.github
+backend/.env
+frontend/.next
+frontend/.env.local
+frontend/node_modules
+backend/.venv
+**/__pycache__
+**/*.pyc
+*.sqlite
+*.db
+workspaces
+node_modules
+.pytest_cache
+frontend/.pytest_cache

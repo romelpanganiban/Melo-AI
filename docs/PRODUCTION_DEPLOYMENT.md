@@ -58,3 +58,31 @@ bandit -r backend -q -f txt -x backend/tests,backend/.venv,backend/test_full_flo
 The GitHub Actions security workflow must pass before merging. After deployment,
 verify health, authentication, secure cookies, CORS behavior, streaming chat, and
 workspace isolation from a non-production client.
+
+## Dormant Docker Compose Deployment
+
+The repository includes a production-shaped Compose stack under `deploy/`. It is
+not active until you start it. To prepare a host:
+
+```bash
+cd deploy
+cp production.env.example production.env
+# Replace every placeholder in production.env.
+docker compose -f docker-compose.production.yml config
+docker compose -f docker-compose.production.yml up -d --build
+```
+
+Set `PUBLIC_DOMAIN` to a DNS name that points to the host. Caddy obtains and
+renews the TLS certificate automatically when ports 80 and 443 are reachable.
+The frontend uses `/api` for backend requests, and Caddy routes that prefix to
+the private backend service. PostgreSQL and Qdrant are internal Compose services
+with persistent named volumes and are not published to the host.
+
+To stop the stack without deleting persistent data:
+
+```bash
+docker compose -f docker-compose.production.yml down
+```
+
+Do not run `docker compose down -v` unless you intentionally want to delete the
+database and vector volumes.
