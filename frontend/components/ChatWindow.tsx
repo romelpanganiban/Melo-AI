@@ -40,14 +40,14 @@ export default function ChatWindow({
   if (!sessionId) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
-        <div className="max-w-md text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-teal-300/15 bg-teal-600 text-2xl text-white shadow-lg shadow-black/30">
+        <div className="glass-panel max-w-md rounded-[26px] border border-teal-500/15 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.10),_rgba(15,23,42,0.00)_42%)] p-8 text-center shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-teal-300/20 bg-teal-600/80 text-2xl font-semibold text-white shadow-lg shadow-teal-900/20">
             M
           </div>
           <p className="brand-title text-2xl font-semibold text-slate-100">
             A quieter place to think
           </p>
-          <p className="empty-chat-copy mt-2 text-sm leading-6 text-slate-300/65">
+          <p className="mt-2 text-sm leading-6 text-slate-300/70">
             Choose a conversation from the sidebar, or create a new one to begin.
           </p>
         </div>
@@ -94,10 +94,13 @@ export default function ChatWindow({
       }}
     >
       {messages.length === 0 ? (
-        <div className="flex items-center justify-center h-full">
-          <div className="max-w-sm text-center">
-            <p className="brand-title text-xl font-semibold text-slate-100">What is on your mind?</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300/55">
+        <div className="flex h-full min-h-[420px] items-center justify-center">
+          <div className="glass-panel flex max-w-md flex-col items-center rounded-[30px] border border-teal-500/15 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.10),_rgba(15,23,42,0.00)_48%)] px-8 py-10 text-center shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-teal-300/20 bg-slate-900/60 text-2xl text-teal-200 shadow-inner shadow-black/25">
+              ✦
+            </div>
+            <p className="brand-title text-2xl font-semibold text-slate-100">What is on your mind?</p>
+            <p className="mt-3 max-w-xs text-sm leading-6 text-slate-300/70">
               Ask a question, bring in a document, or use the composer below to get started.
             </p>
           </div>

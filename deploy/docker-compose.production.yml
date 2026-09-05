@@ -60,7 +60,7 @@ services:
   caddy:
     image: caddy:2.10-alpine
     environment:
-      PUBLIC_DOMAIN: melo.example.com
+      PUBLIC_DOMAIN: localhost
     ports:
       - "80:80"
       - "443:443"
