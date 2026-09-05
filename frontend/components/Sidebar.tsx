@@ -53,6 +53,10 @@ export default function Sidebar({
       setSessions(payload.sessions || []);
       setError(null);
     } catch (err) {
+      if (err instanceof APIError && err.statusCode === 401) {
+        onLogout();
+        return;
+      }
       const message =
         err instanceof APIError
           ? err.message
