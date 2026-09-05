@@ -12,15 +12,34 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    for table in ("sessions", "documents", "knowledge_collections"):
-        bind.execute(sa.text(f"""
-            UPDATE {table} AS resource
+    queries = (
+        """
+            UPDATE sessions AS resource
             SET owner_id = membership.user_id
             FROM workspace_members AS membership
             WHERE resource.workspace_id = membership.workspace_id
               AND resource.owner_id IS NULL
               AND membership.role = 'owner'
-        """))
+        """,
+        """
+            UPDATE documents AS resource
+            SET owner_id = membership.user_id
+            FROM workspace_members AS membership
+            WHERE resource.workspace_id = membership.workspace_id
+              AND resource.owner_id IS NULL
+              AND membership.role = 'owner'
+        """,
+        """
+            UPDATE knowledge_collections AS resource
+            SET owner_id = membership.user_id
+            FROM workspace_members AS membership
+            WHERE resource.workspace_id = membership.workspace_id
+              AND resource.owner_id IS NULL
+              AND membership.role = 'owner'
+        """,
+    )
+    for query in queries:
+        bind.execute(sa.text(query))
 
 
 def downgrade() -> None:

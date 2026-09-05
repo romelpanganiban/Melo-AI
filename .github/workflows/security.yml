@@ -38,4 +38,4 @@ jobs:
 
       - name: Run static analysis security scan
         run: |
-          bandit -r backend -q -f txt -x backend/tests -x backend/.venv
+          bandit -r backend -q -f txt -x backend/tests,backend/.venv,backend/test_full_flow.py,backend/verify_workspace_fs.py

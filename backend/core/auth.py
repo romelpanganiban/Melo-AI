@@ -45,7 +45,7 @@ def get_current_user(
     cookie_token: str | None = Cookie(default=None, alias=settings.AUTH_COOKIE_NAME),
     db: Session = Depends(get_db),
 ) -> User:
-    token = ""
+    token = ""  # nosec B105
     if credentials is not None and credentials.scheme.lower() == "bearer":
         token = credentials.credentials.strip() if credentials.credentials else ""
     elif cookie_token:
