@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from unittest.mock import Mock, patch
 
 from main import app
 
@@ -102,6 +103,19 @@ def test_agent_read_action_uses_workspace_scope(client):
     assert response.json()["results"][0]["result"]["path"] == "backend/services/chat_service.py"
 
 
+def test_agent_capability_allowlist_can_disable_read_action(client, monkeypatch):
+    from core.settings import settings
+
+    monkeypatch.setattr(settings, "AGENT_ALLOWED_CAPABILITIES", {"document:search"})
+    response = client.post(
+        "/agent/run",
+        json={"actions": [{"action": "read_file", "path": "backend/services/chat_service.py"}]},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Agent capability file:read is disabled"
+
+
 def test_agent_approval_is_bound_to_action_and_target(client):
     response = client.post(
         "/agent/approvals",
@@ -112,3 +126,56 @@ def test_agent_approval_is_bound_to_action_and_target(client):
     approval = response.json()
     assert approval["action"] == "write_file"
     assert approval["target"] == "notes.md"
+
+
+def test_agent_mutation_requires_matching_approval(client, monkeypatch):
+    from core.settings import settings
+
+    monkeypatch.setattr(settings, "ENABLE_WORKSPACE_TOOLS", True)
+    monkeypatch.setattr(settings, "AGENT_ALLOWED_CAPABILITIES", {"file:write"})
+    approval_response = client.post(
+        "/agent/approvals",
+        json={"action": "write_file", "target": "notes.md"},
+    )
+    approval_id = approval_response.json()["approval_id"]
+
+    with patch("api.agent.code_service") as code_service:
+        response = client.post(
+            "/agent/mutate",
+            json={
+                "action": "write_file",
+                "approval_id": approval_id,
+                "path": "other.md",
+                "content": "blocked",
+            },
+        )
+
+    assert response.status_code == 403
+    code_service.with_workspace.assert_not_called()
+
+
+def test_agent_mutation_consumes_approval_once(client, monkeypatch):
+    from core.settings import settings
+
+    monkeypatch.setattr(settings, "ENABLE_WORKSPACE_TOOLS", True)
+    monkeypatch.setattr(settings, "AGENT_ALLOWED_CAPABILITIES", {"file:write"})
+    approval_id = client.post(
+        "/agent/approvals",
+        json={"action": "write_file", "target": "notes.md"},
+    ).json()["approval_id"]
+    workspace_service = Mock()
+    workspace_service.write_file.return_value = {"path": "notes.md", "created": True}
+
+    with patch("api.agent.code_service.with_workspace", return_value=workspace_service):
+        request = {
+            "action": "write_file",
+            "approval_id": approval_id,
+            "path": "notes.md",
+            "content": "approved",
+        }
+        first = client.post("/agent/mutate", json=request)
+        second = client.post("/agent/mutate", json=request)
+
+    assert first.status_code == 200
+    assert second.status_code == 403
+    workspace_service.write_file.assert_called_once_with("notes.md", "approved", confirm=True)

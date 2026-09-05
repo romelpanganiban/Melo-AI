@@ -42,6 +42,45 @@ class ApprovalService:
             self._approvals.pop(approval_id, None)
             return True
 
+    def consume_for_request(
+        self,
+        approval_id: str,
+        action: str,
+        target: str,
+        owner_id: str,
+        workspace_id: str,
+        policy,
+    ) -> bool:
+        """Validate authorization binding and consume a matching approval once."""
+        approval = self._get_active_approval(approval_id)
+        if approval is None:
+            return False
+
+        decision = policy.authorize_approval_consumption(
+            user_id=owner_id,
+            workspace_id=workspace_id,
+            approval_token_user_id=approval["owner_id"],
+            approval_token_workspace_id=approval["workspace_id"],
+        )
+        if not decision.allowed:
+            return False
+
+        return self.consume(
+            approval_id,
+            action,
+            target,
+            owner_id=owner_id,
+            workspace_id=workspace_id,
+        )
+
+    def _get_active_approval(self, approval_id: str) -> dict | None:
+        with self._lock:
+            approval = self._approvals.get(approval_id)
+            if not approval or approval["expires_at"] <= datetime.now(timezone.utc):
+                self._approvals.pop(approval_id, None)
+                return None
+            return dict(approval)
+
 
 _approval_service = ApprovalService()
 

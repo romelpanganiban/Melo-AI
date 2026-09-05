@@ -316,8 +316,8 @@ Next: Retrofit existing endpoints (api/chat.py, api/sessions.py, api/documents.p
 - [x] Qdrant tenant isolation with workspace-scoped filters and private vector indexes
 - [x] Path traversal protection for file access, uploads, and workspace operations
 - [x] Workspace filesystem sandbox with per-workspace root isolation and deny-by-default access
-- [ ] Agent capability allowlist restricting available tools, resources, and side effects (Phase 14d)
-- [ ] Action-bound approvals for all mutating agent operations and Git/file changes (Phase 14d)
+- [x] Agent capability allowlist restricting available tools, resources, and side effects (Phase 14d)
+- [x] Action-bound approvals for all mutating agent operations and Git/file changes (Phase 14d)
 - [ ] Secret isolation so agents and tool execution never receive raw credentials or production secrets (Phase 14e)
 - [x] Git safety policy with repo-bound operations, branch restrictions, and diff review checks
 
@@ -353,14 +353,14 @@ The next milestone is security hardening rather than another AI feature. Work sh
 7. [x] Durable session/revocation
 8. [x] Redis-based distributed rate limits
 9. [x] Document processing resource limits
-10. [ ] Qdrant/SQL reconciliation hardening (chunk-level audit, failure-safe repair, and focused test completion)
+10. [x] Qdrant/SQL reconciliation hardening (chunk-level audit, failure-safe repair, and focused test completion)
 11. [x] Prompt-injection defense for RAG/agents
 12. [x] Cross-tenant security regression tests
 13. [x] Fix README's stale test results
 14. [x] Remove committed `__pycache__`
 15. [x] Run a clean backend test environment
 
-**Status: Milestone 14.2 In Progress** - Reconciliation hardening remains before all 15 tasks can be marked complete.
+**Status: Milestone 14.2 In Progress** - Agent capability and approval controls are complete; secret isolation, audit logging, and production security configuration remain.
 
 ---
 
